@@ -292,7 +292,7 @@ void BOARD_BootClockRUN(void)
     }
     else
     {
-        /* Set 1.125V for production samples to align with data sheet requirement */
+        // Set 1.125V for production samples to align with data sheet requirement
         DCDC_SetVDD1P0BuckModeTargetVoltage(DCDC, kDCDC_1P0BuckTarget1P125V);
     }
 #endif
