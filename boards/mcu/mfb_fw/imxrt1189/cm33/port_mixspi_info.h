@@ -23,12 +23,12 @@
 
 #define MFB_MIXSPI_MODULE MFB_MIXSPI_MODULE_IS_FLEXSPI
 
-#define EXAMPLE_MIXSPI                  FLEXSPI1
+#define EXAMPLE_MIXSPI                  FLEXSPI2
 #define FLASH_SIZE                      0x4000 /* 16Mb/KByte */
-#define EXAMPLE_MIXSPI_AMBA_BASE        FlexSPI1_AMBA_BASE
+#define EXAMPLE_MIXSPI_AMBA_BASE        FlexSPI2_AMBA_BASE
 #define EXAMPLE_FLASH_PAGE_SIZE         256
 #define EXAMPLE_FLASH_SECTOR_SIZE       0x1000 /* 4K */
-#define EXAMPLE_MIXSPI_CLOCK            kCLOCK_Flexspi1
+#define EXAMPLE_MIXSPI_CLOCK            kCLOCK_Flexspi2
 #define EXAMPLE_MIXSPI_PORT             kFLEXSPI_PortA1
 
 //#define BOARD_IS_RT1180_EVK_PORTA_QUAD      (0)
@@ -36,8 +36,8 @@
 #define BOARD_IS_RT1180_EVK_PORTB_QUAD      (0)
 #define BOARD_IS_RT1180_EVK_PORTB_OCTAL     (0)  // To Flash memory daughter card
 
-#define BOARD_IS_RT1180_MEM_DC_MUX1         (1)
-#define BOARD_IS_RT1180_MEM_DC_MUX2         (0)
+#define BOARD_IS_RT1180_MEM_DC_MUX1         (0)
+#define BOARD_IS_RT1180_MEM_DC_MUX2         (1)
 #define BOARD_IS_RT1180_MEM_DC_MUX3         (0)
 
 /*
@@ -249,13 +249,29 @@ static void mixspi_pin_init(FLEXSPI_Type *base, flexspi_port_t port, flexspi_pad
                 IOMUXC_SetPinMux(IOMUXC_GPIO_EMC_B1_33_FLEXSPI2_BUS2BIT_B_DATA00, 1U);
                 IOMUXC_SetPinMux(IOMUXC_GPIO_EMC_B1_34_FLEXSPI2_BUS2BIT_B_SCLK,   1U);
 #elif BOARD_IS_RT1180_MEM_DC_MUX2
-                IOMUXC_SetPinMux(IOMUXC_GPIO_AON_21_FLEXSPI2_BUS2BIT_A_DQS,       1U);
+                if (port == kFLEXSPI_PortA1) || (port == kFLEXSPI_PortA2)
+                {
+                    IOMUXC_SetPinMux(IOMUXC_GPIO_AON_21_FLEXSPI2_BUS2BIT_A_DQS,       1U);
+                    IOMUXC_SetPinConfig(IOMUXC_GPIO_AON_21_FLEXSPI2_BUS2BIT_A_DQS,    0x02U);  // default 0x0e
+                                                  /* Slew Rate Field: Fast Slew Rate
+                                                     Drive Strength Field: high driver
+                                                     Pull / Keep Select Field: Pull Disable,
+                                                     Pull Up / Down Config. Field: Weak pull down
+                                                     Open Drain Field: Disabled */
+                }
                 IOMUXC_SetPinMux(IOMUXC_GPIO_AON_22_FLEXSPI2_BUS2BIT_A_SS0_B,     1U);
                 IOMUXC_SetPinMux(IOMUXC_GPIO_AON_23_FLEXSPI2_BUS2BIT_A_SCLK,      1U);
                 IOMUXC_SetPinMux(IOMUXC_GPIO_AON_24_FLEXSPI2_BUS2BIT_A_DATA00,    1U);
                 IOMUXC_SetPinMux(IOMUXC_GPIO_AON_25_FLEXSPI2_BUS2BIT_A_DATA01,    1U);
                 IOMUXC_SetPinMux(IOMUXC_GPIO_AON_26_FLEXSPI2_BUS2BIT_A_DATA02,    1U);
                 IOMUXC_SetPinMux(IOMUXC_GPIO_AON_27_FLEXSPI2_BUS2BIT_A_DATA03,    1U);
+
+                IOMUXC_SetPinConfig(IOMUXC_GPIO_AON_22_FLEXSPI2_BUS2BIT_A_SS0_B,  0x02U);  // default 0x0e
+                IOMUXC_SetPinConfig(IOMUXC_GPIO_AON_23_FLEXSPI2_BUS2BIT_A_SCLK,   0x02U);  // default 0x06
+                IOMUXC_SetPinConfig(IOMUXC_GPIO_AON_24_FLEXSPI2_BUS2BIT_A_DATA00, 0x02U);  // default 0x06
+                IOMUXC_SetPinConfig(IOMUXC_GPIO_AON_25_FLEXSPI2_BUS2BIT_A_DATA01, 0x02U);  // default 0x06
+                IOMUXC_SetPinConfig(IOMUXC_GPIO_AON_26_FLEXSPI2_BUS2BIT_A_DATA02, 0x02U);  // default 0x06
+                IOMUXC_SetPinConfig(IOMUXC_GPIO_AON_27_FLEXSPI2_BUS2BIT_A_DATA03, 0x02U);  // default 0x0e
 
 #if BOARD_IS_RT1180_MEM_DC_MUX3
                 IOMUXC_SetPinMux(IOMUXC_GPIO_EMC_B1_22_FLEXSPI2_BUS2BIT_B_DATA03, 1U);
@@ -269,7 +285,18 @@ static void mixspi_pin_init(FLEXSPI_Type *base, flexspi_port_t port, flexspi_pad
                 IOMUXC_SetPinMux(IOMUXC_GPIO_AON_18_FLEXSPI2_BUS2BIT_B_DATA00, 1U);
                 IOMUXC_SetPinMux(IOMUXC_GPIO_AON_19_FLEXSPI2_BUS2BIT_B_SCLK,   1U);
                 IOMUXC_SetPinMux(IOMUXC_GPIO_AON_20_FLEXSPI2_BUS2BIT_B_DQS,    1U);
-                IOMUXC_SetPinMux(IOMUXC_GPIO_AON_21_FLEXSPI2_BUS2BIT_B_SS0_B,  1U);
+                if (port == kFLEXSPI_PortB1) || (port == kFLEXSPI_PortB2)
+                {
+                    IOMUXC_SetPinMux(IOMUXC_GPIO_AON_21_FLEXSPI2_BUS2BIT_B_SS0_B,  1U);
+                    IOMUXC_SetPinConfig(IOMUXC_GPIO_AON_21_FLEXSPI2_BUS2BIT_B_SS0_B,  0x02U);  // default 0x0e
+                }
+
+                IOMUXC_SetPinConfig(IOMUXC_GPIO_AON_20_FLEXSPI2_BUS2BIT_B_DQS,    0x02U);  // default 0x0e
+                IOMUXC_SetPinConfig(IOMUXC_GPIO_AON_19_FLEXSPI2_BUS2BIT_B_SCLK,   0x02U);  // default 0x0e
+                IOMUXC_SetPinConfig(IOMUXC_GPIO_AON_18_FLEXSPI2_BUS2BIT_B_DATA00, 0x02U);  // default 0x06
+                IOMUXC_SetPinConfig(IOMUXC_GPIO_AON_17_FLEXSPI2_BUS2BIT_B_DATA01, 0x02U);  // default 0x06
+                IOMUXC_SetPinConfig(IOMUXC_GPIO_AON_16_FLEXSPI2_BUS2BIT_B_DATA02, 0x02U);  // default 0x06
+                IOMUXC_SetPinConfig(IOMUXC_GPIO_AON_15_FLEXSPI2_BUS2BIT_B_DATA03, 0x02U);  // default 0x06
 #endif
 #elif BOARD_IS_RT1180_MEM_DC_MUX3
                 IOMUXC_SetPinMux(IOMUXC_GPIO_EMC_B1_28_FLEXSPI2_BUS2BIT_B_SS0_B,  1U);
