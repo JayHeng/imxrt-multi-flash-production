@@ -16,6 +16,9 @@
 *.lst
 *.elf
 *.bin
+
+*.cmake
+
 */*/*/*/*/settings/
 */*/*/*/*/debug/
 */*/*/*/*/release/

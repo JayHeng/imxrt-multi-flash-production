@@ -11,7 +11,7 @@
 **
 **     Reference manual:    IMXRT1010RM Rev.1, 10/2021 | IMXRT1010SRM Rev.0
 **     Version:             rev. 1.2, 2021-08-10
-**     Build:               b211011
+**     Build:               b211108
 **
 **     Abstract:
 **         CMSIS Peripheral Access Layer for MIMXRT1011
@@ -945,7 +945,7 @@ typedef struct {
 typedef struct {
   __IO uint32_t CTRL;                              /**< ADC_ETC Global Control Register, offset: 0x0 */
   __IO uint32_t DONE0_1_IRQ;                       /**< ETC DONE0 and DONE1 IRQ State Register, offset: 0x4 */
-  __IO uint32_t DONE2_3_ERR_IRQ;                   /**< ETC DONE_2 and DONE_ERR IRQ State Register, offset: 0x8 */
+  __IO uint32_t DONE2_3_ERR_IRQ;                   /**< ETC DONE_2, DONE_3 and DONE_ERR IRQ State Register, offset: 0x8 */
   __IO uint32_t DMA_CTRL;                          /**< ETC DMA control Register, offset: 0xC */
   struct {                                         /* offset: 0x10, array step: 0x28 */
     __IO uint32_t TRIGn_CTRL;                        /**< ETC_TRIG Control Register, array offset: 0x10, array step: 0x28 */
@@ -1137,7 +1137,7 @@ typedef struct {
 #define ADC_ETC_DONE0_1_IRQ_TRIG7_DONE1(x)       (((uint32_t)(((uint32_t)(x)) << ADC_ETC_DONE0_1_IRQ_TRIG7_DONE1_SHIFT)) & ADC_ETC_DONE0_1_IRQ_TRIG7_DONE1_MASK)
 /*! @} */
 
-/*! @name DONE2_3_ERR_IRQ - ETC DONE_2 and DONE_ERR IRQ State Register */
+/*! @name DONE2_3_ERR_IRQ - ETC DONE_2, DONE_3 and DONE_ERR IRQ State Register */
 /*! @{ */
 
 #define ADC_ETC_DONE2_3_ERR_IRQ_TRIG0_DONE2_MASK (0x1U)
@@ -1203,6 +1203,70 @@ typedef struct {
  *  0b1..TRIG7_DONE2 interrupt detected
  */
 #define ADC_ETC_DONE2_3_ERR_IRQ_TRIG7_DONE2(x)   (((uint32_t)(((uint32_t)(x)) << ADC_ETC_DONE2_3_ERR_IRQ_TRIG7_DONE2_SHIFT)) & ADC_ETC_DONE2_3_ERR_IRQ_TRIG7_DONE2_MASK)
+
+#define ADC_ETC_DONE2_3_ERR_IRQ_TRIG0_DONE3_MASK (0x100U)
+#define ADC_ETC_DONE2_3_ERR_IRQ_TRIG0_DONE3_SHIFT (8U)
+/*! TRIG0_DONE3
+ *  0b0..No TRIG0_DONE3 interrupt detected
+ *  0b1..TRIG0_DONE3 interrupt detected
+ */
+#define ADC_ETC_DONE2_3_ERR_IRQ_TRIG0_DONE3(x)   (((uint32_t)(((uint32_t)(x)) << ADC_ETC_DONE2_3_ERR_IRQ_TRIG0_DONE3_SHIFT)) & ADC_ETC_DONE2_3_ERR_IRQ_TRIG0_DONE3_MASK)
+
+#define ADC_ETC_DONE2_3_ERR_IRQ_TRIG1_DONE3_MASK (0x200U)
+#define ADC_ETC_DONE2_3_ERR_IRQ_TRIG1_DONE3_SHIFT (9U)
+/*! TRIG1_DONE3
+ *  0b0..No TRIG1_DONE3 interrupt detected
+ *  0b1..TRIG1_DONE3 interrupt detected
+ */
+#define ADC_ETC_DONE2_3_ERR_IRQ_TRIG1_DONE3(x)   (((uint32_t)(((uint32_t)(x)) << ADC_ETC_DONE2_3_ERR_IRQ_TRIG1_DONE3_SHIFT)) & ADC_ETC_DONE2_3_ERR_IRQ_TRIG1_DONE3_MASK)
+
+#define ADC_ETC_DONE2_3_ERR_IRQ_TRIG2_DONE3_MASK (0x400U)
+#define ADC_ETC_DONE2_3_ERR_IRQ_TRIG2_DONE3_SHIFT (10U)
+/*! TRIG2_DONE3
+ *  0b0..No TRIG2_DONE3 interrupt detected
+ *  0b1..TRIG2_DONE3 interrupt detected
+ */
+#define ADC_ETC_DONE2_3_ERR_IRQ_TRIG2_DONE3(x)   (((uint32_t)(((uint32_t)(x)) << ADC_ETC_DONE2_3_ERR_IRQ_TRIG2_DONE3_SHIFT)) & ADC_ETC_DONE2_3_ERR_IRQ_TRIG2_DONE3_MASK)
+
+#define ADC_ETC_DONE2_3_ERR_IRQ_TRIG3_DONE3_MASK (0x800U)
+#define ADC_ETC_DONE2_3_ERR_IRQ_TRIG3_DONE3_SHIFT (11U)
+/*! TRIG3_DONE3
+ *  0b0..No TRIG3_DONE3 interrupt detected
+ *  0b1..TRIG3_DONE3 interrupt detected
+ */
+#define ADC_ETC_DONE2_3_ERR_IRQ_TRIG3_DONE3(x)   (((uint32_t)(((uint32_t)(x)) << ADC_ETC_DONE2_3_ERR_IRQ_TRIG3_DONE3_SHIFT)) & ADC_ETC_DONE2_3_ERR_IRQ_TRIG3_DONE3_MASK)
+
+#define ADC_ETC_DONE2_3_ERR_IRQ_TRIG4_DONE3_MASK (0x1000U)
+#define ADC_ETC_DONE2_3_ERR_IRQ_TRIG4_DONE3_SHIFT (12U)
+/*! TRIG4_DONE3
+ *  0b0..No TRIG4_DONE3 interrupt detected
+ *  0b1..TRIG4_DONE3 interrupt detected
+ */
+#define ADC_ETC_DONE2_3_ERR_IRQ_TRIG4_DONE3(x)   (((uint32_t)(((uint32_t)(x)) << ADC_ETC_DONE2_3_ERR_IRQ_TRIG4_DONE3_SHIFT)) & ADC_ETC_DONE2_3_ERR_IRQ_TRIG4_DONE3_MASK)
+
+#define ADC_ETC_DONE2_3_ERR_IRQ_TRIG5_DONE3_MASK (0x2000U)
+#define ADC_ETC_DONE2_3_ERR_IRQ_TRIG5_DONE3_SHIFT (13U)
+/*! TRIG5_DONE3
+ *  0b0..No TRIG5_DONE3 interrupt detected
+ *  0b1..TRIG5_DONE3 interrupt detected
+ */
+#define ADC_ETC_DONE2_3_ERR_IRQ_TRIG5_DONE3(x)   (((uint32_t)(((uint32_t)(x)) << ADC_ETC_DONE2_3_ERR_IRQ_TRIG5_DONE3_SHIFT)) & ADC_ETC_DONE2_3_ERR_IRQ_TRIG5_DONE3_MASK)
+
+#define ADC_ETC_DONE2_3_ERR_IRQ_TRIG6_DONE3_MASK (0x4000U)
+#define ADC_ETC_DONE2_3_ERR_IRQ_TRIG6_DONE3_SHIFT (14U)
+/*! TRIG6_DONE3
+ *  0b0..No TRIG6_DONE3 interrupt detected
+ *  0b1..TRIG6_DONE3 interrupt detected
+ */
+#define ADC_ETC_DONE2_3_ERR_IRQ_TRIG6_DONE3(x)   (((uint32_t)(((uint32_t)(x)) << ADC_ETC_DONE2_3_ERR_IRQ_TRIG6_DONE3_SHIFT)) & ADC_ETC_DONE2_3_ERR_IRQ_TRIG6_DONE3_MASK)
+
+#define ADC_ETC_DONE2_3_ERR_IRQ_TRIG7_DONE3_MASK (0x8000U)
+#define ADC_ETC_DONE2_3_ERR_IRQ_TRIG7_DONE3_SHIFT (15U)
+/*! TRIG7_DONE3
+ *  0b0..No TRIG7_DONE3 interrupt detected
+ *  0b1..TRIG7_DONE3 interrupt detected
+ */
+#define ADC_ETC_DONE2_3_ERR_IRQ_TRIG7_DONE3(x)   (((uint32_t)(((uint32_t)(x)) << ADC_ETC_DONE2_3_ERR_IRQ_TRIG7_DONE3_SHIFT)) & ADC_ETC_DONE2_3_ERR_IRQ_TRIG7_DONE3_MASK)
 
 #define ADC_ETC_DONE2_3_ERR_IRQ_TRIG0_ERR_MASK   (0x10000U)
 #define ADC_ETC_DONE2_3_ERR_IRQ_TRIG0_ERR_SHIFT  (16U)
@@ -1516,12 +1580,20 @@ typedef struct {
 #define ADC_ETC_TRIGn_CHAIN_1_0_IE0_MASK         (0x6000U)
 #define ADC_ETC_TRIGn_CHAIN_1_0_IE0_SHIFT        (13U)
 /*! IE0
- *  0b00..No interrupt when finished
- *  0b01..Generate interrupt on Done0 when segment 0 finish.
- *  0b10..Generate interrupt on Done1 when segment 0 finish.
- *  0b11..Generate interrupt on Done2 when segment 0 finish.
+ *  0b00..Generate interrupt on Done0 when segment 0 finish.
+ *  0b01..Generate interrupt on Done1 when segment 0 finish.
+ *  0b10..Generate interrupt on Done2 when segment 0 finish.
+ *  0b11..Generate interrupt on Done3 when segment 0 finish.
  */
 #define ADC_ETC_TRIGn_CHAIN_1_0_IE0(x)           (((uint32_t)(((uint32_t)(x)) << ADC_ETC_TRIGn_CHAIN_1_0_IE0_SHIFT)) & ADC_ETC_TRIGn_CHAIN_1_0_IE0_MASK)
+
+#define ADC_ETC_TRIGn_CHAIN_1_0_IE0_EN_MASK      (0x8000U)
+#define ADC_ETC_TRIGn_CHAIN_1_0_IE0_EN_SHIFT     (15U)
+/*! IE0_EN
+ *  0b0..Interrupt DONE disabled.
+ *  0b1..Interrupt DONE enabled. When segment 0 finish, an interrupt will be generated on the specific port configured by the IE0.
+ */
+#define ADC_ETC_TRIGn_CHAIN_1_0_IE0_EN(x)        (((uint32_t)(((uint32_t)(x)) << ADC_ETC_TRIGn_CHAIN_1_0_IE0_EN_SHIFT)) & ADC_ETC_TRIGn_CHAIN_1_0_IE0_EN_MASK)
 
 #define ADC_ETC_TRIGn_CHAIN_1_0_CSEL1_MASK       (0xF0000U)
 #define ADC_ETC_TRIGn_CHAIN_1_0_CSEL1_SHIFT      (16U)
@@ -1571,12 +1643,20 @@ typedef struct {
 #define ADC_ETC_TRIGn_CHAIN_1_0_IE1_MASK         (0x60000000U)
 #define ADC_ETC_TRIGn_CHAIN_1_0_IE1_SHIFT        (29U)
 /*! IE1
- *  0b00..No interrupt when finished
- *  0b01..Generate interrupt on Done0 when Segment 1 finish.
- *  0b10..Generate interrupt on Done1 when Segment 1 finish.
- *  0b11..Generate interrupt on Done2 when Segment 1 finish.
+ *  0b00..Generate interrupt on Done0 when Segment 1 finish.
+ *  0b01..Generate interrupt on Done1 when Segment 1 finish.
+ *  0b10..Generate interrupt on Done2 when Segment 1 finish.
+ *  0b11..Generate interrupt on Done3 when Segment 1 finish.
  */
 #define ADC_ETC_TRIGn_CHAIN_1_0_IE1(x)           (((uint32_t)(((uint32_t)(x)) << ADC_ETC_TRIGn_CHAIN_1_0_IE1_SHIFT)) & ADC_ETC_TRIGn_CHAIN_1_0_IE1_MASK)
+
+#define ADC_ETC_TRIGn_CHAIN_1_0_IE1_EN_MASK      (0x80000000U)
+#define ADC_ETC_TRIGn_CHAIN_1_0_IE1_EN_SHIFT     (31U)
+/*! IE1_EN
+ *  0b0..Interrupt DONE disabled.
+ *  0b1..Interrupt DONE enabled. When segment 1 finish, an interrupt will be generated on the specific port configured by the IE1.
+ */
+#define ADC_ETC_TRIGn_CHAIN_1_0_IE1_EN(x)        (((uint32_t)(((uint32_t)(x)) << ADC_ETC_TRIGn_CHAIN_1_0_IE1_EN_SHIFT)) & ADC_ETC_TRIGn_CHAIN_1_0_IE1_EN_MASK)
 /*! @} */
 
 /* The count of ADC_ETC_TRIGn_CHAIN_1_0 */
@@ -1633,12 +1713,20 @@ typedef struct {
 #define ADC_ETC_TRIGn_CHAIN_3_2_IE2_MASK         (0x6000U)
 #define ADC_ETC_TRIGn_CHAIN_3_2_IE2_SHIFT        (13U)
 /*! IE2
- *  0b00..No interrupt when finished
- *  0b01..Generate interrupt on Done0 when segment 2 finish.
- *  0b10..Generate interrupt on Done1 when segment 2 finish.
- *  0b11..Generate interrupt on Done2 when segment 2 finish.
+ *  0b00..Generate interrupt on Done0 when segment 2 finish.
+ *  0b01..Generate interrupt on Done1 when segment 2 finish.
+ *  0b10..Generate interrupt on Done2 when segment 2 finish.
+ *  0b11..Generate interrupt on Done3 when segment 2 finish.
  */
 #define ADC_ETC_TRIGn_CHAIN_3_2_IE2(x)           (((uint32_t)(((uint32_t)(x)) << ADC_ETC_TRIGn_CHAIN_3_2_IE2_SHIFT)) & ADC_ETC_TRIGn_CHAIN_3_2_IE2_MASK)
+
+#define ADC_ETC_TRIGn_CHAIN_3_2_IE2_EN_MASK      (0x8000U)
+#define ADC_ETC_TRIGn_CHAIN_3_2_IE2_EN_SHIFT     (15U)
+/*! IE2_EN
+ *  0b0..Interrupt DONE disabled.
+ *  0b1..Interrupt DONE enabled. When segment 2 finish, an interrupt will be generated on the specific port configured by the IE2.
+ */
+#define ADC_ETC_TRIGn_CHAIN_3_2_IE2_EN(x)        (((uint32_t)(((uint32_t)(x)) << ADC_ETC_TRIGn_CHAIN_3_2_IE2_EN_SHIFT)) & ADC_ETC_TRIGn_CHAIN_3_2_IE2_EN_MASK)
 
 #define ADC_ETC_TRIGn_CHAIN_3_2_CSEL3_MASK       (0xF0000U)
 #define ADC_ETC_TRIGn_CHAIN_3_2_CSEL3_SHIFT      (16U)
@@ -1688,12 +1776,20 @@ typedef struct {
 #define ADC_ETC_TRIGn_CHAIN_3_2_IE3_MASK         (0x60000000U)
 #define ADC_ETC_TRIGn_CHAIN_3_2_IE3_SHIFT        (29U)
 /*! IE3
- *  0b00..No interrupt when finished
- *  0b01..Generate interrupt on Done0 when segment 3 finish.
- *  0b10..Generate interrupt on Done1 when segment 3 finish.
- *  0b11..Generate interrupt on Done2 when segment 3 finish.
+ *  0b00..Generate interrupt on Done0 when segment 3 finish.
+ *  0b01..Generate interrupt on Done1 when segment 3 finish.
+ *  0b10..Generate interrupt on Done2 when segment 3 finish.
+ *  0b11..Generate interrupt on Done3 when segment 3 finish.
  */
 #define ADC_ETC_TRIGn_CHAIN_3_2_IE3(x)           (((uint32_t)(((uint32_t)(x)) << ADC_ETC_TRIGn_CHAIN_3_2_IE3_SHIFT)) & ADC_ETC_TRIGn_CHAIN_3_2_IE3_MASK)
+
+#define ADC_ETC_TRIGn_CHAIN_3_2_IE3_EN_MASK      (0x80000000U)
+#define ADC_ETC_TRIGn_CHAIN_3_2_IE3_EN_SHIFT     (31U)
+/*! IE3_EN
+ *  0b0..Interrupt DONE disabled.
+ *  0b1..Interrupt DONE enabled. When segment 3 finish, an interrupt will be generated on the specific port configured by the IE3.
+ */
+#define ADC_ETC_TRIGn_CHAIN_3_2_IE3_EN(x)        (((uint32_t)(((uint32_t)(x)) << ADC_ETC_TRIGn_CHAIN_3_2_IE3_EN_SHIFT)) & ADC_ETC_TRIGn_CHAIN_3_2_IE3_EN_MASK)
 /*! @} */
 
 /* The count of ADC_ETC_TRIGn_CHAIN_3_2 */
@@ -1750,12 +1846,20 @@ typedef struct {
 #define ADC_ETC_TRIGn_CHAIN_5_4_IE4_MASK         (0x6000U)
 #define ADC_ETC_TRIGn_CHAIN_5_4_IE4_SHIFT        (13U)
 /*! IE4
- *  0b00..No interrupt when finished
- *  0b01..Generate interrupt on Done0 when segment 4 finish.
- *  0b10..Generate interrupt on Done1 when segment 4 finish.
- *  0b11..Generate interrupt on Done2 when segment 4 finish.
+ *  0b00..Generate interrupt on Done0 when segment 4 finish.
+ *  0b01..Generate interrupt on Done1 when segment 4 finish.
+ *  0b10..Generate interrupt on Done2 when segment 4 finish.
+ *  0b11..Generate interrupt on Done3 when segment 4 finish.
  */
 #define ADC_ETC_TRIGn_CHAIN_5_4_IE4(x)           (((uint32_t)(((uint32_t)(x)) << ADC_ETC_TRIGn_CHAIN_5_4_IE4_SHIFT)) & ADC_ETC_TRIGn_CHAIN_5_4_IE4_MASK)
+
+#define ADC_ETC_TRIGn_CHAIN_5_4_IE4_EN_MASK      (0x8000U)
+#define ADC_ETC_TRIGn_CHAIN_5_4_IE4_EN_SHIFT     (15U)
+/*! IE4_EN
+ *  0b0..Interrupt DONE disabled.
+ *  0b1..Interrupt DONE enabled. When segment 4 finish, an interrupt will be generated on the specific port configured by the IE4.
+ */
+#define ADC_ETC_TRIGn_CHAIN_5_4_IE4_EN(x)        (((uint32_t)(((uint32_t)(x)) << ADC_ETC_TRIGn_CHAIN_5_4_IE4_EN_SHIFT)) & ADC_ETC_TRIGn_CHAIN_5_4_IE4_EN_MASK)
 
 #define ADC_ETC_TRIGn_CHAIN_5_4_CSEL5_MASK       (0xF0000U)
 #define ADC_ETC_TRIGn_CHAIN_5_4_CSEL5_SHIFT      (16U)
@@ -1805,12 +1909,20 @@ typedef struct {
 #define ADC_ETC_TRIGn_CHAIN_5_4_IE5_MASK         (0x60000000U)
 #define ADC_ETC_TRIGn_CHAIN_5_4_IE5_SHIFT        (29U)
 /*! IE5
- *  0b00..No interrupt when finished
- *  0b01..Generate interrupt on Done0 when segment 5 finish.
- *  0b10..Generate interrupt on Done1 when segment 5 finish.
- *  0b11..Generate interrupt on Done2 when segment 5 finish.
+ *  0b00..Generate interrupt on Done0 when segment 5 finish.
+ *  0b01..Generate interrupt on Done1 when segment 5 finish.
+ *  0b10..Generate interrupt on Done2 when segment 5 finish.
+ *  0b11..Generate interrupt on Done3 when segment 5 finish.
  */
 #define ADC_ETC_TRIGn_CHAIN_5_4_IE5(x)           (((uint32_t)(((uint32_t)(x)) << ADC_ETC_TRIGn_CHAIN_5_4_IE5_SHIFT)) & ADC_ETC_TRIGn_CHAIN_5_4_IE5_MASK)
+
+#define ADC_ETC_TRIGn_CHAIN_5_4_IE5_EN_MASK      (0x80000000U)
+#define ADC_ETC_TRIGn_CHAIN_5_4_IE5_EN_SHIFT     (31U)
+/*! IE5_EN
+ *  0b0..Interrupt DONE disabled.
+ *  0b1..Interrupt DONE enabled. When segment 5 finish, an interrupt will be generated on the specific port configured by the IE5.
+ */
+#define ADC_ETC_TRIGn_CHAIN_5_4_IE5_EN(x)        (((uint32_t)(((uint32_t)(x)) << ADC_ETC_TRIGn_CHAIN_5_4_IE5_EN_SHIFT)) & ADC_ETC_TRIGn_CHAIN_5_4_IE5_EN_MASK)
 /*! @} */
 
 /* The count of ADC_ETC_TRIGn_CHAIN_5_4 */
@@ -1867,12 +1979,20 @@ typedef struct {
 #define ADC_ETC_TRIGn_CHAIN_7_6_IE6_MASK         (0x6000U)
 #define ADC_ETC_TRIGn_CHAIN_7_6_IE6_SHIFT        (13U)
 /*! IE6
- *  0b00..No interrupt when finished
- *  0b01..Generate interrupt on Done0 when segment 6 finish.
- *  0b10..Generate interrupt on Done1 when segment 6 finish.
- *  0b11..Generate interrupt on Done2 when segment 6 finish.
+ *  0b00..Generate interrupt on Done0 when segment 6 finish.
+ *  0b01..Generate interrupt on Done1 when segment 6 finish.
+ *  0b10..Generate interrupt on Done2 when segment 6 finish.
+ *  0b11..Generate interrupt on Done3 when segment 6 finish.
  */
 #define ADC_ETC_TRIGn_CHAIN_7_6_IE6(x)           (((uint32_t)(((uint32_t)(x)) << ADC_ETC_TRIGn_CHAIN_7_6_IE6_SHIFT)) & ADC_ETC_TRIGn_CHAIN_7_6_IE6_MASK)
+
+#define ADC_ETC_TRIGn_CHAIN_7_6_IE6_EN_MASK      (0x8000U)
+#define ADC_ETC_TRIGn_CHAIN_7_6_IE6_EN_SHIFT     (15U)
+/*! IE6_EN
+ *  0b0..Interrupt DONE disabled.
+ *  0b1..Interrupt DONE enabled. When segment 6 finish, an interrupt will be generated on the specific port configured by the IE6.
+ */
+#define ADC_ETC_TRIGn_CHAIN_7_6_IE6_EN(x)        (((uint32_t)(((uint32_t)(x)) << ADC_ETC_TRIGn_CHAIN_7_6_IE6_EN_SHIFT)) & ADC_ETC_TRIGn_CHAIN_7_6_IE6_EN_MASK)
 
 #define ADC_ETC_TRIGn_CHAIN_7_6_CSEL7_MASK       (0xF0000U)
 #define ADC_ETC_TRIGn_CHAIN_7_6_CSEL7_SHIFT      (16U)
@@ -1922,12 +2042,20 @@ typedef struct {
 #define ADC_ETC_TRIGn_CHAIN_7_6_IE7_MASK         (0x60000000U)
 #define ADC_ETC_TRIGn_CHAIN_7_6_IE7_SHIFT        (29U)
 /*! IE7
- *  0b00..No interrupt when finished
- *  0b01..Generate interrupt on Done0 when segment 7 finish.
- *  0b10..Generate interrupt on Done1 when segment 7 finish.
- *  0b11..Generate interrupt on Done2 when segment 7 finish.
+ *  0b00..Generate interrupt on Done0 when segment 7 finish.
+ *  0b01..Generate interrupt on Done1 when segment 7 finish.
+ *  0b10..Generate interrupt on Done2 when segment 7 finish.
+ *  0b11..Generate interrupt on Done3 when segment 7 finish.
  */
 #define ADC_ETC_TRIGn_CHAIN_7_6_IE7(x)           (((uint32_t)(((uint32_t)(x)) << ADC_ETC_TRIGn_CHAIN_7_6_IE7_SHIFT)) & ADC_ETC_TRIGn_CHAIN_7_6_IE7_MASK)
+
+#define ADC_ETC_TRIGn_CHAIN_7_6_IE7_EN_MASK      (0x80000000U)
+#define ADC_ETC_TRIGn_CHAIN_7_6_IE7_EN_SHIFT     (31U)
+/*! IE7_EN
+ *  0b0..Interrupt DONE disabled.
+ *  0b1..Interrupt DONE enabled. When segment 7 finish, an interrupt will be generated on the specific port configured by the IE7.
+ */
+#define ADC_ETC_TRIGn_CHAIN_7_6_IE7_EN(x)        (((uint32_t)(((uint32_t)(x)) << ADC_ETC_TRIGn_CHAIN_7_6_IE7_EN_SHIFT)) & ADC_ETC_TRIGn_CHAIN_7_6_IE7_EN_MASK)
 /*! @} */
 
 /* The count of ADC_ETC_TRIGn_CHAIN_7_6 */
@@ -13590,7 +13718,7 @@ typedef struct {
 
 #define FLEXSPI_AHBCR_CLRAHBTXBUF_MASK           (0x4U)
 #define FLEXSPI_AHBCR_CLRAHBTXBUF_SHIFT          (2U)
-/*! CLRAHBTXBUF - Clear the status/pointers of AHB TX Buffer. Auto-cleared.
+/*! CLRAHBTXBUF - Clear the status/pointers of AHB TX Buffer. Auto-cleared. For internal use only.
  */
 #define FLEXSPI_AHBCR_CLRAHBTXBUF(x)             (((uint32_t)(((uint32_t)(x)) << FLEXSPI_AHBCR_CLRAHBTXBUF_SHIFT)) & FLEXSPI_AHBCR_CLRAHBTXBUF_MASK)
 

@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2015, Freescale Semiconductor, Inc.
- * Copyright 2016-2017 NXP
+ * Copyright 2016-2021 NXP
  * All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
@@ -100,18 +100,18 @@ static void SAI_TxEDMACallback(edma_handle_t *handle, void *userData, bool done,
 
     if (saiHandle->state != (uint32_t)kSAI_BusyLoopTransfer)
     {
-        if (saiHandle->queueDriver + tcds > SAI_XFER_QUEUE_SIZE)
+        if (saiHandle->queueDriver + tcds > (uint32_t)SAI_XFER_QUEUE_SIZE)
         {
             (void)memset(&saiHandle->saiQueue[saiHandle->queueDriver], 0,
                          sizeof(sai_transfer_t) * ((uint32_t)SAI_XFER_QUEUE_SIZE - saiHandle->queueDriver));
             (void)memset(&saiHandle->saiQueue[0U], 0,
-                         sizeof(sai_transfer_t) * (saiHandle->queueDriver + tcds - SAI_XFER_QUEUE_SIZE));
+                         sizeof(sai_transfer_t) * (saiHandle->queueDriver + tcds - (uint32_t)SAI_XFER_QUEUE_SIZE));
         }
         else
         {
             (void)memset(&saiHandle->saiQueue[saiHandle->queueDriver], 0, sizeof(sai_transfer_t) * tcds);
         }
-        saiHandle->queueDriver = (uint8_t)((saiHandle->queueDriver + tcds) % SAI_XFER_QUEUE_SIZE);
+        saiHandle->queueDriver = (uint8_t)((saiHandle->queueDriver + tcds) % (uint32_t)SAI_XFER_QUEUE_SIZE);
 
         /* If all data finished, just stop the transfer */
         if (saiHandle->saiQueue[saiHandle->queueDriver].data == NULL)
@@ -138,18 +138,18 @@ static void SAI_RxEDMACallback(edma_handle_t *handle, void *userData, bool done,
 
     if (saiHandle->state != (uint32_t)kSAI_BusyLoopTransfer)
     {
-        if (saiHandle->queueDriver + tcds > SAI_XFER_QUEUE_SIZE)
+        if (saiHandle->queueDriver + tcds > (uint32_t)SAI_XFER_QUEUE_SIZE)
         {
             (void)memset(&saiHandle->saiQueue[saiHandle->queueDriver], 0,
                          sizeof(sai_transfer_t) * ((uint32_t)SAI_XFER_QUEUE_SIZE - saiHandle->queueDriver));
             (void)memset(&saiHandle->saiQueue[0U], 0,
-                         sizeof(sai_transfer_t) * (saiHandle->queueDriver + tcds - SAI_XFER_QUEUE_SIZE));
+                         sizeof(sai_transfer_t) * (saiHandle->queueDriver + tcds - (uint32_t)SAI_XFER_QUEUE_SIZE));
         }
         else
         {
             (void)memset(&saiHandle->saiQueue[saiHandle->queueDriver], 0, sizeof(sai_transfer_t) * tcds);
         }
-        saiHandle->queueDriver = (uint8_t)((saiHandle->queueDriver + tcds) % SAI_XFER_QUEUE_SIZE);
+        saiHandle->queueDriver = (uint8_t)((saiHandle->queueDriver + tcds) % (uint32_t)SAI_XFER_QUEUE_SIZE);
 
         /* If all data finished, just stop the transfer */
         if (saiHandle->saiQueue[saiHandle->queueDriver].data == NULL)

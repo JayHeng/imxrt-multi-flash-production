@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2015, Freescale Semiconductor, Inc.
- * Copyright 2016-2021 NXP
+ * Copyright 2016-2022 NXP
  * All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
@@ -726,8 +726,8 @@ static void SHELL_GetHistoryCommand(shell_context_handle_t *shellContextHandle, 
     shellContextHandle->l_pos = (uint8_t)strlen(shellContextHandle->hist_buf[hist_pos]);
     shellContextHandle->c_pos = shellContextHandle->l_pos;
     (void)memcpy(shellContextHandle->line, shellContextHandle->hist_buf[hist_pos], shellContextHandle->l_pos);
-    (void)SHELL_WriteSynchronization(shellContextHandle, shellContextHandle->hist_buf[hist_pos],
-                                     strlen(shellContextHandle->hist_buf[hist_pos]));
+    (void)SHELL_WRITEX(shellContextHandle, shellContextHandle->hist_buf[hist_pos],
+                       strlen(shellContextHandle->hist_buf[hist_pos]));
 }
 
 static void SHELL_AutoComplete(shell_context_handle_t *shellContextHandle)
@@ -972,7 +972,7 @@ shell_status_t SHELL_Init(shell_handle_t shellHandle, serial_handle_t serialHand
     (void)SHELL_RegisterCommand(shellContextHandle, SHELL_COMMAND(help));
     (void)SHELL_RegisterCommand(shellContextHandle, SHELL_COMMAND(exit));
     SHELL_MUTEX_CREATE();
-    (void)SHELL_Write(shellContextHandle, "\r\nCopyright  2020  NXP\r\n", strlen("\r\nCopyright  2020  NXP\r\n"));
+    (void)SHELL_Write(shellContextHandle, "\r\nCopyright  2022  NXP\r\n", strlen("\r\nCopyright  2022  NXP\r\n"));
     SHELL_PrintPrompt(shellContextHandle);
 
     return kStatus_SHELL_Success;
@@ -1127,7 +1127,7 @@ int SHELL_PrintfSynchronization(shell_handle_t shellHandle, const char *formatSt
     va_end(ap);
     SHELL_EXIT_CRITICAL();
 
-    return (int)status;
+    return (status == kStatus_SHELL_Success) ? (int)length : 0;
 }
 void SHELL_ChangePrompt(shell_handle_t shellHandle, char *prompt)
 {
