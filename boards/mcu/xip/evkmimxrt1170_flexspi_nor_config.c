@@ -21,68 +21,6 @@ __attribute__((section(".boot_hdr.conf"), used))
 #elif defined(__ICCARM__)
 #pragma location = ".boot_hdr.conf"
 #endif
-/*
-const flexspi_nor_config_t qspiflash_config = {
-    .memConfig =
-        {
-            .tag              = FLEXSPI_CFG_BLK_TAG,
-            .version          = FLEXSPI_CFG_BLK_VERSION,
-            .readSampleClkSrc = kFlexSPIReadSampleClk_LoopbackFromDqsPad,
-            .csHoldTime       = 3u,
-            .csSetupTime      = 3u,
-            // Enable DDR mode, Wordaddassable, Safe configuration, Differential clock
-            .controllerMiscOption = 0x10,
-            .deviceType           = kFlexSpiDeviceType_SerialNOR,
-            .sflashPadType        = kSerialFlash_4Pads,
-            .serialClkFreq        = kFlexSpiSerialClk_100MHz,
-            .sflashA1Size         = 16u * 1024u * 1024u,
-            .lookupTable =
-                {
-                    // Read LUTs
-                    FLEXSPI_LUT_SEQ(CMD_SDR, FLEXSPI_1PAD, 0xEB, RADDR_SDR, FLEXSPI_4PAD, 0x18),
-                    FLEXSPI_LUT_SEQ(MODE8_SDR, FLEXSPI_4PAD, 0x00, DUMMY_SDR, FLEXSPI_4PAD, 0x04),
-                    FLEXSPI_LUT_SEQ(READ_SDR, FLEXSPI_4PAD, 0x04, 0, 0, 0),
-                },
-        },
-    .pageSize           = 256u,
-    .sectorSize         = 4u * 1024u,
-    .ipcmdSerialClkFreq = 0x1,
-    .blockSize          = 256u * 1024u,
-    .isUniformBlockSize = false,
-};
-*/
-
-const flexspi_nor_config_t qspiflash_config_wb_3bytes = {
-    .memConfig =
-        {
-            .tag              = FLEXSPI_CFG_BLK_TAG,
-            .version          = FLEXSPI_CFG_BLK_VERSION,
-            .readSampleClkSrc = kFlexSPIReadSampleClk_LoopbackFromDqsPad,
-            .csHoldTime       = 3u,
-            .csSetupTime      = 3u,
-            // Enable DDR mode, Wordaddassable, Safe configuration, Differential clock
-            .controllerMiscOption = 0x10,
-            .deviceType           = kFlexSpiDeviceType_SerialNOR,
-            .sflashPadType        = kSerialFlash_4Pads,
-            .serialClkFreq        = kFlexSpiSerialClk_100MHz,
-            .sflashA1Size         = 16u * 1024u * 1024u,
-            .lookupTable =
-                {
-                    // Read LUTs
-                    FLEXSPI_LUT_SEQ(CMD_SDR, FLEXSPI_1PAD, 0xEC, RADDR_SDR, FLEXSPI_4PAD, 0x18),
-                    FLEXSPI_LUT_SEQ(MODE8_SDR, FLEXSPI_4PAD, 0xF0, DUMMY_SDR, FLEXSPI_4PAD, 0x04),
-                    FLEXSPI_LUT_SEQ(READ_SDR, FLEXSPI_4PAD, 0x04, 0, 0, 0),
-                },
-        },
-    .pageSize           = 256u,
-    .sectorSize         = 4u * 1024u,
-    .ipcmdSerialClkFreq = 0x1,
-    .blockSize          = 256u * 1024u,
-    .isUniformBlockSize = false,
-};
-
-/*
-#define CMD_LUT_SEQ_IDX_ENTER_QPI 7
 
 const flexspi_nor_config_t qspiflash_config = {
     .memConfig =
@@ -96,37 +34,38 @@ const flexspi_nor_config_t qspiflash_config = {
             .controllerMiscOption = 0x10,
             .deviceType           = kFlexSpiDeviceType_SerialNOR,
             .sflashPadType        = kSerialFlash_4Pads,
-            .serialClkFreq        = kFlexSpiSerialClk_100MHz,
+            .serialClkFreq        = kFlexSpiSerialClk_133MHz,
             .sflashA1Size         = 16u * 1024u * 1024u,
-            
-            // Ê¹ÄÜFlash¼Ä´æÆ÷ÅäÖÃ²Ù×÷
-            .deviceModeCfgEnable = 1u,
-            .deviceModeType = kDeviceConfigCmdType_Spi2Xpi,
-            .waitTimeCfgCommands = 1,
-            .deviceModeSeq =
-                {
-                    .seqNum   = 1,
-                    .seqId    = CMD_LUT_SEQ_IDX_ENTER_QPI, //See Lookup table for more details 
-                    .reserved = 0,
-                },
-           .deviceModeArg = 0,
-             
             .lookupTable =
                 {
                     // Read LUTs
-                    [0]               = FLEXSPI_LUT_SEQ(CMD_SDR, FLEXSPI_4PAD, 0xEB, RADDR_SDR, FLEXSPI_4PAD, 0x18),
-                    [1]               = FLEXSPI_LUT_SEQ(MODE8_SDR, FLEXSPI_4PAD, 0x00, DUMMY_SDR, FLEXSPI_4PAD, 0x04),
-                    [2]               = FLEXSPI_LUT_SEQ(READ_SDR, FLEXSPI_4PAD, 0x04, 0, 0, 0),
+                    [0] = FLEXSPI_LUT_SEQ(CMD_SDR, FLEXSPI_1PAD, 0xEB, RADDR_SDR, FLEXSPI_4PAD, 0x18),
+                    [1] = FLEXSPI_LUT_SEQ(DUMMY_SDR, FLEXSPI_4PAD, 0x06, READ_SDR, FLEXSPI_4PAD, 0x04),
 
-                    [4*CMD_LUT_SEQ_IDX_ENTER_QPI]     = FLEXSPI_LUT_SEQ(CMD_SDR,   FLEXSPI_1PAD, 0x35, 0, 0, 0),
+                    // Read Status LUTs
+                    [4 * 1 + 0] = FLEXSPI_LUT_SEQ(CMD_SDR, FLEXSPI_1PAD, 0x05, READ_SDR, FLEXSPI_1PAD, 0x04),
+
+                    // Write Enable LUTs
+                    [4 * 3 + 0] = FLEXSPI_LUT_SEQ(CMD_SDR, FLEXSPI_1PAD, 0x06, STOP, FLEXSPI_1PAD, 0x0),
+
+                    // Erase Sector LUTs
+                    [4 * 5 + 0] = FLEXSPI_LUT_SEQ(CMD_SDR, FLEXSPI_1PAD, 0x20, RADDR_SDR, FLEXSPI_1PAD, 0x18),
+
+                    // Erase Block LUTs
+                    [4 * 8 + 0] = FLEXSPI_LUT_SEQ(CMD_SDR, FLEXSPI_1PAD, 0xD8, RADDR_SDR, FLEXSPI_1PAD, 0x18),
+
+                    // Pape Program LUTs
+                    [4 * 9 + 0] = FLEXSPI_LUT_SEQ(CMD_SDR, FLEXSPI_1PAD, 0x02, RADDR_SDR, FLEXSPI_1PAD, 0x18),
+                    [4 * 9 + 1] = FLEXSPI_LUT_SEQ(WRITE_SDR, FLEXSPI_1PAD, 0x04, STOP, FLEXSPI_1PAD, 0x0),
+
+                    // Erase Chip LUTs
+                    [4 * 11 + 0] = FLEXSPI_LUT_SEQ(CMD_SDR, FLEXSPI_1PAD, 0x60, STOP, FLEXSPI_1PAD, 0x0),
                 },
         },
     .pageSize           = 256u,
     .sectorSize         = 4u * 1024u,
     .ipcmdSerialClkFreq = 0x1,
-    .blockSize          = 256u * 1024u,
+    .blockSize          = 64u * 1024u,
     .isUniformBlockSize = false,
-    .flashStateCtx = 0x06004100u,
 };
-*/
 #endif /* XIP_BOOT_HEADER_ENABLE */

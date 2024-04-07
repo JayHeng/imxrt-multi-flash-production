@@ -255,8 +255,7 @@ typedef struct _flexspi_nor_config
     uint8_t halfClkForNonReadCmd;   //!< Half the Serial Clock for non-read command: true/false
     uint8_t needRestoreNoCmdMode;   //!< Need to Restore NoCmd mode after IP commmand execution
     uint32_t blockSize;             //!< Block size
-    uint32_t flashStateCtx;               /*!< Flash State Context */
-    uint32_t reserve2[10];                /*!< Reserved for future use */
+    uint32_t reserve2[11];          //!< Reserved for future use
 } flexspi_nor_config_t;
 
 #ifdef __cplusplus
