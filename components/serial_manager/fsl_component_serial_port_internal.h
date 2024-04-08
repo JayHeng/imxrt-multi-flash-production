@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 NXP
+ * Copyright 2019-2020, 2023 NXP
  * All rights reserved.
  *
  *
@@ -43,18 +43,6 @@ serial_manager_status_t Serial_UartExitLowpower(serial_handle_t serialHandle);
 serial_manager_status_t Serial_UartDmaInit(serial_handle_t serialHandle, void *serialConfig);
 serial_manager_status_t Serial_UartDmaDeinit(serial_handle_t serialHandle);
 serial_manager_status_t Serial_UartDmaWrite(serial_handle_t serialHandle, uint8_t *buffer, uint32_t length);
-
-#if (defined(SERIAL_MANAGER_NON_BLOCKING_MODE) && (SERIAL_MANAGER_NON_BLOCKING_MODE > 0U))
-serial_manager_status_t Serial_UartDmaWriteBlocking(serial_handle_t serialHandle, uint8_t *buffer, uint32_t length);
-#endif /* SERIAL_MANAGER_NON_BLOCKING_MODE */
-
-#if (defined(SERIAL_MANAGER_NON_BLOCKING_MODE) && (SERIAL_MANAGER_NON_BLOCKING_MODE > 0U))
-#if (defined(SERIAL_MANAGER_NON_BLOCKING_DUAL_MODE) && (SERIAL_MANAGER_NON_BLOCKING_DUAL_MODE > 0U))
-serial_manager_status_t Serial_UartDmaRead(serial_handle_t serialHandle, uint8_t *buffer, uint32_t length);
-#endif
-#else
-serial_manager_status_t Serial_UartDmaRead(serial_handle_t serialHandle, uint8_t *buffer, uint32_t length);
-#endif
 
 #if (defined(SERIAL_MANAGER_NON_BLOCKING_MODE) && (SERIAL_MANAGER_NON_BLOCKING_MODE > 0U))
 serial_manager_status_t Serial_UartDmaCancelWrite(serial_handle_t serialHandle);
@@ -178,6 +166,22 @@ serial_manager_status_t Serial_SpiSlaveCancelWrite(serial_handle_t serialHandle)
 
 #endif
 #endif
+
+#if (defined(SERIAL_PORT_TYPE_BLE_WU) && (SERIAL_PORT_TYPE_BLE_WU > 0U))
+serial_manager_status_t Serial_PortBleWuInit(serial_handle_t serialHandle, void *config);
+serial_manager_status_t Serial_PortBleWuDeinit(serial_handle_t serialHandle);
+serial_manager_status_t Serial_PortBleWuWrite(serial_handle_t serialHandle, uint8_t *buffer, uint32_t length);
+serial_manager_status_t Serial_PortBleWuRead(serial_handle_t serialHandle, uint8_t *buffer, uint32_t length);
+serial_manager_status_t Serial_PortBleWuCancelWrite(serial_handle_t serialHandle);
+serial_manager_status_t Serial_PortBleWuInstallTxCallback(serial_handle_t serialHandle,
+                                                          serial_manager_callback_t callback,
+                                                          void *callbackParam);
+serial_manager_status_t Serial_PortBleWuInstallRxCallback(serial_handle_t serialHandle,
+                                                          serial_manager_callback_t callback,
+                                                          void *callbackParam);
+void Serial_PortBleWuIsrFunction(serial_handle_t serialHandle);
+#endif
+
 #if defined(__cplusplus)
 }
 #endif

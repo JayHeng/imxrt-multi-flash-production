@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2015 - 2016, Freescale Semiconductor, Inc.
- * Copyright 2016 - 2020 NXP
+ * Copyright 2016 - 2020, 2023 NXP
  * All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
@@ -21,9 +21,10 @@
 
 #include "usb_device_descriptor.h"
 #include "fsl_component_serial_port_usb.h"
-
 #if defined(USB_DEVICE_CONFIG_EHCI) && (USB_DEVICE_CONFIG_EHCI > 0)
+#if ((defined FSL_FEATURE_SOC_USBPHY_COUNT) && (FSL_FEATURE_SOC_USBPHY_COUNT > 0U))
 #include "usb_phy.h"
+#endif
 #endif
 #if (defined(FSL_FEATURE_SOC_SYSMPU_COUNT) && (FSL_FEATURE_SOC_SYSMPU_COUNT > 0U))
 #include "fsl_sysmpu.h"
@@ -121,7 +122,7 @@ typedef struct _serial_usb_cdc_state
     volatile uint8_t attach; /* A flag to indicate whether a usb device is attached. 1: attached, 0: not attached */
     uint8_t speed;           /* Speed of USB device. USB_SPEED_FULL/USB_SPEED_LOW/USB_SPEED_HIGH.                 */
     volatile uint8_t
-        startTransactions; /* A flag to indicate whether a CDC device is ready to transmit and receive data.    */
+        startTransactions;   /* A flag to indicate whether a CDC device is ready to transmit and receive data.    */
     uint8_t currentConfiguration;                                           /* Current configuration value. */
     uint8_t currentInterfaceAlternateSetting[USB_CDC_VCOM_INTERFACE_COUNT]; /* Current alternate setting value for each
                                                                                interface. */
@@ -490,9 +491,9 @@ static usb_status_t USB_DeviceCdcVcomCallback(class_handle_t handle, uint32_t ev
             acmInfo->serialStateBuf[1] = USB_DEVICE_CDC_NOTIF_SERIAL_STATE; /* bNotification */
             acmInfo->serialStateBuf[2] = 0x00;                              /* wValue */
             acmInfo->serialStateBuf[3] = 0x00;
-            acmInfo->serialStateBuf[4] = 0x00; /* wIndex */
+            acmInfo->serialStateBuf[4] = 0x00;                              /* wIndex */
             acmInfo->serialStateBuf[5] = 0x00;
-            acmInfo->serialStateBuf[6] = UART_BITMAP_SIZE; /* wLength */
+            acmInfo->serialStateBuf[6] = UART_BITMAP_SIZE;                  /* wLength */
             acmInfo->serialStateBuf[7] = 0x00;
             /* Notifiy to host the line state */
             acmInfo->serialStateBuf[4] = (uint8_t)acmReqParam->interfaceIndex;
@@ -654,6 +655,7 @@ static usb_status_t USB_DeviceCallback(usb_device_handle handle, uint32_t event,
 }
 
 #if (defined(USB_DEVICE_CONFIG_EHCI) && (USB_DEVICE_CONFIG_EHCI > 0U))
+#ifndef SERIAL_PORT_USB_CDC_USB_OTG2_IRQ_HANDLER_DISABLE
 void USB_OTG2_IRQHandler(void);
 void USB_OTG2_IRQHandler(void)
 {
@@ -668,9 +670,11 @@ void USB_OTG2_IRQHandler(void)
         serialUsbCdc = serialUsbCdc->next;
     }
 }
+#endif /* SERIAL_PORT_USB_CDC_USB_OTG2_IRQ_HANDLER_DISABLE */
 #endif
 
 #if defined(USB_DEVICE_CONFIG_EHCI) && (USB_DEVICE_CONFIG_EHCI > 0U)
+#ifndef SERIAL_PORT_USB_CDC_USBHS_IRQ_HANDLER_DISABLE
 void USBHS_IRQHandler(void);
 void USBHS_IRQHandler(void)
 {
@@ -686,8 +690,10 @@ void USBHS_IRQHandler(void)
     }
     SDK_ISR_EXIT_BARRIER;
 }
+#endif /* SERIAL_PORT_USB_CDC_USBHS_IRQ_HANDLER_DISABLE */
 #if defined(USB_DEVICE_CONFIG_EHCI) && (USB_DEVICE_CONFIG_EHCI > 1U)
 #if defined(FSL_FEATURE_USBHS_EHCI_COUNT) && (FSL_FEATURE_USBHS_EHCI_COUNT > 1U)
+#ifndef SERIAL_PORT_USB_CDC_USB1_IRQ_HANDLER_DISABLE
 void USB1_IRQHandler(void);
 void USB1_IRQHandler(void)
 {
@@ -703,10 +709,12 @@ void USB1_IRQHandler(void)
     }
     SDK_ISR_EXIT_BARRIER;
 }
+#endif /* SERIAL_PORT_USB_CDC_USB1_IRQ_HANDLER_DISABLE */
 #endif
 #endif
 #endif
 #if defined(USB_DEVICE_CONFIG_KHCI) && (USB_DEVICE_CONFIG_KHCI > 0U)
+#ifndef SERIAL_PORT_USB_CDC_USB0_IRQ_HANDLER_DISABLE
 void USB0_IRQHandler(void);
 void USB0_IRQHandler(void)
 {
@@ -722,16 +730,18 @@ void USB0_IRQHandler(void)
     }
     SDK_ISR_EXIT_BARRIER;
 }
+#endif /* SERIAL_PORT_USB_CDC_USB0_IRQ_HANDLER_DISABLE */
 #endif
 #if defined(USB_DEVICE_CONFIG_LPCIP3511FS) && (USB_DEVICE_CONFIG_LPCIP3511FS > 0U)
+#ifndef SERIAL_PORT_USB_CDC_USB0_IRQ_HANDLER_DISABLE
 void USB0_IRQHandler(void);
 void USB0_IRQHandler(void)
 {
     serial_usb_cdc_state_t *serialUsbCdc = s_UsbCdcHead;
 
-    while (serialUsbCdc)
+    while (NULL != serialUsbCdc)
     {
-        if ((kSerialManager_UsbControllerLpcIp3511Fs0 == serialUsbCdc->instance))
+        if (((uint8_t)kSerialManager_UsbControllerLpcIp3511Fs0 == serialUsbCdc->instance))
         {
             USB_DeviceLpcIp3511IsrFunction(serialUsbCdc->deviceHandle);
         }
@@ -739,8 +749,10 @@ void USB0_IRQHandler(void)
     }
     SDK_ISR_EXIT_BARRIER;
 }
+#endif /* SERIAL_PORT_USB_CDC_USB0_IRQ_HANDLER_DISABLE */
 #endif
 #if defined(USB_DEVICE_CONFIG_LPCIP3511HS) && (USB_DEVICE_CONFIG_LPCIP3511HS > 0U)
+#ifndef SERIAL_PORT_USB_CDC_USB1_IRQ_HANDLER_DISABLE
 void USB1_IRQHandler(void);
 void USB1_IRQHandler(void)
 {
@@ -756,6 +768,7 @@ void USB1_IRQHandler(void)
     }
     SDK_ISR_EXIT_BARRIER;
 }
+#endif /* SERIAL_PORT_USB_CDC_USB1_IRQ_HANDLER_DISABLE */
 #endif
 
 static void USB_DeviceIsrEnable(serial_usb_cdc_state_t *serialUsbCdc)

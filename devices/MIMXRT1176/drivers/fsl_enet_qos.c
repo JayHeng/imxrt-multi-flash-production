@@ -1,6 +1,5 @@
 /*
- * Copyright 2019-2022 NXP
- * All rights reserved.
+ * Copyright 2019-2023 NXP
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -264,9 +263,44 @@ static void ENET_QOS_SetDMAControl(ENET_QOS_Type *base, const enet_qos_config_t 
     uint32_t reg;
     uint32_t burstLen;
 
-    /* Reset first and wait for the complete
-     * The reset bit will automatically be cleared after complete. */
+    if (kENET_QOS_RmiiMode == config->miiMode)
+    {
+        /* Disable enet qos clock first. */
+        ENET_QOS_EnableClock(false);
+    }
+    else
+    {
+        /* Enable enet qos clock. */
+        ENET_QOS_EnableClock(true);
+    }
+    /* Set MII mode*/
+    ENET_QOS_SetSYSControl(config->miiMode);
+
+    /* Reset first, The reset bit will automatically be cleared after complete. */
     base->DMA_MODE |= ENET_QOS_DMA_MODE_SWR_MASK;
+    for (uint32_t i = 0U; i < 100UL; i++)
+    {
+        __NOP();
+    }
+    if (kENET_QOS_RmiiMode == config->miiMode)
+    {
+        /* Configure mac */
+        reg = ENET_QOS_MAC_CONFIGURATION_DM(config->miiDuplex) | (uint32_t)config->miiSpeed |
+              ENET_QOS_MAC_CONFIGURATION_S2KP(
+                  ((config->specialControl & (uint32_t)kENET_QOS_8023AS2KPacket) != 0U) ? 1U : 0U);
+        if (config->miiDuplex == kENET_QOS_MiiHalfDuplex)
+        {
+            reg |= ENET_QOS_MAC_CONFIGURATION_IPG(ENET_QOS_HALFDUPLEX_DEFAULTIPG);
+        }
+        base->MAC_CONFIGURATION = reg;
+        /* Enable enet qos clock. */
+        ENET_QOS_EnableClock(true);
+        for (uint32_t i = 0U; i < 100UL; i++)
+        {
+            __NOP();
+        }
+    }
+    /* Wait for the complete */
     while ((base->DMA_MODE & ENET_QOS_DMA_MODE_SWR_MASK) != 0U)
     {
     }
@@ -402,7 +436,9 @@ static void ENET_QOS_SetMacControl(ENET_QOS_Type *base,
     /* Set the speed and duplex. */
     reg = ENET_QOS_MAC_CONFIGURATION_DM(config->miiDuplex) | (uint32_t)config->miiSpeed |
           ENET_QOS_MAC_CONFIGURATION_S2KP(((config->specialControl & (uint32_t)kENET_QOS_8023AS2KPacket) != 0U) ? 1U :
-                                                                                                                  0U);
+                                                                                                                  0U) |
+          ENET_QOS_MAC_CONFIGURATION_IPC(
+              ((config->specialControl & (uint32_t)kENET_QOS_RxChecksumOffloadEnable) != 0U) ? 1U : 0U);
     if (config->miiDuplex == kENET_QOS_MiiHalfDuplex)
     {
         reg |= ENET_QOS_MAC_CONFIGURATION_IPG(ENET_QOS_HALFDUPLEX_DEFAULTIPG);
@@ -842,6 +878,9 @@ status_t ENET_QOS_Up(
     assert(config != NULL);
     status_t result = kStatus_Success;
 
+    /* Initializes the ENET MDIO. */
+    ENET_QOS_SetSMI(base, refclkSrc_Hz);
+
     /* Initializes the ENET MTL with basic function. */
     ENET_QOS_SetMTL(base, config);
 
@@ -877,9 +916,6 @@ status_t ENET_QOS_Init(
     /* Ungate ENET clock. */
     (void)CLOCK_EnableClock(s_enetqosClock[instance]);
 #endif /* FSL_SDK_DISABLE_DRIVER_CLOCK_CONTROL */
-
-    /* System configure fistly. */
-    ENET_QOS_SetSYSControl(config->miiMode);
 
     /* Initializes the ENET DMA with basic function. */
     ENET_QOS_SetDMAControl(base, config);
@@ -1700,91 +1736,205 @@ void ENET_QOS_SetSMI(ENET_QOS_Type *base, uint32_t csrClock_Hz)
 }
 
 /*!
- * brief Starts a SMI write command.
- * It supports MDIO IEEE802.3 Clause 22.
+ * @brief Sends the MDIO IEEE802.3 Clause 22 format write command.
  * After send command, user needs to check whether the transmission is over
  * with ENET_QOS_IsSMIBusy().
  *
- * param base  ENET peripheral base address.
- * param phyAddr The PHY address.
- * param phyReg The PHY register.
- * param data The data written to PHY.
+ * @param base  ENET peripheral base address.
+ * @param phyAddr The PHY address.
+ * @param regAddr The PHY register address.
+ * @param data The data written to PHY.
  */
-void ENET_QOS_StartSMIWrite(ENET_QOS_Type *base, uint32_t phyAddr, uint32_t phyReg, uint32_t data)
+void ENET_QOS_StartSMIWrite(ENET_QOS_Type *base, uint8_t phyAddr, uint8_t regAddr, uint16_t data)
 {
     uint32_t reg = base->MAC_MDIO_ADDRESS & ENET_QOS_MAC_MDIO_ADDRESS_CR_MASK;
 
     /* Build MII write command. */
     base->MAC_MDIO_ADDRESS = reg | (uint32_t)kENET_QOS_MiiWriteFrame | ENET_QOS_MAC_MDIO_ADDRESS_PA(phyAddr) |
-                             ENET_QOS_MAC_MDIO_ADDRESS_RDA(phyReg);
+                             ENET_QOS_MAC_MDIO_ADDRESS_RDA(regAddr);
     base->MAC_MDIO_DATA = data;
     base->MAC_MDIO_ADDRESS |= ENET_QOS_MAC_MDIO_ADDRESS_GB_MASK;
 }
 
 /*!
- * brief Starts an SMI read command.
- * It supports MDIO IEEE802.3 Clause 22.
+ * @brief Sends the MDIO IEEE802.3 Clause 22 format read command.
  * After send command, user needs to check whether the transmission is over
  * with ENET_QOS_IsSMIBusy().
  *
- * param base  ENET peripheral base address.
- * param phyAddr The PHY address.
- * param phyReg The PHY register.
+ * @param base  ENET peripheral base address.
+ * @param phyAddr The PHY address.
+ * @param regAddr The PHY register address.
  */
-void ENET_QOS_StartSMIRead(ENET_QOS_Type *base, uint32_t phyAddr, uint32_t phyReg)
+void ENET_QOS_StartSMIRead(ENET_QOS_Type *base, uint8_t phyAddr, uint8_t regAddr)
 {
     uint32_t reg = base->MAC_MDIO_ADDRESS & ENET_QOS_MAC_MDIO_ADDRESS_CR_MASK;
 
     /* Build MII read command. */
     base->MAC_MDIO_ADDRESS = reg | (uint32_t)kENET_QOS_MiiReadFrame | ENET_QOS_MAC_MDIO_ADDRESS_PA(phyAddr) |
-                             ENET_QOS_MAC_MDIO_ADDRESS_RDA(phyReg);
+                             ENET_QOS_MAC_MDIO_ADDRESS_RDA(regAddr);
     base->MAC_MDIO_ADDRESS |= ENET_QOS_MAC_MDIO_ADDRESS_GB_MASK;
 }
 
 /*!
- * brief Starts a SMI write command.
- * It supports MDIO IEEE802.3 Clause 45.
+ * @brief Sends the MDIO IEEE802.3 Clause 45 format write command.
  * After send command, user needs to check whether the transmission is over
  * with ENET_QOS_IsSMIBusy().
  *
- * param base  ENET peripheral base address.
- * param phyAddr The PHY address.
- * param device The PHY device type.
- * param phyReg The PHY register address.
- * param data The data written to PHY.
+ * @param base  ENET peripheral base address.
+ * @param portAddr  The MDIO port address(PHY address).
+ * @param devAddr  The device address.
+ * @param regAddr  The PHY register address.
+ * @param data The data written to PHY.
  */
 void ENET_QOS_StartExtC45SMIWrite(
-    ENET_QOS_Type *base, uint32_t phyAddr, uint32_t device, uint32_t phyReg, uint32_t data)
+    ENET_QOS_Type *base, uint8_t portAddr, uint8_t devAddr, uint16_t regAddr, uint16_t data)
 {
     uint32_t reg = base->MAC_MDIO_ADDRESS & ENET_QOS_MAC_MDIO_ADDRESS_CR_MASK;
 
     /* Build MII write command. */
     base->MAC_MDIO_ADDRESS = reg | ENET_QOS_MAC_MDIO_ADDRESS_C45E_MASK | (uint32_t)kENET_QOS_MiiWriteFrame |
-                             ENET_QOS_MAC_MDIO_ADDRESS_PA(phyAddr) | ENET_QOS_MAC_MDIO_ADDRESS_RDA(device);
-    base->MAC_MDIO_DATA = data | ENET_QOS_MAC_MDIO_DATA_RA(phyReg);
+                             ENET_QOS_MAC_MDIO_ADDRESS_PA(portAddr) | ENET_QOS_MAC_MDIO_ADDRESS_RDA(devAddr);
+    base->MAC_MDIO_DATA = data | ENET_QOS_MAC_MDIO_DATA_RA(regAddr);
     base->MAC_MDIO_ADDRESS |= ENET_QOS_MAC_MDIO_ADDRESS_GB_MASK;
 }
 
 /*!
- * brief Starts a SMI write command.
- * It supports MDIO IEEE802.3 Clause 45.
+ * @brief Sends the MDIO IEEE802.3 Clause 45 format read command.
  * After send command, user needs to check whether the transmission is over
  * with ENET_QOS_IsSMIBusy().
  *
- * param base  ENET peripheral base address.
- * param phyAddr The PHY address.
- * param device The PHY device type.
- * param phyReg The PHY register address.
+ * @param base  ENET peripheral base address.
+ * @param portAddr  The MDIO port address(PHY address).
+ * @param devAddr  The device address.
+ * @param regAddr  The PHY register address.
  */
-void ENET_QOS_StartExtC45SMIRead(ENET_QOS_Type *base, uint32_t phyAddr, uint32_t device, uint32_t phyReg)
+void ENET_QOS_StartExtC45SMIRead(ENET_QOS_Type *base, uint8_t portAddr, uint8_t devAddr, uint16_t regAddr)
 {
     uint32_t reg = base->MAC_MDIO_ADDRESS & ENET_QOS_MAC_MDIO_ADDRESS_CR_MASK;
 
     /* Build MII read command. */
     base->MAC_MDIO_ADDRESS = reg | ENET_QOS_MAC_MDIO_ADDRESS_C45E_MASK | (uint32_t)kENET_QOS_MiiReadFrame |
-                             ENET_QOS_MAC_MDIO_ADDRESS_PA(phyAddr) | ENET_QOS_MAC_MDIO_ADDRESS_RDA(device);
-    base->MAC_MDIO_DATA = ENET_QOS_MAC_MDIO_DATA_RA(phyReg);
+                             ENET_QOS_MAC_MDIO_ADDRESS_PA(portAddr) | ENET_QOS_MAC_MDIO_ADDRESS_RDA(devAddr);
+    base->MAC_MDIO_DATA = ENET_QOS_MAC_MDIO_DATA_RA(regAddr);
     base->MAC_MDIO_ADDRESS |= ENET_QOS_MAC_MDIO_ADDRESS_GB_MASK;
+}
+
+static status_t ENET_QOS_MDIOWaitTransferOver(ENET_QOS_Type *base)
+{
+    status_t result = kStatus_Success;
+#ifdef ENET_QOS_MDIO_TIMEOUT_COUNT
+    uint32_t counter;
+#endif
+
+#ifdef ENET_QOS_MDIO_TIMEOUT_COUNT
+    for (counter = ENET_QOS_MDIO_TIMEOUT_COUNT; counter > 0U; counter--)
+    {
+        if (!ENET_QOS_IsSMIBusy(base))
+        {
+            break;
+        }
+    }
+    /* Check for timeout. */
+    if (0U == counter)
+    {
+        result = kStatus_Timeout;
+    }
+#else
+    while (ENET_QOS_IsSMIBusy(base))
+    {
+    }
+#endif
+    return result;
+}
+
+/*!
+ * @brief MDIO write with IEEE802.3 MDIO Clause 22 format.
+ *
+ * @param base  ENET peripheral base address.
+ * @param phyAddr  The PHY address.
+ * @param regAddr  The PHY register.
+ * @param data  The data written to PHY.
+ * @return kStatus_Success  MDIO access succeeds.
+ * @return kStatus_Timeout  MDIO access timeout.
+ */
+status_t ENET_QOS_MDIOWrite(ENET_QOS_Type *base, uint8_t phyAddr, uint8_t regAddr, uint16_t data)
+{
+    ENET_QOS_StartSMIWrite(base, phyAddr, regAddr, data);
+
+    return ENET_QOS_MDIOWaitTransferOver(base);
+}
+
+/*!
+ * @brief MDIO read with IEEE802.3 MDIO Clause 22 format.
+ *
+ * @param base  ENET peripheral base address.
+ * @param phyAddr  The PHY address.
+ * @param regAddr  The PHY register.
+ * @param pData  The data read from PHY.
+ * @return kStatus_Success  MDIO access succeeds.
+ * @return kStatus_Timeout  MDIO access timeout.
+ */
+status_t ENET_QOS_MDIORead(ENET_QOS_Type *base, uint8_t phyAddr, uint8_t regAddr, uint16_t *pData)
+{
+    assert(pData);
+
+    status_t result;
+
+    ENET_QOS_StartSMIRead(base, phyAddr, regAddr);
+
+    result = ENET_QOS_MDIOWaitTransferOver(base);
+    if (result != kStatus_Success)
+    {
+        return result;
+    }
+    *pData = ENET_QOS_ReadSMIData(base);
+
+    return result;
+}
+
+/*!
+ * @brief MDIO write with IEEE802.3 Clause 45 format.
+ *
+ * @param base  ENET peripheral base address.
+ * @param portAddr  The MDIO port address(PHY address).
+ * @param devAddr  The device address.
+ * @param regAddr  The PHY register address.
+ * @param data  The data written to PHY.
+ * @return kStatus_Success  MDIO access succeeds.
+ * @return kStatus_Timeout  MDIO access timeout.
+ */
+status_t ENET_QOS_MDIOC45Write(ENET_QOS_Type *base, uint8_t portAddr, uint8_t devAddr, uint16_t regAddr, uint16_t data)
+{
+    ENET_QOS_StartExtC45SMIWrite(base, portAddr, devAddr, regAddr, data);
+
+    return ENET_QOS_MDIOWaitTransferOver(base);
+}
+
+/*!
+ * @brief MDIO read with IEEE802.3 Clause 45 format.
+ *
+ * @param base  ENET peripheral base address.
+ * @param portAddr  The MDIO port address(PHY address).
+ * @param devAddr  The device address.
+ * @param regAddr  The PHY register address.
+ * @param pData  The data read from PHY.
+ * @return kStatus_Success  MDIO access succeeds.
+ * @return kStatus_Timeout  MDIO access timeout.
+ */
+status_t ENET_QOS_MDIOC45Read(ENET_QOS_Type *base, uint8_t portAddr, uint8_t devAddr, uint16_t regAddr, uint16_t *pData)
+{
+    status_t result = kStatus_Success;
+
+    ENET_QOS_StartExtC45SMIRead(base, portAddr, devAddr, regAddr);
+
+    result = ENET_QOS_MDIOWaitTransferOver(base);
+    if (result != kStatus_Success)
+    {
+        return result;
+    }
+    *pData = ENET_QOS_ReadSMIData(base);
+
+    return result;
 }
 
 /*!
@@ -2172,12 +2322,9 @@ status_t ENET_QOS_ReadFrame(ENET_QOS_Type *base,
                         }
                         control = rxDesc->control;
                     }
-                }
 
-                /* Reinit for the context descritor which has been updated by DMA. */
-                if ((control & ENET_QOS_RXDESCRIP_WR_CTXT_MASK) != 0U)
-                {
-                    if (tsAvailable && (NULL != ts))
+                    /* Reinit for the context descriptor which has been updated by DMA. */
+                    if (NULL != ts)
                     {
                         ENET_QOS_StoreRxFrameTime(base, handle, rxDesc, ts);
                     }
@@ -2376,6 +2523,65 @@ void ENET_QOS_SetupTxDescriptor(enet_qos_tx_bd_struct_t *txDesc,
 }
 
 /*!
+ * brief Configure a given tx descriptor.
+ *  This function is a low level functional API to setup or prepare
+ *  a given tx descriptor.
+ *
+ * param txDesc  The given tx descriptor.
+ * param config  The tx descriptor configuration.
+ *
+ * note This must be called after all the ENET initilization.
+ * And should be called when the ENET receive/transmit is required.
+ * Transmit buffers are 'zero-copy' buffers, so the buffer must remain in
+ * memory until the packet has been fully transmitted. The buffers
+ * should be free or requeued in the transmit interrupt irq handler.
+ */
+static void ENET_QOS_ConfigTxDescriptor(enet_qos_tx_bd_struct_t *txDesc, enet_qos_tx_bd_config_struct_t *config)
+{
+    uint32_t control = ENET_QOS_TXDESCRIP_RD_BL1(config->bytes1) | ENET_QOS_TXDESCRIP_RD_BL2(config->bytes2);
+
+    if (config->tsEnable)
+    {
+        control |= ENET_QOS_TXDESCRIP_RD_TTSE_MASK;
+    }
+    else
+    {
+        control &= ~ENET_QOS_TXDESCRIP_RD_TTSE_MASK;
+    }
+
+    if (config->intEnable)
+    {
+        control |= ENET_QOS_TXDESCRIP_RD_IOC_MASK;
+    }
+    else
+    {
+        control &= ~ENET_QOS_TXDESCRIP_RD_IOC_MASK;
+    }
+
+    /* Preare the descriptor for transmit. */
+#if defined(FSL_FEATURE_MEMORY_HAS_ADDRESS_OFFSET) && FSL_FEATURE_MEMORY_HAS_ADDRESS_OFFSET
+    txDesc->buff1Addr = MEMORY_ConvertMemoryMapAddress((uintptr_t)(uint8_t *)config->buffer1, kMEMORY_Local2DMA);
+    txDesc->buff2Addr = MEMORY_ConvertMemoryMapAddress((uintptr_t)(uint8_t *)config->buffer2, kMEMORY_Local2DMA);
+#else
+    txDesc->buff1Addr = (uint32_t)(uintptr_t)(uint8_t *)config->buffer1;
+    txDesc->buff2Addr = (uint32_t)(uintptr_t)(uint8_t *)config->buffer2;
+#endif /* FSL_FEATURE_MEMORY_HAS_ADDRESS_OFFSET */
+    txDesc->buffLen   = control;
+
+    /* Make sure all fields of descriptor are written before setting ownership */
+    __DMB();
+
+    control = ENET_QOS_TXDESCRIP_RD_FL(config->framelen) |
+              ENET_QOS_TXDESCRIP_RD_CIC(config->txOffloadOps) | ENET_QOS_TXDESCRIP_RD_LDFD(config->flag) |
+              ENET_QOS_TXDESCRIP_RD_OWN_MASK;
+
+    txDesc->controlStat = control;
+
+    /* Make sure the descriptor is written in memory (before MAC starts checking it) */
+    __DSB();
+}
+
+/*!
  * brief Reclaim tx descriptors.
  *  This function is used to update the tx descriptor status and
  *  store the tx timestamp when the 1588 feature is enabled.
@@ -2463,6 +2669,7 @@ void ENET_QOS_ReclaimTxDescriptor(ENET_QOS_Type *base, enet_qos_handle_t *handle
  * param channel Channel to send the frame, same with queue index.
  * param isNeedTs True means save timestamp
  * param context pointer to user context to be kept in the tx dirty frame information.
+ * param txOffloadOps The Tx frame checksum offload option.
  * retval kStatus_Success  Send frame succeed.
  * retval kStatus_ENET_QOS_TxFrameBusy  Transmit buffer descriptor is busy under transmission.
  *         The transmit busy happens when the data send rate is over the MAC capacity.
@@ -2475,18 +2682,25 @@ status_t ENET_QOS_SendFrame(ENET_QOS_Type *base,
                             uint32_t length,
                             uint8_t channel,
                             bool isNeedTs,
-                            void *context)
+                            void *context,
+                            enet_qos_tx_offload_t txOffloadOps)
 {
     assert(handle != NULL);
     assert(data != NULL);
     assert(channel < handle->txQueueUse);
 
+    enet_qos_tx_bd_config_struct_t txDescConfig;
     enet_qos_tx_bd_ring_t *txBdRing;
     enet_qos_tx_bd_struct_t *txDesc;
     enet_qos_tx_dirty_ring_t *txDirtyRing;
     enet_qos_frame_info_t *txDirty;
     uint32_t primask;
     uint32_t txDescTail;
+
+    if (txOffloadOps != kENET_QOS_TxOffloadDisable)
+    {
+        assert(((uint32_t)FSL_FEATURE_ENET_QOS_TX_OFFLOAD_QUEUE_SUPPORT_BITMAP & ((uint32_t)1U << channel)) != 0U);
+    }
 
     if (length > 2U * ENET_QOS_TXDESCRIP_RD_BL1_MASK)
     {
@@ -2506,16 +2720,27 @@ status_t ENET_QOS_SendFrame(ENET_QOS_Type *base,
     txDirty->context = context;
 
     /* Fill the descriptor. */
+    txDescConfig.framelen  = length;
+    txDescConfig.flag      = kENET_QOS_FirstLastFlag;
+    txDescConfig.intEnable = true;
+    txDescConfig.tsEnable  = isNeedTs;
+    txDescConfig.txOffloadOps = txOffloadOps;
+
     if (length <= ENET_QOS_TXDESCRIP_RD_BL1_MASK)
     {
-        ENET_QOS_SetupTxDescriptor(txDesc, data, length, NULL, 0, length, true, isNeedTs, kENET_QOS_FirstLastFlag, 0);
+        txDescConfig.buffer1 = data;
+        txDescConfig.bytes1  = length;
+        txDescConfig.buffer2 = NULL;
+        txDescConfig.bytes2  = 0;
     }
     else
     {
-        ENET_QOS_SetupTxDescriptor(txDesc, data, ENET_QOS_TXDESCRIP_RD_BL1_MASK, &data[ENET_QOS_TXDESCRIP_RD_BL1_MASK],
-                                   (length - ENET_QOS_TXDESCRIP_RD_BL1_MASK), length, true, isNeedTs,
-                                   kENET_QOS_FirstLastFlag, 0);
+        txDescConfig.buffer1 = data;
+        txDescConfig.bytes1  = ENET_QOS_TXDESCRIP_RD_BL1_MASK;
+        txDescConfig.buffer2 = &data[ENET_QOS_TXDESCRIP_RD_BL1_MASK];
+        txDescConfig.bytes2  = length - ENET_QOS_TXDESCRIP_RD_BL1_MASK;
     }
+    ENET_QOS_ConfigTxDescriptor(txDesc, &txDescConfig);
 
     /* Increase the index. */
     txBdRing->txGenIdx = ENET_QOS_IncreaseIndex(txBdRing->txGenIdx, txBdRing->txRingLen);
@@ -2932,7 +3157,7 @@ status_t ENET_QOS_GetRxFrame(ENET_QOS_Type *base,
             /* Free the incomplete frame buffers. */
             while (index-- != 0U)
             {
-                handle->rxBuffFree(base, &rxFrame->rxBuffArray[index].buffer, handle->userData, channel);
+                handle->rxBuffFree(base, rxFrame->rxBuffArray[index].buffer, handle->userData, channel);
             }
 
             /* Update all left BDs of this frame from current index. */

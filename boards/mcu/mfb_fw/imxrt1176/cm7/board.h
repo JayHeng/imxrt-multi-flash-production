@@ -1,6 +1,5 @@
 /*
- * Copyright 2020 NXP
- * All rights reserved.
+ * Copyright 2020, 2023 NXP
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -12,6 +11,11 @@
 #include "fsl_common.h"
 #include "fsl_gpio.h"
 #include "fsl_clock.h"
+#if defined(CONFIG_BT_LOW_POWER_MODE) && (CONFIG_BT_LOW_POWER_MODE)
+#if (defined(BUTTON_COUNT) && (BUTTON_COUNT > 0U))
+#include "fsl_component_button.h"
+#endif /* BUTTON_COUNT */
+#endif /* CONFIG_BT_LOW_POWER_MODE */
 
 /*******************************************************************************
  * Definitions
@@ -74,7 +78,7 @@
 
 #define USER_LED_INIT(output)                                            \
     GPIO_PinWrite(BOARD_USER_LED_GPIO, BOARD_USER_LED_GPIO_PIN, output); \
-    BOARD_USER_LED_GPIO->GDIR |= (1U << BOARD_USER_LED_GPIO_PIN) /*!< Enable target USER_LED */
+    BOARD_USER_LED_GPIO->GDIR |= (1U << BOARD_USER_LED_GPIO_PIN)                       /*!< Enable target USER_LED */
 #define USER_LED_OFF() \
     GPIO_PortClear(BOARD_USER_LED_GPIO, 1U << BOARD_USER_LED_GPIO_PIN)                 /*!< Turn off target USER_LED */
 #define USER_LED_ON() GPIO_PortSet(BOARD_USER_LED_GPIO, 1U << BOARD_USER_LED_GPIO_PIN) /*!<Turn on target USER_LED*/
@@ -93,6 +97,23 @@
 #define BOARD_USER_BUTTON_IRQ_HANDLER GPIO13_Combined_0_31_IRQHandler
 #define BOARD_USER_BUTTON_NAME        "SW7"
 
+#if defined(CONFIG_BT_LOW_POWER_MODE) && (CONFIG_BT_LOW_POWER_MODE)
+#ifndef BUTTON_COUNT
+#define BUTTON_COUNT 1
+#endif
+#if (defined(BUTTON_COUNT) && (BUTTON_COUNT > 0U))
+#define APP_WAKEUP_BUTTON               BOARD_USER_BUTTON_GPIO
+#define APP_WAKEUP_BUTTON_GPIO          13
+#define APP_WAKEUP_BUTTON_GPIO_PIN      BOARD_USER_BUTTON_GPIO_PIN
+#define APP_WAKEUP_BUTTON_DEFAULT_VALUE 1
+#define APP_WAKEUP_BUTTON_IRQ           BOARD_USER_BUTTON_IRQ
+#define APP_WAKEUP_BUTTON_IRQ_HANDLER   BOARD_USER_BUTTON_IRQ_HANDLER
+#define APP_WAKEUP_BUTTON_NAME          BOARD_USER_BUTTON_NAME
+
+extern button_config_t g_buttonConfig[];
+#endif /* BUTTON_COUNT */
+#endif /* CONFIG_BT_LOW_POWER_MODE */
+
 /*! @brief The board flash size */
 #define BOARD_FLASH_SIZE (0x1000000U)
 
@@ -107,11 +128,40 @@
 /*! @brief The ENET1 PHY address. */
 #define BOARD_ENET1_PHY_ADDRESS (0x01U) /* Phy address of enet port 1. */
 
+/*! @brief The ENET PHY used for board. */
+#ifndef BOARD_ENET_PHY0_RESET_GPIO
+#define BOARD_ENET_PHY0_RESET_GPIO GPIO12
+#endif
+#ifndef BOARD_ENET_PHY0_RESET_GPIO_PIN
+#define BOARD_ENET_PHY0_RESET_GPIO_PIN (12U)
+#endif
+
+#define BOARD_ENET_PHY0_RESET                                                           \
+    GPIO_WritePinOutput(BOARD_ENET_PHY0_RESET_GPIO, BOARD_ENET_PHY0_RESET_GPIO_PIN, 0); \
+    SDK_DelayAtLeastUs(10000, CLOCK_GetFreq(kCLOCK_CpuClk));                            \
+    GPIO_WritePinOutput(BOARD_ENET_PHY0_RESET_GPIO, BOARD_ENET_PHY0_RESET_GPIO_PIN, 1); \
+    SDK_DelayAtLeastUs(100, CLOCK_GetFreq(kCLOCK_CpuClk))
+
+#ifndef BOARD_ENET_PHY1_RESET_GPIO
+#define BOARD_ENET_PHY1_RESET_GPIO GPIO11
+#endif
+#ifndef BOARD_ENET_PHY1_RESET_GPIO_PIN
+#define BOARD_ENET_PHY1_RESET_GPIO_PIN (14U)
+#endif
+
+/* For a complete PHY reset of RTL8211FDI-CG, this pin must be asserted low for at least 10ms. And
+ * wait for a further 30ms(for internal circuits settling time) before accessing the PHY register */
+#define BOARD_ENET_PHY1_RESET                                                           \
+    GPIO_WritePinOutput(BOARD_ENET_PHY1_RESET_GPIO, BOARD_ENET_PHY1_RESET_GPIO_PIN, 0); \
+    SDK_DelayAtLeastUs(10000, CLOCK_GetFreq(kCLOCK_CpuClk));                            \
+    GPIO_WritePinOutput(BOARD_ENET_PHY1_RESET_GPIO, BOARD_ENET_PHY1_RESET_GPIO_PIN, 1); \
+    SDK_DelayAtLeastUs(30000, CLOCK_GetFreq(kCLOCK_CpuClk))
+
 /*! @brief The EMVSIM SMARTCARD PHY configuration. */
 #define BOARD_SMARTCARD_MODULE                (EMVSIM1)      /*!< SMARTCARD communicational module instance */
 #define BOARD_SMARTCARD_MODULE_IRQ            (EMVSIM1_IRQn) /*!< SMARTCARD communicational module IRQ handler */
 #define BOARD_SMARTCARD_CLOCK_MODULE_CLK_FREQ (CLOCK_GetRootClockFreq(kCLOCK_Root_Emv1))
-#define BOARD_SMARTCARD_CLOCK_VALUE           (4000000U) /*!< SMARTCARD clock frequency */
+#define BOARD_SMARTCARD_CLOCK_VALUE           (4000000U)     /*!< SMARTCARD clock frequency */
 
 /* USB PHY condfiguration */
 #define BOARD_USB_PHY_D_CAL     (0x07U)
@@ -171,6 +221,7 @@
 #define BOARD_WIFI_SD_DETECT_TYPE kSDMMCHOST_DetectCardByHostDATA3
 
 #define BOARD_BT_UART_INSTANCE    7
+#define BOARD_BT_UART_BASEADDR    (uint32_t) LPUART7
 #define BOARD_BT_UART_BAUDRATE    3000000
 #define BOARD_BT_UART_CLK_FREQ    CLOCK_GetRootClockFreq(kCLOCK_Root_Lpuart7);
 #define BOARD_BT_UART_IRQ         LPUART7_IRQn
@@ -182,6 +233,10 @@
 #ifndef BOARD_NETWORK_USE_100M_ENET_PORT
 #define BOARD_NETWORK_USE_100M_ENET_PORT (0U)
 #endif
+
+/* Timer Manager definition. */
+#define BOARD_TM_INSTANCE   1
+#define BOARD_TM_CLOCK_ROOT kCLOCK_Root_Gpt1
 
 #if defined(__cplusplus)
 extern "C" {

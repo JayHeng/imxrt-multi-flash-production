@@ -145,7 +145,7 @@ void Serial_SpiSlaveTxCallback(hal_spi_slave_handle_t handle, hal_spi_status_t s
         serial_manager_status_t serialManagerStatus = kStatus_SerialManager_Success;
         msg.buffer                                  = serialSpiSlaveHandle->tx.buffer;
         msg.length                                  = serialSpiSlaveHandle->tx.length;
-        if (NULL != serialSpiSlaveHandle->rx.callback)
+        if (NULL != serialSpiSlaveHandle->tx.callback)
         {
             serialSpiSlaveHandle->tx.callback(serialSpiSlaveHandle->tx.callbackParam, &msg, serialManagerStatus);
         }
@@ -394,8 +394,7 @@ serial_manager_status_t Serial_SpiSlaveRead(serial_handle_t serialHandle, uint8_
         ((hal_spi_slave_handle_t)&serialSpiSlaveHandle->spiSlaveHandleBuffer[0]), &slaveReceiver);
 }
 
-#else /* SERIAL_MANAGER_NON_BLOCKING_DUAL_MODE */
-
+#else /* SERIAL_MANAGER_NON_BLOCKING_MODE */
 serial_manager_status_t Serial_SpiMasterWrite(serial_handle_t serialHandle, uint8_t *buffer, uint32_t length)
 {
     serial_spi_master_state_t *serialSpiMasterHandle;
@@ -407,8 +406,8 @@ serial_manager_status_t Serial_SpiMasterWrite(serial_handle_t serialHandle, uint
 
     serialSpiMasterHandle = (serial_spi_master_state_t *)serialHandle;
 
-    mastetTransfer.txData = buffer;
-    mastetTransfer.rxData = NULL;
+    mastetTransfer.txData   = buffer;
+    mastetTransfer.rxData   = NULL;
     mastetTransfer.dataSize = (size_t)length;
     return (serial_manager_status_t)HAL_SpiMasterTransferBlocking(
         ((hal_spi_master_handle_t)&serialSpiMasterHandle->spiMasterHandleBuffer[0]), &mastetTransfer);
@@ -423,9 +422,9 @@ serial_manager_status_t Serial_SpiMasterRead(serial_handle_t serialHandle, uint8
     assert(buffer);
     assert(length);
 
-    serialSpiMasterHandle = (serial_spi_master_state_t *)serialHandle;
-    masterReceiver.txData = NULL;
-    masterReceiver.rxData = buffer;
+    serialSpiMasterHandle   = (serial_spi_master_state_t *)serialHandle;
+    masterReceiver.txData   = NULL;
+    masterReceiver.rxData   = buffer;
     masterReceiver.dataSize = (size_t)length;
     return (serial_manager_status_t)HAL_SpiMasterTransferBlocking(
         ((hal_spi_master_handle_t)&serialSpiMasterHandle->spiMasterHandleBuffer[0]), &masterReceiver);

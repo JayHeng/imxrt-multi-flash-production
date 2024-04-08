@@ -18,8 +18,8 @@
  * limitations under the License.
  */
 
-#ifndef _FSL_ENET_CMSIS_H_
-#define _FSL_ENET_CMSIS_H_
+#ifndef FSL_ENET_CMSIS_H_
+#define FSL_ENET_CMSIS_H_
 
 #include "Driver_ETH.h"
 #include "Driver_ETH_MAC.h"
@@ -33,8 +33,12 @@
 #define ENET_FLAG_POWER      (1U << 1)
 #define ETH_MAC_EVENT_OTHERS (ARM_ETH_MAC_EVENT_TIMER_ALARM + 1U)
 
-extern ARM_DRIVER_ETH_MAC Driver_ETH_MAC0;
+typedef struct _cmsis_enet_mac_resource
+{
+    ENET_Type *base;           /*!< ENET peripheral base address. */
+    uint32_t (*GetFreq)(void); /*!< Function to get frequency. */
+} cmsis_enet_mac_resource_t;
 
-extern uint32_t ENET0_GetFreq(void);
+extern ARM_DRIVER_ETH_MAC Driver_ETH_MAC0;
 
 #endif

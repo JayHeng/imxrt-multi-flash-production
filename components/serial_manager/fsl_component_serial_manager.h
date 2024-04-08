@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2020 NXP
+ * Copyright 2018-2023 NXP
  * All rights reserved.
  *
  *
@@ -36,6 +36,7 @@
 #ifndef SERIAL_MANAGER_RING_BUFFER_FLOWCONTROL
 #define SERIAL_MANAGER_RING_BUFFER_FLOWCONTROL (0U)
 #endif
+
 /*! @brief Enable or disable uart port (1 - enable, 0 - disable) */
 #ifndef SERIAL_PORT_TYPE_UART
 #define SERIAL_PORT_TYPE_UART (0U)
@@ -75,21 +76,16 @@
 #define SERIAL_PORT_TYPE_SPI_SLAVE (0U)
 #endif
 
+/*! @brief Enable or disable BLE WU port (1 - enable, 0 - disable) */
+#ifndef SERIAL_PORT_TYPE_BLE_WU
+#define SERIAL_PORT_TYPE_BLE_WU (0U)
+#endif
+
 #if (defined(SERIAL_PORT_TYPE_SPI_SLAVE) && (SERIAL_PORT_TYPE_SPI_SLAVE == 1U))
 #if (defined(SERIAL_MANAGER_NON_BLOCKING_MODE) && (SERIAL_MANAGER_NON_BLOCKING_MODE == 0U))
 #warning When SERIAL_PORT_TYPE_SPI_SLAVE=1, SERIAL_MANAGER_NON_BLOCKING_MODE should be set.
 #undef SERIAL_MANAGER_NON_BLOCKING_MODE
 #define SERIAL_MANAGER_NON_BLOCKING_MODE (1U)
-#endif
-#endif
-
-/*! @brief Enable or disable SerialManager_Task() handle TX to prevent recursive calling */
-#ifndef SERIAL_MANAGER_TASK_HANDLE_TX
-#define SERIAL_MANAGER_TASK_HANDLE_TX (0U)
-#endif
-#if (defined(SERIAL_MANAGER_TASK_HANDLE_TX) && (SERIAL_MANAGER_TASK_HANDLE_TX > 0U))
-#ifndef OSA_USED
-#error When SERIAL_MANAGER_TASK_HANDLE_TX=1, OSA_USED must be set.
 #endif
 #endif
 
@@ -164,6 +160,14 @@
 
 #include "fsl_component_serial_port_virtual.h"
 #endif
+#if (defined(SERIAL_PORT_TYPE_BLE_WU) && (SERIAL_PORT_TYPE_BLE_WU > 0U))
+
+#if !(defined(SERIAL_MANAGER_NON_BLOCKING_MODE) && (SERIAL_MANAGER_NON_BLOCKING_MODE > 0U))
+#error The serial manager blocking mode cannot be supported for BLE WU.
+#endif /* SERIAL_MANAGER_NON_BLOCKING_MODE */
+
+#include "fsl_component_serial_port_ble_wu.h"
+#endif /* SERIAL_PORT_TYPE_BLE_WU */
 
 #define SERIAL_MANAGER_HANDLE_SIZE_TEMP 0U
 #if (defined(SERIAL_PORT_TYPE_UART) && (SERIAL_PORT_TYPE_UART > 0U))
@@ -232,39 +236,33 @@
 
 #endif
 
+#if (defined(SERIAL_PORT_TYPE_BLE_WU) && (SERIAL_PORT_TYPE_BLE_WU > 0U))
+
+#if (SERIAL_PORT_BLE_WU_HANDLE_SIZE > SERIAL_MANAGER_HANDLE_SIZE_TEMP)
+#undef SERIAL_MANAGER_HANDLE_SIZE_TEMP
+#define SERIAL_MANAGER_HANDLE_SIZE_TEMP SERIAL_PORT_BLE_WU_HANDLE_SIZE
+#endif
+
+#endif
+
 /*! @brief SERIAL_PORT_UART_HANDLE_SIZE/SERIAL_PORT_USB_CDC_HANDLE_SIZE + serial manager dedicated size */
 #if ((defined(SERIAL_MANAGER_HANDLE_SIZE_TEMP) && (SERIAL_MANAGER_HANDLE_SIZE_TEMP > 0U)))
 #else
-#error SERIAL_PORT_TYPE_UART, SERIAL_PORT_TYPE_USBCDC, SERIAL_PORT_TYPE_SWO and SERIAL_PORT_TYPE_VIRTUAL should not be cleared at same time.
+#error SERIAL_PORT_TYPE_UART, SERIAL_PORT_TYPE_USBCDC, SERIAL_PORT_TYPE_SWO, SERIAL_PORT_TYPE_VIRTUAL, and SERIAL_PORT_TYPE_BLE_WU should not be cleared at same time.
 #endif
 
-#if defined(OSA_USED)
-#include "fsl_component_common_task.h"
-#endif
 /*! @brief Macro to determine whether use common task. */
 #ifndef SERIAL_MANAGER_USE_COMMON_TASK
 #define SERIAL_MANAGER_USE_COMMON_TASK (0U)
-#if (defined(COMMON_TASK_ENABLE) && (COMMON_TASK_ENABLE == 0U))
-#undef SERIAL_MANAGER_USE_COMMON_TASK
-#define SERIAL_MANAGER_USE_COMMON_TASK (0U)
-#endif
-#endif
-
-#if (defined(SERIAL_MANAGER_NON_BLOCKING_MODE) && (SERIAL_MANAGER_NON_BLOCKING_MODE > 0U))
-#if (defined(OSA_USED) && !(defined(SERIAL_MANAGER_USE_COMMON_TASK) && (SERIAL_MANAGER_USE_COMMON_TASK > 0U)))
-#include "fsl_os_abstraction.h"
-#endif
 #endif
 
 #if defined(OSA_USED)
+#if (defined(SERIAL_MANAGER_USE_COMMON_TASK) && (SERIAL_MANAGER_USE_COMMON_TASK > 0U))
 #include "fsl_component_common_task.h"
 #endif
-/*! @brief Macro to determine whether use common task. */
-#ifndef SERIAL_MANAGER_USE_COMMON_TASK
-#define SERIAL_MANAGER_USE_COMMON_TASK (0U)
-#if (defined(COMMON_TASK_ENABLE) && (COMMON_TASK_ENABLE == 0U))
-#undef SERIAL_MANAGER_USE_COMMON_TASK
-#define SERIAL_MANAGER_USE_COMMON_TASK (0U)
+/*! @brief Enable or disable SerialManager_Task() handle TX to prevent recursive calling */
+#ifndef SERIAL_MANAGER_TASK_HANDLE_TX
+#define SERIAL_MANAGER_TASK_HANDLE_TX (1U)
 #endif
 #endif
 
@@ -279,7 +277,7 @@
 #if (defined(OSA_USED) && !(defined(SERIAL_MANAGER_USE_COMMON_TASK) && (SERIAL_MANAGER_USE_COMMON_TASK > 0U)))
 #define SERIAL_MANAGER_HANDLE_SIZE \
     (SERIAL_MANAGER_HANDLE_SIZE_TEMP + 124U + OSA_TASK_HANDLE_SIZE + OSA_EVENT_HANDLE_SIZE)
-#else /*defined(OSA_USED)*/
+#else  /*defined(OSA_USED)*/
 #define SERIAL_MANAGER_HANDLE_SIZE (SERIAL_MANAGER_HANDLE_SIZE_TEMP + 124U)
 #endif /*defined(OSA_USED)*/
 #define SERIAL_MANAGER_BLOCK_HANDLE_SIZE (SERIAL_MANAGER_HANDLE_SIZE_TEMP + 16U)
@@ -365,9 +363,12 @@ typedef void *serial_write_handle_t;
 /*! @brief The read handle of the serial manager module */
 typedef void *serial_read_handle_t;
 
+#ifndef _SERIAL_PORT_T_
+#define _SERIAL_PORT_T_
 /*! @brief serial port type*/
 typedef enum _serial_port_type
 {
+    kSerialPort_None = 0U, /*!< Serial port is none */
     kSerialPort_Uart = 1U, /*!< Serial port UART */
     kSerialPort_UsbCdc,    /*!< Serial port USB CDC */
     kSerialPort_Swo,       /*!< Serial port SWO */
@@ -376,8 +377,9 @@ typedef enum _serial_port_type
     kSerialPort_UartDma,   /*!< Serial port UART DMA*/
     kSerialPort_SpiMaster, /*!< Serial port SPIMASTER*/
     kSerialPort_SpiSlave,  /*!< Serial port SPISLAVE*/
-    kSerialPort_None,      /*!< Serial port is none */
+    kSerialPort_BleWu,     /*!< Serial port BLE WU */
 } serial_port_type_t;
+#endif
 
 /*! @brief serial manager type*/
 typedef enum _serial_manager_type
@@ -389,10 +391,10 @@ typedef enum _serial_manager_type
 typedef struct _serial_manager_config
 {
 #if defined(SERIAL_MANAGER_NON_BLOCKING_MODE)
-    uint8_t *ringBuffer;     /*!< Ring buffer address, it is used to buffer data received by the hardware.
-                                  Besides, the memory space cannot be free during the lifetime of the serial
-                                  manager module. */
-    uint32_t ringBufferSize; /*!< The size of the ring buffer */
+    uint8_t *ringBuffer;             /*!< Ring buffer address, it is used to buffer data received by the hardware.
+                                          Besides, the memory space cannot be free during the lifetime of the serial
+                                          manager module. */
+    uint32_t ringBufferSize;         /*!< The size of the ring buffer */
 #endif
     serial_port_type_t type;         /*!< Serial port type */
     serial_manager_type_t blockType; /*!< Serial manager port type */
@@ -421,11 +423,18 @@ typedef struct _serial_manager_callback_message
     uint32_t length; /*!< Transferred data length */
 } serial_manager_callback_message_t;
 
-/*! @brief callback function */
+/*! @brief serial manager callback function */
 typedef void (*serial_manager_callback_t)(void *callbackParam,
                                           serial_manager_callback_message_t *message,
                                           serial_manager_status_t status);
 
+/*! @brief serial manager Lowpower Critical callback function */
+typedef int32_t (*serial_manager_lowpower_critical_callback_t)(int32_t power_mode);
+typedef struct _serial_manager_lowpower_critical_CBs_t
+{
+    serial_manager_lowpower_critical_callback_t serialEnterLowpowerCriticalFunc;
+    serial_manager_lowpower_critical_callback_t serialExitLowpowerCriticalFunc;
+} serial_manager_lowpower_critical_CBs_t;
 /*******************************************************************************
  * API
  ******************************************************************************/
@@ -492,11 +501,11 @@ extern "C" {
  * #SERIAL_MANAGER_HANDLE_DEFINE(serialHandle);
  * or
  * uint32_t serialHandle[((SERIAL_MANAGER_HANDLE_SIZE + sizeof(uint32_t) - 1U) / sizeof(uint32_t))];
- * @param config Pointer to user-defined configuration structure.
+ * @param serialConfig Pointer to user-defined configuration structure.
  * @retval kStatus_SerialManager_Error An error occurred.
  * @retval kStatus_SerialManager_Success The Serial Manager module initialization succeed.
  */
-serial_manager_status_t SerialManager_Init(serial_handle_t serialHandle, const serial_manager_config_t *config);
+serial_manager_status_t SerialManager_Init(serial_handle_t serialHandle, const serial_manager_config_t *serialConfig);
 
 /*!
  * @brief De-initializes the serial manager module instance.
@@ -787,6 +796,27 @@ serial_manager_status_t SerialManager_InstallRxCallback(serial_read_handle_t rea
                                                         serial_manager_callback_t callback,
                                                         void *callbackParam);
 
+/*!
+ * @brief Check if need polling ISR.
+ *
+ * This function is used to check if need polling ISR.
+ *
+ * @retval TRUE if need polling.
+ */
+static inline bool SerialManager_needPollingIsr(void)
+{
+#if (defined(__DSC__) && defined(__CW__))
+    return !(isIRQAllowed());
+#elif defined(CPSR_M_Msk)
+    return (0x13 == (__get_CPSR() & CPSR_M_Msk));
+#elif defined(DAIF_I_BIT)
+    return (__get_DAIF() & DAIF_I_BIT);
+#elif defined(__XCC__)
+    return (xthal_get_interrupt() & xthal_get_intenable());
+#else
+    return (0U != __get_IPSR());
+#endif
+}
 #endif
 
 /*!
@@ -810,22 +840,14 @@ serial_manager_status_t SerialManager_EnterLowpower(serial_handle_t serialHandle
 serial_manager_status_t SerialManager_ExitLowpower(serial_handle_t serialHandle);
 
 /*!
- * @brief Check if need polling ISR.
+ * @brief This function performs initialization of the callbacks structure used to disable lowpower
+ *          when serial manager is active.
  *
- * This function is used to check if need polling ISR.
  *
- * @retval TRUE if need polling.
+ * @param  pfCallback Pointer to the function structure used to allow/disable lowpower.
+ *
  */
-static inline bool SerialManager_needPollingIsr(void)
-{
-#if (defined(__DSC__) && defined(__CW__))
-    return !(isIRQAllowed());
-#elif defined(__GIC_PRIO_BITS)
-    return (0x13 == (__get_CPSR() & CPSR_M_Msk));
-#else
-    return (0U != __get_IPSR());
-#endif
-}
+void SerialManager_SetLowpowerCriticalCb(const serial_manager_lowpower_critical_CBs_t *pfCallback);
 
 #if defined(__cplusplus)
 }

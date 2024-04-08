@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2020 NXP
+ * Copyright 2018-2020, 2022 NXP
  * All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
@@ -221,19 +221,19 @@ typedef struct _FlexSPIConfig
 
 #define NOR_CMD_LUT_SEQ_IDX_READ CMD_LUT_SEQ_IDX_READ //!< 0  READ LUT sequence id in lookupTable stored in config block
 #define NOR_CMD_LUT_SEQ_IDX_READSTATUS \
-    CMD_LUT_SEQ_IDX_READSTATUS //!< 1  Read Status LUT sequence id in lookupTable stored in config block
+    CMD_LUT_SEQ_IDX_READSTATUS  //!< 1  Read Status LUT sequence id in lookupTable stored in config block
 #define NOR_CMD_LUT_SEQ_IDX_READSTATUS_XPI \
-    2 //!< 2  Read status DPI/QPI/OPI sequence id in lookupTable stored in config block
+    2                           //!< 2  Read status DPI/QPI/OPI sequence id in lookupTable stored in config block
 #define NOR_CMD_LUT_SEQ_IDX_WRITEENABLE \
     CMD_LUT_SEQ_IDX_WRITEENABLE //!< 3  Write Enable sequence id in lookupTable stored in config block
 #define NOR_CMD_LUT_SEQ_IDX_WRITEENABLE_XPI \
-    4 //!< 4  Write Enable DPI/QPI/OPI sequence id in lookupTable stored in config block
+    4                           //!< 4  Write Enable DPI/QPI/OPI sequence id in lookupTable stored in config block
 #define NOR_CMD_LUT_SEQ_IDX_ERASESECTOR 5 //!< 5  Erase Sector sequence id in lookupTable stored in config block
 #define NOR_CMD_LUT_SEQ_IDX_ERASEBLOCK  8 //!< 8 Erase Block sequence id in lookupTable stored in config block
 #define NOR_CMD_LUT_SEQ_IDX_PAGEPROGRAM \
-    CMD_LUT_SEQ_IDX_WRITE                //!< 9  Program sequence id in lookupTable stored in config block
-#define NOR_CMD_LUT_SEQ_IDX_CHIPERASE 11 //!< 11 Chip Erase sequence in lookupTable id stored in config block
-#define NOR_CMD_LUT_SEQ_IDX_READ_SFDP 13 //!< 13 Read SFDP sequence in lookupTable id stored in config block
+    CMD_LUT_SEQ_IDX_WRITE                 //!< 9  Program sequence id in lookupTable stored in config block
+#define NOR_CMD_LUT_SEQ_IDX_CHIPERASE 11  //!< 11 Chip Erase sequence in lookupTable id stored in config block
+#define NOR_CMD_LUT_SEQ_IDX_READ_SFDP 13  //!< 13 Read SFDP sequence in lookupTable id stored in config block
 #define NOR_CMD_LUT_SEQ_IDX_RESTORE_NOCMD \
     14 //!< 14 Restore 0-4-4/0-8-8 mode sequence id in lookupTable stored in config block
 #define NOR_CMD_LUT_SEQ_IDX_EXIT_NOCMD \
@@ -249,13 +249,15 @@ typedef struct _flexspi_nor_config
     uint32_t sectorSize;            //!< Sector size of Serial NOR
     uint8_t ipcmdSerialClkFreq;     //!< Clock frequency for IP command
     uint8_t isUniformBlockSize;     //!< Sector/Block size is the same
-    uint8_t reserved0[2];           //!< Reserved for future use
+    uint8_t isDataOrderSwapped;     //!< The data order is swapped in OPI DDR mode
+    uint8_t reserved0;              //!< Reserved for future use
     uint8_t serialNorType;          //!< Serial NOR Flash type: 0/1/2/3
     uint8_t needExitNoCmdMode;      //!< Need to exit NoCmd mode before other IP command
     uint8_t halfClkForNonReadCmd;   //!< Half the Serial Clock for non-read command: true/false
     uint8_t needRestoreNoCmdMode;   //!< Need to Restore NoCmd mode after IP commmand execution
     uint32_t blockSize;             //!< Block size
-    uint32_t reserve2[11];          //!< Reserved for future use
+    uint32_t FlashStateCtx;         //!< Flash State Context after being configured
+    uint32_t reserve2[10];          //!< Reserved for future use
 } flexspi_nor_config_t;
 
 #ifdef __cplusplus

@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2015, Freescale Semiconductor, Inc.
- * Copyright 2016-2021 NXP
+ * Copyright 2016-2021, 2023 NXP
  * All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
@@ -24,6 +24,10 @@
 #define ENC_CTRL2_W1C_FLAGS (ENC_CTRL2_SABIRQ_MASK | ENC_CTRL2_ROIRQ_MASK | ENC_CTRL2_RUIRQ_MASK)
 #endif
 
+#if defined(ENC_RSTS)
+#define ENC_RESETS_ARRAY ENC_RSTS
+#endif
+
 /*******************************************************************************
  * Prototypes
  ******************************************************************************/
@@ -44,6 +48,11 @@ static ENC_Type *const s_encBases[] = ENC_BASE_PTRS;
 /*! @brief Pointers to ENC clocks for each instance. */
 static const clock_ip_name_t s_encClocks[] = ENC_CLOCKS;
 #endif /* FSL_SDK_DISABLE_DRIVER_CLOCK_CONTROL */
+
+#if defined(ENC_RESETS_ARRAY)
+/* Reset array */
+static const reset_ip_name_t s_encResets[] = ENC_RESETS_ARRAY;
+#endif
 
 /*******************************************************************************
  * Code
@@ -88,6 +97,10 @@ void ENC_Init(ENC_Type *base, const enc_config_t *config)
     CLOCK_EnableClock(s_encClocks[ENC_GetInstance(base)]);
 #endif /* FSL_SDK_DISABLE_DRIVER_CLOCK_CONTROL */
 
+#if defined(ENC_RESETS_ARRAY)
+    RESET_ReleasePeripheralReset(s_encResets[ENC_GetInstance(base)]);
+#endif
+
     /* ENC_CTRL. */
     tmp16 = base->CTRL & (uint16_t)(~(ENC_CTRL_W1C_FLAGS | ENC_CTRL_HIP_MASK | ENC_CTRL_HNE_MASK | ENC_CTRL_REV_MASK |
                                       ENC_CTRL_PH1_MASK | ENC_CTRL_XIP_MASK | ENC_CTRL_XNE_MASK | ENC_CTRL_WDE_MASK));
@@ -127,7 +140,11 @@ void ENC_Init(ENC_Type *base, const enc_config_t *config)
     base->CTRL = tmp16;
 
     /* ENC_FILT. */
-    base->FILT = ENC_FILT_FILT_CNT(config->filterCount) | ENC_FILT_FILT_PER(config->filterSamplePeriod);
+    base->FILT = ENC_FILT_FILT_CNT(config->filterCount) | ENC_FILT_FILT_PER(config->filterSamplePeriod)
+#if (defined(FSL_FEATURE_ENC_HAS_FILT_PRSC) && FSL_FEATURE_ENC_HAS_FILT_PRSC)
+                 | ENC_FILT_FILT_PRSC(config->filterPrescaler)
+#endif
+        ;
 
     /* ENC_CTRL2. */
     tmp16 = base->CTRL2 & (uint16_t)(~(ENC_CTRL2_W1C_FLAGS | ENC_CTRL2_OUTCTL_MASK | ENC_CTRL2_REVMOD_MASK |
@@ -247,6 +264,10 @@ void ENC_GetDefaultConfig(enc_config_t *config)
 #if (defined(FSL_FEATURE_ENC_HAS_CTRL3) && FSL_FEATURE_ENC_HAS_CTRL3)
     config->prescalerValue                  = kENC_ClockDiv1;
     config->enablePeriodMeasurementFunction = true;
+#endif
+
+#if (defined(FSL_FEATURE_ENC_HAS_FILT_PRSC) && FSL_FEATURE_ENC_HAS_FILT_PRSC)
+    config->filterPrescaler = kENC_FilterPrescalerDiv1;
 #endif
 }
 
