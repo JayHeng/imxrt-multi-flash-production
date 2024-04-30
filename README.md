@@ -61,6 +61,7 @@ FlexSPI2 pin multiplex options performance specifications:
 2. GPIO_AON_XX only supports the maximum 104 MHz operation frequency
 ```
 
+- 确保BB-[J82-J90]-2&3, J109-Open
 - 测试仅改动 BB-J68&J16 以设置 Flash_VCC: 3.3V/1.8V/1.2V
   -- J68.1-2 3.3V
   -- J68.2-3 1.8V
