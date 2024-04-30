@@ -200,6 +200,14 @@ static void mixspi_pin_init(FLEXSPI_Type *base, flexspi_port_t port, flexspi_pad
                 IOMUXC_SetPinMux(IOMUXC_GPIO_SD_B2_10_FLEXSPI1_BUS2BIT_B_DATA02, 1U);
                 IOMUXC_SetPinMux(IOMUXC_GPIO_SD_B2_11_FLEXSPI1_BUS2BIT_B_DATA03, 1U);
                 
+                //IOMUXC_SetPinConfig(IOMUXC_GPIO_SD_B2_05_FLEXSPI1_BUS2BIT_B_DQS,     0x02U);
+                //IOMUXC_SetPinConfig(IOMUXC_GPIO_SD_B2_06_FLEXSPI1_BUS2BIT_B_SS0_B,   0x02U);
+                //IOMUXC_SetPinConfig(IOMUXC_GPIO_SD_B2_07_FLEXSPI1_BUS2BIT_B_SCLK,    0x02U);
+                //IOMUXC_SetPinConfig(IOMUXC_GPIO_SD_B2_08_FLEXSPI1_BUS2BIT_B_DATA00,  0x02U);
+                //IOMUXC_SetPinConfig(IOMUXC_GPIO_SD_B2_09_FLEXSPI1_BUS2BIT_B_DATA01,  0x02U);
+                //IOMUXC_SetPinConfig(IOMUXC_GPIO_SD_B2_10_FLEXSPI1_BUS2BIT_B_DATA02,  0x02U);
+                //IOMUXC_SetPinConfig(IOMUXC_GPIO_SD_B2_11_FLEXSPI1_BUS2BIT_B_DATA03,  0x02U);
+                
                 IOMUXC_SetPinMux(IOMUXC_GPIO_SD_B2_00_FLEXSPI1_BUS2BIT_B_DATA04, 1U);
                 IOMUXC_SetPinMux(IOMUXC_GPIO_SD_B2_01_FLEXSPI1_BUS2BIT_B_DATA05, 1U);
                 IOMUXC_SetPinMux(IOMUXC_GPIO_SD_B2_02_FLEXSPI1_BUS2BIT_B_DATA06, 1U);
@@ -249,7 +257,7 @@ static void mixspi_pin_init(FLEXSPI_Type *base, flexspi_port_t port, flexspi_pad
                 IOMUXC_SetPinMux(IOMUXC_GPIO_EMC_B1_33_FLEXSPI2_BUS2BIT_B_DATA00, 1U);
                 IOMUXC_SetPinMux(IOMUXC_GPIO_EMC_B1_34_FLEXSPI2_BUS2BIT_B_SCLK,   1U);
 #elif BOARD_IS_RT1180_MEM_DC_MUX2
-                if (port == kFLEXSPI_PortA1) || (port == kFLEXSPI_PortA2)
+                if ((port == kFLEXSPI_PortA1) || (port == kFLEXSPI_PortA2))
                 {
                     IOMUXC_SetPinMux(IOMUXC_GPIO_AON_21_FLEXSPI2_BUS2BIT_A_DQS,       1U);
                     IOMUXC_SetPinConfig(IOMUXC_GPIO_AON_21_FLEXSPI2_BUS2BIT_A_DQS,    0x02U);  // default 0x0e
@@ -285,7 +293,7 @@ static void mixspi_pin_init(FLEXSPI_Type *base, flexspi_port_t port, flexspi_pad
                 IOMUXC_SetPinMux(IOMUXC_GPIO_AON_18_FLEXSPI2_BUS2BIT_B_DATA00, 1U);
                 IOMUXC_SetPinMux(IOMUXC_GPIO_AON_19_FLEXSPI2_BUS2BIT_B_SCLK,   1U);
                 IOMUXC_SetPinMux(IOMUXC_GPIO_AON_20_FLEXSPI2_BUS2BIT_B_DQS,    1U);
-                if (port == kFLEXSPI_PortB1) || (port == kFLEXSPI_PortB2)
+                if ((port == kFLEXSPI_PortB1) || (port == kFLEXSPI_PortB2))
                 {
                     IOMUXC_SetPinMux(IOMUXC_GPIO_AON_21_FLEXSPI2_BUS2BIT_B_SS0_B,  1U);
                     IOMUXC_SetPinConfig(IOMUXC_GPIO_AON_21_FLEXSPI2_BUS2BIT_B_SS0_B,  0x02U);  // default 0x0e
