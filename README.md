@@ -62,7 +62,12 @@ FlexSPI2 pin multiplex options performance specifications:
 ```
 
 - 测试仅改动 BB-J68&J16 以设置 Flash_VCC: 3.3V/1.8V/1.2V
+  -- J68.1-2 3.3V
+  -- J68.2-3 1.8V
+  -- J16.1-2 1.2V
 - 测试仅改动 BB-J11 以切换 QUAD/OCTAL
+  -- J11.1-2 OCTAL
+  -- J11.2-3 QUAD
 
 <table><tbody>
     <tr>
@@ -103,6 +108,15 @@ FlexSPI2 pin multiplex options performance specifications:
         <td>84M (x4)</td>
         <td>S84Mx4</td>
         <td>通过</td>
+    </tr>
+    <tr>
+        <td>W25Q12NESSIG</td>
+        <td>1.14V-1.26V</td>
+        <td>104M (x4)</td>
+        <td>S84Mx4<br>
+            S104Mx4</td>
+        <td>通过<br>
+            回读校验失败</td>
     </tr>
     <tr>
         <td>W25Q64JWSJQ</td>
@@ -457,6 +471,13 @@ FlexSPI2 pin multiplex options performance specifications:
         <td>1.65-1.95V</td>
         <td>166M (x4)</td>
         <td>S166Mx4</td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>IS25WP128</td>
+        <td>1.65-1.95V</td>
+        <td>133M (x4)</td>
+        <td>S133Mx4</td>
         <td></td>
     </tr>
     <tr>
