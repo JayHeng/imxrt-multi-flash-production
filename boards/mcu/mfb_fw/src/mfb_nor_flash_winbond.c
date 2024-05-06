@@ -57,6 +57,12 @@ const uint32_t s_customLUT_WINBOND_Quad[CUSTOM_LUT_LENGTH] = {
     [4 * NOR_CMD_LUT_SEQ_IDX_ENABLEQE] =
         FLEXSPI_LUT_SEQ(kFLEXSPI_Command_SDR,       kFLEXSPI_1PAD, 0x31, kFLEXSPI_Command_WRITE_SDR, kFLEXSPI_1PAD, 0x01),
 
+    /* Set Drive strength */
+    // DRV[1:0] in 8bit Status Register-3[6:5], there are three Status Registers (1/2/3)
+    // opcode 0x01/0x31/0x11 to write Status Registers (1/2/3)
+    [4 * NOR_CMD_LUT_SEQ_IDX_SETDRIVE] =
+        FLEXSPI_LUT_SEQ(kFLEXSPI_Command_SDR,       kFLEXSPI_1PAD, 0x11, kFLEXSPI_Command_WRITE_SDR, kFLEXSPI_1PAD, 0x01),
+
     /* Read status register - 2 */
     [4 * NOR_CMD_LUT_SEQ_IDX_READREG] =
         FLEXSPI_LUT_SEQ(kFLEXSPI_Command_SDR,       kFLEXSPI_1PAD, 0x35, kFLEXSPI_Command_READ_SDR,  kFLEXSPI_1PAD, 0x01),
@@ -205,7 +211,10 @@ void mfb_flash_set_param_for_winbond(jedec_id_t *jedecID)
             break;
         case 0x65:
             mfb_printf(" -- W25QxxxNE QuadlSPI 1.2V Series.\r\n");
-            g_flashPropertyInfo.mixspiRootClkFreq = kMixspiRootClkFreq_80MHz;
+            g_flashPropertyInfo.mixspiRootClkFreq = kMixspiRootClkFreq_100MHz;
+#if WINBOND_DEVICE_W25QxxxNE
+            g_flashPropertyInfo.flashDriveStrength = WINBOND_FLASH_DRVIE_STRENGTH_100P;
+#endif
             break;
         case 0x70:
             mfb_printf(" -- W25QxxxJV(-IM/JM) QuadlSPI 3.3V Series.\r\n");

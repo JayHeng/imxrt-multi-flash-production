@@ -324,6 +324,15 @@ status_t mixspi_nor_set_dummy_cycle(FLEXSPI_Type *base, uint8_t dummyCmd)
     return mixspi_nor_write_register(base, &regAccess);
 }
 
+status_t mixspi_nor_set_drive_strength(FLEXSPI_Type *base, uint8_t driveCmd)
+{
+    flash_reg_access_t regAccess;
+    regAccess.regNum = 1;
+    regAccess.regSeqIdx = NOR_CMD_LUT_SEQ_IDX_SETDRIVE;
+    regAccess.regValue.U = driveCmd;
+    return mixspi_nor_write_register(base, &regAccess);
+}
+
 status_t mixspi_nor_enable_quad_mode(FLEXSPI_Type *base)
 {
     flash_reg_access_t regAccess;

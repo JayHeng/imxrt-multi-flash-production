@@ -119,7 +119,7 @@ FlexSPI2 pin multiplex options performance specifications:
         <td>S84Mx4<br>
             S104Mx4</td>
         <td>通过<br>
-            回读校验失败</td>
+            通过（100% DRV）</td>
     </tr>
     <tr>
         <td>W25Q64JWSJQ</td>
