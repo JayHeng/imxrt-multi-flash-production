@@ -414,7 +414,8 @@ bool mfb_flash_pattern_verify_test(bool showError)
     //  3. It is 3rd time verify (after QE/QPI/OPI enablment), just verify even failure (ERASE/PROGRAM seq in vendor LUT)
 #if MFB_FLASH_PATTERN_VERIFY_ENABLE
 #if defined(CACHE_MAINTAIN) && CACHE_MAINTAIN
-    DCACHE_InvalidateByRange(EXAMPLE_MIXSPI_AMBA_BASE + MFB_FLASH_ACCESS_REGION_START, MFB_FLASH_ACCESS_REGION_SIZE);
+    DCACHE_CleanInvalidateByRange(EXAMPLE_MIXSPI_AMBA_BASE + MFB_FLASH_ACCESS_REGION_START, MFB_FLASH_ACCESS_REGION_SIZE);
+    __DSB();
 #endif
     for (uint32_t idx = 0; idx < MFB_FLASH_ACCESS_REGION_SIZE / EXAMPLE_FLASH_PAGE_SIZE; idx++)
     {
