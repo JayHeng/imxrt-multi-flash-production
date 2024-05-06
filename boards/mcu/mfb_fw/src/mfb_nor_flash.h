@@ -14,7 +14,7 @@
  * Definitions
  ******************************************************************************/
 
-#define DUMMY_VALUE_INVALID               (0xdeadbeefu)
+#define U32_VALUE_INVALID                 (0xdeadbeefu)
 #define INVALID_JEDEC_ID_0                (0x00u)
 #define INVALID_JEDEC_ID_1                (0xFFu)
    
@@ -70,6 +70,7 @@ typedef struct _flash_property_info
     uint8_t  flashQuadEnableBytes;
     uint8_t  flashEnableOctalCmd;
     uint32_t flashDummyValue;
+    uint32_t flashDriveStrength;
 } flash_property_info_t;
 
 // Flash status/cfg register r/w access helper
@@ -100,6 +101,7 @@ typedef struct _flash_reg_access
 #define NOR_CMD_LUT_SEQ_IDX_ENTEROPI        4
 #define NOR_CMD_LUT_SEQ_IDX_READSTATUS      5
 #define NOR_CMD_LUT_SEQ_IDX_SETDUMMY        6
+#define NOR_CMD_LUT_SEQ_IDX_SETDRIVE        6
 #define NOR_CMD_LUT_SEQ_IDX_WRITEENABLE     7
 #define NOR_CMD_LUT_SEQ_IDX_READREG         8
 #define NOR_CMD_LUT_SEQ_IDX_PAGEPROGRAM     10
@@ -250,6 +252,7 @@ extern const uint32_t g_mixspiRootClkFreqInMHz[];
 extern status_t mixspi_nor_get_jedec_id(MIXSPI_Type *base, uint32_t *jedecId, flash_inst_mode_t flashInstMode);
 extern status_t mixspi_nor_get_cfi_id(MIXSPI_Type *base, cfi_device_id_t *cfiDeviceId);
 extern status_t mixspi_nor_set_dummy_cycle(MIXSPI_Type *base, uint8_t dummyCmd);
+extern status_t mixspi_nor_set_drive_strength(FLEXSPI_Type *base, uint8_t driveCmd);
 extern status_t mixspi_nor_enable_quad_mode(MIXSPI_Type *base);
 extern status_t mixspi_nor_enable_qpi_mode(MIXSPI_Type *base);
 extern status_t mixspi_nor_enable_opi_mode(MIXSPI_Type *base);

@@ -44,6 +44,9 @@
 //  2'b10     | 6(def for SPI) |        104MHz         |         104MHz         |
 //  2'b11     |       8        |        104MHz         |         104MHz         |
 //------------------------------------------------------------------------------
+
+// change driver strength to 100% from 50% to increase Output driving current to improve the load of flash
+#define WINBOND_FLASH_DRVIE_STRENGTH_100P  0x00
 #endif
 
 #if WINBOND_DEVICE_W35T51NW

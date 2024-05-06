@@ -340,7 +340,8 @@ void mfb_main(void)
         g_flashPropertyInfo.mixspiPad = kFLEXSPI_4PAD;
         g_flashPropertyInfo.mixspiRootClkFreq = kMixspiRootClkFreq_100MHz;
         g_flashPropertyInfo.mixspiReadSampleClock = kFLEXSPI_ReadSampleClkLoopbackFromDqsPad;
-        g_flashPropertyInfo.flashDummyValue = DUMMY_VALUE_INVALID;
+        g_flashPropertyInfo.flashDummyValue = U32_VALUE_INVALID;
+        g_flashPropertyInfo.flashDriveStrength = U32_VALUE_INVALID;
         g_flashPropertyInfo.flashQuadEnableBytes = 0;
         /* Get real flash size according to jedec id result (it may not be appliable to some specifal adesto device) */
         g_flashPropertyInfo.flashMemSizeInByte = mfb_flash_decode_common_capacity_id(jedecID.capacityID);
@@ -372,10 +373,16 @@ void mfb_main(void)
             mixspi_nor_flash_init(EXAMPLE_MIXSPI, g_flashPropertyInfo.mixspiCustomLUTVendor, g_flashPropertyInfo.mixspiReadSampleClock, sta_flashInstMode);
             mfb_printf("MFB: FLEXSPI module is initialized to multi-I/O fast read mode.\r\n");
             /* Write dummy cycle value into flash if needed */
-            if (g_flashPropertyInfo.flashDummyValue != DUMMY_VALUE_INVALID)
+            if (g_flashPropertyInfo.flashDummyValue != U32_VALUE_INVALID)
             {
                 mixspi_nor_set_dummy_cycle(EXAMPLE_MIXSPI, (uint8_t)(g_flashPropertyInfo.flashDummyValue & 0xFF));
                 mfb_printf("MFB: Flash register (with dummy cycle) is set to 0x%x.\r\n", g_flashPropertyInfo.flashDummyValue);
+            }
+            /* Write drive strength value into flash if needed */
+            if (g_flashPropertyInfo.flashDriveStrength != U32_VALUE_INVALID)
+            {
+                mixspi_nor_set_drive_strength(EXAMPLE_MIXSPI, (uint8_t)(g_flashPropertyInfo.flashDriveStrength & 0xFF));
+                mfb_printf("MFB: Flash register (with drive strength) is set to 0x%x.\r\n", g_flashPropertyInfo.flashDriveStrength);
             }
             if (!g_flashPropertyInfo.flashIsOctal)
             {
