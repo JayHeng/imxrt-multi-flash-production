@@ -228,7 +228,7 @@
                 <option>
                     <name>CCDefines</name>
                     <state>DEBUG</state>
-                    <state>CPU_MIMXRT1189CVM8A_cm33</state>
+                    <state>CPU_MIMXRT1189CVM8B_cm33</state>
                     <state>PRINTF_FLOAT_ENABLE=0</state>
                     <state>SCANF_FLOAT_ENABLE=0</state>
                     <state>PRINTF_ADVANCED_ENABLE=0</state>
@@ -1333,7 +1333,7 @@
                     <state>DEBUG</state>
                     <state>XIP_EXTERNAL_FLASH=1</state>
                     <state>XIP_BOOT_HEADER_ENABLE=0</state>
-                    <state>CPU_MIMXRT1189CVM8A_cm33</state>
+                    <state>CPU_MIMXRT1189CVM8B_cm33</state>
                     <state>PRINTF_FLOAT_ENABLE=0</state>
                     <state>SCANF_FLOAT_ENABLE=0</state>
                     <state>PRINTF_ADVANCED_ENABLE=0</state>
@@ -2436,7 +2436,7 @@
                 <option>
                     <name>CCDefines</name>
                     <state>NDEBUG</state>
-                    <state>CPU_MIMXRT1189CVM8A_cm33</state>
+                    <state>CPU_MIMXRT1189CVM8B_cm33</state>
                     <state>PRINTF_FLOAT_ENABLE=0</state>
                     <state>SCANF_FLOAT_ENABLE=0</state>
                     <state>PRINTF_ADVANCED_ENABLE=0</state>
@@ -3541,7 +3541,7 @@
                     <state>XIP_EXTERNAL_FLASH=1</state>
                     <state>XIP_BOOT_HEADER_ENABLE=0</state>
                     <state>NDEBUG</state>
-                    <state>CPU_MIMXRT1189CVM8A_cm33</state>
+                    <state>CPU_MIMXRT1189CVM8B_cm33</state>
                     <state>PRINTF_FLOAT_ENABLE=0</state>
                     <state>SCANF_FLOAT_ENABLE=0</state>
                     <state>PRINTF_ADVANCED_ENABLE=0</state>
