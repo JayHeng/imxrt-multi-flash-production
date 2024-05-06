@@ -5,8 +5,8 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-#ifndef _FSL_XBAR_H_
-#define _FSL_XBAR_H_
+#ifndef FSL_XBAR_H_
+#define FSL_XBAR_H_
 
 #include "fsl_common.h"
 
@@ -19,7 +19,7 @@
  * Definitions
  ******************************************************************************/
 
-#define FSL_XBAR_DRIVER_VERSION (MAKE_VERSION(2, 0, 1))
+#define FSL_XBAR_DRIVER_VERSION (MAKE_VERSION(2, 0, 2))
 
 /*!
  * @brief Find the instance index from base address and register offset mappings.
@@ -171,4 +171,4 @@ status_t XBAR_SetOutputSignalConfig(xbar_output_signal_t output, const xbar_cont
 
 /*! @}*/
 
-#endif /* _FSL_XBAR_H_ */
+#endif /* FSL_XBAR_H_ */

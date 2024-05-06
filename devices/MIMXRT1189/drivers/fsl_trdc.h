@@ -5,8 +5,8 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-#ifndef _FSL_TRDC_H_
-#define _FSL_TRDC_H_
+#ifndef FSL_TRDC_H_
+#define FSL_TRDC_H_
 
 #include "fsl_common.h"
 
@@ -18,7 +18,7 @@
 /******************************************************************************
  * Definitions
  *****************************************************************************/
-#define FSL_TRDC_DRIVER_VERSION (MAKE_VERSION(2, 2, 0))
+#define FSL_TRDC_DRIVER_VERSION (MAKE_VERSION(2, 3, 0))
 
 /* Hardware configuration definitions */
 /*!
@@ -74,8 +74,8 @@ typedef enum _trdc_pid_domain_hit_config
 {
     kTRDC_pidDomainHitNone0,     /*!< No PID is included in the domain hit evaluation. */
     kTRDC_pidDomainHitNone1,     /*!< No PID is included in the domain hit evaluation. */
-    kTRDC_pidDomainHitInclusive, /*!< The PID is included in the domain hit evaluation when (PID & ~PIDM). */
-    kTRDC_pidDomainHitExclusive, /*!< The PID is included in the domain hit evaluation when ~(PID & ~PIDM). */
+    kTRDC_pidDomainHitInclusive, /*!< Domain hit when all the bits in PID is masked by the pidMask. */
+    kTRDC_pidDomainHitExclusive, /*!< Domain hit when not all the bits in PID is masked by the pidMask. */
 } trdc_pid_domain_hit_config_t;
 #endif
 
@@ -695,6 +695,31 @@ void TRDC_GetDefaultNonProcessorDomainAssignment(trdc_non_processor_domain_assig
 
 #if defined(FSL_FEATURE_TRDC_PROCESSOR_MASTER_COUNT) && (FSL_FEATURE_TRDC_PROCESSOR_MASTER_COUNT > 1)
 /*!
+ * brief Sets the current Process identifier(PID) for processor core.
+ *
+ * Each processor has a corresponding process identifier (PID) which can be used to group tasks into different domains.
+ * Secure privileged software saves and restores the PID as part of any context switch.
+ *
+ * param base TRDC peripheral base address.
+ * param master Which processor master to configure, refer to trdc_master_t in processor header file.
+ * param pidConfig Pointer to the configuration structure.
+ */
+void TRDC_SetPid(TRDC_Type *base, uint8_t master, const trdc_pid_config_t *pidConfig);
+
+/*!
+ * @brief Gets the bit map of the bus master(s) that is(are) sourcing a PID register.
+ *
+ * This function sets the non-processor master domain assignment as valid.
+ *
+ * @param base TRDC peripheral base address.
+ * @return the bit map of the master(s). Bit 1 sets indicates bus master 1.
+ */
+static inline uint64_t TRDC_GetActiveMasterPidMap(TRDC_Type *base)
+{
+    return ((uint64_t)base->TRDC_HWCFG3 << 32U) | (uint64_t)base->TRDC_HWCFG2;
+}
+
+/*!
  * @brief Sets the processor bus master domain assignment.
  *
  * This function sets the processor master domain assignment as valid.
@@ -749,6 +774,51 @@ void TRDC_SetProcessorDomainAssignment(TRDC_Type *base,
 void TRDC_SetProcessorDomainAssignment(TRDC_Type *base, const trdc_processor_domain_assignment_t *domainAssignment);
 #endif
 
+#if defined(FSL_FEATURE_TRDC_PROCESSOR_MASTER_COUNT) && (FSL_FEATURE_TRDC_PROCESSOR_MASTER_COUNT > 1)
+/*!
+ * @brief Enables the processor bus master domain assignment.
+ *
+ * @param base TRDC peripheral base address.
+ * @param master Which master to configure, refer to trdcx_master_t in processor header file, x is trdc instance.
+ * @param regNum Which register to configure, processor master can have more than one register.
+ * @param enable True to enable, false to disable.
+ */
+static inline void TRDC_EnableProcessorDomainAssignment(TRDC_Type *base, uint8_t master, uint8_t regNum, bool enable)
+#else
+/*!
+ * @brief Enables the processor bus master domain assignment.
+ *
+ * @param base TRDC peripheral base address.
+ * @param enable True to enable, false to disable.
+ */
+static inline void TRDC_EnableProcessorDomainAssignment(TRDC_Type *base, bool enable)
+#endif
+{
+#if defined(FSL_FEATURE_TRDC_PROCESSOR_MASTER_COUNT) && (FSL_FEATURE_TRDC_PROCESSOR_MASTER_COUNT > 1)
+    /* Make sure the master number does not exceed the max master count. */
+    assert(master < ((base->TRDC_HWCFG0 & TRDC_TRDC_HWCFG0_NMSTR_MASK) >> TRDC_TRDC_HWCFG0_NMSTR_SHIFT));
+    /* Make sure the master is a processor master. */
+    assert(0U == (base->DACFG[master] & TRDC_DACFG_NCM_MASK));
+    if (enable)
+    {
+        base->MDA_DFMT0[master].MDA_W_DFMT0[regNum] |= TRDC_MDA_W_DFMT0_VLD_MASK;
+    }
+    else
+    {
+        base->MDA_DFMT0[master].MDA_W_DFMT0[regNum] &= ~TRDC_MDA_W_DFMT0_VLD_MASK;
+    }
+#else
+    if (enable)
+    {
+        base->MDA_W0_0_DFMT0 |= TRDC_MDA_W0_0_DFMT0_VLD_MASK;
+    }
+    else
+    {
+        base->MDA_W0_0_DFMT0 &= ~TRDC_MDA_W0_0_DFMT0_VLD_MASK;
+    }
+#endif
+}
+
 /*!
  * @brief Sets the non-processor bus master domain assignment.
  *
@@ -774,21 +844,6 @@ void TRDC_SetProcessorDomainAssignment(TRDC_Type *base, const trdc_processor_dom
 void TRDC_SetNonProcessorDomainAssignment(TRDC_Type *base,
                                           uint8_t master,
                                           const trdc_non_processor_domain_assignment_t *domainAssignment);
-
-#if defined(FSL_FEATURE_TRDC_PROCESSOR_MASTER_COUNT) && (FSL_FEATURE_TRDC_PROCESSOR_MASTER_COUNT > 1)
-/*!
- * @brief Gets the bit map of the bus master(s) that is(are) sourcing a PID register.
- *
- * This function sets the non-processor master domain assignment as valid.
- *
- * @param base TRDC peripheral base address.
- * @return the bit map of the master(s). Bit 1 sets indicates bus master 1.
- */
-static inline uint64_t TRDC_GetActiveMasterPidMap(TRDC_Type *base)
-{
-    return ((uint64_t)base->TRDC_HWCFG3 << 32U) | (uint64_t)base->TRDC_HWCFG2;
-}
-#endif
 
 /* @} */
 
@@ -979,7 +1034,7 @@ static inline void TRDC_SetMrcGlobalValid(TRDC_Type *base)
  */
 static inline uint8_t TRDC_GetMrcRegionNumber(TRDC_Type *base, uint8_t mrcIdx)
 {
-    return ((base->MRC_INDEX[mrcIdx].MRC_GLBCFG & TRDC_MRC_GLBCFG_NRGNS_MASK) >> TRDC_MRC_GLBCFG_NRGNS_SHIFT);
+    return (uint8_t)((base->MRC_INDEX[mrcIdx].MRC_GLBCFG & TRDC_MRC_GLBCFG_NRGNS_MASK) >> TRDC_MRC_GLBCFG_NRGNS_SHIFT);
 }
 
 /*!
@@ -1048,9 +1103,9 @@ void TRDC_MrcRegionNseClear(TRDC_Type *base, uint8_t mrcIdx, uint16_t regionMask
  *
  * @param base TRDC peripheral base address.
  * @param mrcIdx MRC index.
- * @param domianMask Bit mask of the domians whose NSE bits to clear.
+ * @param domainMask Bit mask of the domians whose NSE bits to clear.
  */
-void TRDC_MrcDomainNseClear(TRDC_Type *base, uint8_t mrcIdx, uint16_t domianMask);
+void TRDC_MrcDomainNseClear(TRDC_Type *base, uint8_t mrcIdx, uint16_t domainMask);
 
 /*!
  * @brief Sets the configuration for one of the region descriptor per domain per MRC instnce.
@@ -1181,4 +1236,4 @@ void TRDC_MbcSetMemoryBlockConfig(TRDC_Type *base, const trdc_mbc_memory_block_c
  * @}
  */
 
-#endif /* _FSL_TRDC_H_ */
+#endif /* FSL_TRDC_H_ */

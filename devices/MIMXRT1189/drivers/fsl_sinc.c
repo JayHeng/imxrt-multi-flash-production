@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 NXP
+ * Copyright 2022-2023 NXP
  *
  * All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause
@@ -82,13 +82,13 @@ void SINC_Init(SINC_Type *base, const sinc_config_t *config)
     /* Set clock configuration. */
     SINC_SetClkPrescale(base, config->clockPreDivider);
     SINC_SetModulatorClockDivider(base, config->modClkDivider);
-    SINC_DisableModulatorClockOutput(base, kSINC_ModClk0, config->disableModClk0Output);
-    SINC_DisableModulatorClockOutput(base, kSINC_ModClk1, config->disableModClk1Output);
-    SINC_DisableModulatorClockOutput(base, kSINC_ModClk2, config->disableModClk2Output);
+    SINC_DisableModulatorClockOutput(base, (uint32_t)kSINC_ModClk0, config->disableModClk0Output);
+    SINC_DisableModulatorClockOutput(base, (uint32_t)kSINC_ModClk1, config->disableModClk1Output);
+    SINC_DisableModulatorClockOutput(base, (uint32_t)kSINC_ModClk2, config->disableModClk2Output);
 
     SINC_DisableDozeMode(base, config->disableDozeMode);
 
-    for (i = 0U; i < 4U; i++)
+    for (i = 0U; i < (uint8_t)SINC_CHANNEL_COUNT; i++)
     {
         if (config->channelsConfigArray[i] != NULL)
         {
@@ -98,14 +98,33 @@ void SINC_Init(SINC_Type *base, const sinc_config_t *config)
 
     SINC_EnableMaster(base, config->enableMaster);
     if ((config->disableModClk0Output == false) && (config->enableMaster == true))
-        while (!SINC_CheckModulatorClockReady(base, kSINC_ModClk0))
+    {
+        while (!SINC_CheckModulatorClockReady(base, (uint32_t)kSINC_ModClk0))
+        {
+            /* Loop until Modulator clock 0 is ready. */
             ;
-    if ((config->disableModClk1Output == false) && (config->enableMaster == true))
-        while (!SINC_CheckModulatorClockReady(base, kSINC_ModClk1))
+        }
+    }
+    else if ((config->disableModClk1Output == false) && (config->enableMaster == true))
+    {
+        while (!SINC_CheckModulatorClockReady(base, (uint32_t)kSINC_ModClk1))
+        {
+            /* Loop until Modulator clock 0 is ready. */
             ;
-    if ((config->disableModClk2Output == false) && (config->enableMaster == true))
-        while (!SINC_CheckModulatorClockReady(base, kSINC_ModClk2))
+        }
+    }
+    else if ((config->disableModClk2Output == false) && (config->enableMaster == true))
+    {
+        while (!SINC_CheckModulatorClockReady(base, (uint32_t)kSINC_ModClk2))
+        {
+            /* Loop until Modulator clock 0 is ready. */
             ;
+        }
+    }
+    else
+    {
+        /* Added comments to avoid violations of MISRA C-2012 rules. */
+    }
 }
 
 /*!
@@ -134,7 +153,7 @@ void SINC_Deinit(SINC_Type *base)
  *     config->disableModClk1Output = false;
  *     config->disableModClk2Output = false;
  *
- *     config->channelsConfigArray[4] = {NULL, NULL, NULL, NULL};
+ *     config->channelsConfigArray[SINC_CHANNEL_COUNT] = {NULL, NULL, NULL, NULL};
  *
  *     config->disableDozeMode      = false;
  *     config->enableMaster         = false;
@@ -153,10 +172,10 @@ void SINC_GetDefaultConfig(sinc_config_t *config)
     config->disableModClk1Output = false;
     config->disableModClk2Output = false;
 
-    config->channelsConfigArray[0] = NULL;
-    config->channelsConfigArray[1] = NULL;
-    config->channelsConfigArray[2] = NULL;
-    config->channelsConfigArray[3] = NULL;
+    for (uint8_t i = 0U; i < (uint8_t)SINC_CHANNEL_COUNT; i++)
+    {
+        config->channelsConfigArray[i] = NULL;
+    }
 
     config->disableDozeMode = false;
     config->enableMaster    = false;
@@ -282,12 +301,12 @@ void SINC_SetChannelProtectionOption(SINC_Type *base,
         if (chProtection->bEnableLmtBreakSignal)
         {
             base->CHANNEL[(uint8_t)chId].CPROT |=
-                ((chProtection->limitDetectorMode & 0x1CUL >> 2UL) << SINC_CPROT_LLMTBK_SHIFT);
+                (((((uint32_t)(chProtection->limitDetectorMode)) & 0x1CUL) >> 2UL) << SINC_CPROT_LLMTBK_SHIFT);
         }
         else
         {
             base->CHANNEL[(uint8_t)chId].CPROT &=
-                ~((chProtection->limitDetectorMode & 0x1CUL >> 2UL) << SINC_CPROT_LLMTBK_SHIFT);
+                ~(((((uint32_t)(chProtection->limitDetectorMode)) & 0x1CUL) >> 2UL) << SINC_CPROT_LLMTBK_SHIFT);
         }
         base->CHANNEL[(uint8_t)chId].CCR |= SINC_CCR_LMTEN_MASK;
     }

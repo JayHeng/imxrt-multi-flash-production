@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 NXP
+ * Copyright 2021-2023 NXP
  * All rights reserved.
  *
  *
@@ -22,8 +22,8 @@
 
 /*! @name Driver version */
 /*@{*/
-/*! @brief GPC driver version 2.0.0. */
-#define FSL_GPC_RIVER_VERSION (MAKE_VERSION(2, 0, 0))
+/*! @brief GPC driver version 2.1.0. */
+#define FSL_GPC_RIVER_VERSION (MAKE_VERSION(2, 1, 0))
 /*! @}*/
 
 #define GPC_RESERVED_USE_MACRO 0xFFFFFFFFU
@@ -375,6 +375,46 @@ static inline bool GPC_CM_GetSystemSleepModeStatus(gpc_cpu_slice_t slice, uint32
  *            - \b false This step is disabled, GPC will skip this step and not send any request.
  */
 void GPC_SS_EnableSystemSleepTransitionStep(GPC_SYS_SLEEP_CTRL_Type *base, gpc_ss_tran_step_t step, bool enable);
+
+/*!
+ * @brief Trigger PMIC standby ON/OFF by software.
+ *
+ * @param base PMIC module base address.
+ * @param enable Trigger on/off PMIC standby.
+ *			- \b true Trigger PMIC standby ON.
+ *			- \b false Trigger PMIC standby OFF.
+ */
+static inline void GPC_SS_SoftwareTriggerPMICStandby(GPC_SYS_SLEEP_CTRL_Type *base, bool enable)
+{
+    if (enable)
+    {
+        base->PMIC_CTRL |= GPC_SYS_SLEEP_CTRL_PMIC_CTRL_PMIC_STBY_SOFT_MASK;
+    }
+    else
+    {
+        base->PMIC_CTRL &= ~GPC_SYS_SLEEP_CTRL_PMIC_CTRL_PMIC_STBY_SOFT_MASK;
+    }
+}
+
+/*!
+ * brief Assert the PMIC standby request when system sleep.
+ *
+ * @param base PMIC module base address.
+ * @param enable Assert PMIC standby request or not.
+ *			- \b true Assert PMIC_STBY_REQ when system sleep is entered.
+ *			- \b false Do not assert PMIC_STBY_REQ when system sleep is entered.
+ */
+static inline void GPC_SS_SystemSleepTriggerPMICStandby(GPC_SYS_SLEEP_CTRL_Type *base, bool enable)
+{
+    if (enable)
+    {
+        base->PMIC_CTRL |= GPC_SYS_SLEEP_CTRL_PMIC_CTRL_PMIC_STBY_EN_MASK;
+    }
+    else
+    {
+        base->PMIC_CTRL &= ~GPC_SYS_SLEEP_CTRL_PMIC_CTRL_PMIC_STBY_EN_MASK;
+    }
+}
 
 /*!
  * @}

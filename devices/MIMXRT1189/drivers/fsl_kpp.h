@@ -4,8 +4,8 @@
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
-#ifndef _FSL_KPP_H_
-#define _FSL_KPP_H_
+#ifndef FSL_KPP_H_
+#define FSL_KPP_H_
 
 #include "fsl_common.h"
 
@@ -177,4 +177,4 @@ void KPP_keyPressScanning(KPP_Type *base, uint8_t *data, uint32_t clockSrc_Hz);
 
 /*! @}*/
 
-#endif /* _FSL_KPP_H_*/
+#endif /* FSL_KPP_H_*/

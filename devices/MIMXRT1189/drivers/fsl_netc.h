@@ -1,11 +1,11 @@
 /*
- * Copyright 2021-2022 NXP
+ * Copyright 2021-2023 NXP
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-#ifndef _FSL_NETC_H_
-#define _FSL_NETC_H_
+#ifndef FSL_NETC_H_
+#define FSL_NETC_H_
 
 #include "fsl_common.h"
 #if defined(FSL_ETH_ENABLE_CACHE_CONTROL)
@@ -26,8 +26,31 @@
  * @{
  */
 
+/*!
+ * @defgroup netc_abbrev Abbreviation in NETC driver
+ * @details Abbreviation list in NETC driver
+ *   - UC: unicast
+ *   - BC: broadcast
+ *   - MC: multicast
+ *   - IPF: ingress port filter
+ *   - VlanC: Vlan classification
+ *   - QosC: Qos Classification
+ *   - FRER: Frame Replication and Elimination for Reliability
+ *   - PSFP: Per-stream Filtering and Policing
+ *   - FM: Frame Modification
+ *   - SGI: Stream Gate Instance
+ *   - SGC: Stream Gate Control List
+ *   - ISI: Ingress Stream Identification
+ *   - ISC: Ingress stream count
+ *   - IS: Ingress Stream Table
+ *   - VF: Vlan Filter
+ *   - MF: Mac Filter
+ *   - EM: Extract Match
+ * @ingroup netc
+ */
+
 /*! @brief Driver Version */
-#define FSL_NETC_DRIVER_VERSION (MAKE_VERSION(2, 2, 1))
+#define FSL_NETC_DRIVER_VERSION (MAKE_VERSION(2, 6, 1))
 
 /*! @brief Macro to divides an address into a low 32 bits and a possible high 32 bits */
 #define NETC_ADDR_LOW_32BIT(x)  ((uint32_t)(x)&0xFFFFFFFFU)
@@ -44,7 +67,9 @@ enum
         MAKE_STATUS(kStatusGroup_NETC, 4), /*!< Lack of resources to configure certain features. */
     kStatus_NETC_Unsupported      = MAKE_STATUS(kStatusGroup_NETC, 5), /*!< Unsupported operation/feature. */
     kStatus_NETC_RxHRZeroFrame    = MAKE_STATUS(kStatusGroup_NETC, 6), /*!< Rx frame host reason is zero */
-    kStatus_NETC_RxHRNotZeroFrame = MAKE_STATUS(kStatusGroup_NETC, 7)  /*!< Rx frame host reason is not zero */
+    kStatus_NETC_RxHRNotZeroFrame = MAKE_STATUS(kStatusGroup_NETC, 7),  /*!< Rx frame host reason is not zero */
+    kStatus_NETC_NotFound         = MAKE_STATUS(kStatusGroup_NETC, 8),  /*!< No entry found in hardware tables */
+    kStatus_NETC_EntryExists      = MAKE_STATUS(kStatusGroup_NETC, 9)  /*!< An entry already exists in hardware tables */
 };
 
 /*! @brief Defines the common interrupt event for callback use. */
@@ -192,29 +217,6 @@ typedef enum _netc_tx_ext_flags
 #pragma endregion netc
 #endif
 
-/*!
- * @defgroup netc_abbrev Abbreviation in NETC driver
- * @details Abbreviation list in NETC driver
- *   - UC: unicast
- *   - BC: broadcast
- *   - MC: multicast
- *   - IPF: ingress port filter
- *   - VlanC: Vlan classification
- *   - QosC: Qos Classification
- *   - FRER: Frame Replication and Elimination for Reliability
- *   - PSFP: Per-stream Filtering and Policing
- *   - FM: Frame Modification
- *   - SGI: Stream Gate Instance
- *   - SGC: Stream Gate Control List
- *   - ISI: Ingress Stream Identification
- *   - ISC: Ingress stream count
- *   - IS: Ingress Stream Table
- *   - VF: Vlan Filter
- *   - MF: Mac Filter
- *   - EM: Extract Match
- * @ingroup netc
- */
-
 #if !(defined(__GNUC__) || defined(__ICCARM__))
 #pragma region netc_hw
 #endif
@@ -239,14 +241,6 @@ typedef enum _netc_hw_switch_idx
     kNETC_SWITCH0, /*!< SWITCH hardware 0 */
 } netc_hw_switch_idx_t;
 
-/*! @brief Station interface index enumerator */
-typedef enum _netc_hw_si_idx
-{
-    kNETC_ENETC0PSI0 = (0U << 8U) | (0U << 4U) | 0U, /*!< ENETC0 PSI0, index 0 */
-    kNETC_ENETC1PSI0 = (1U << 8U) | (0U << 4U) | 1U, /*!< ENETC1 PSI0, index 1 */
-    kNETC_ENETC1VSI1 = (1U << 8U) | (1U << 4U) | 2U, /*!< ENETC1 VSI1, index 2 */
-} netc_hw_si_idx_t;
-
 /*! @brief Port Resource for the NETC module */
 typedef enum _netc_hw_port_idx
 {
@@ -258,16 +252,6 @@ typedef enum _netc_hw_port_idx
     kNETC_SWITCH0Port3 = 3U, /*!< MAC port3 for SWITCH */
     kNETC_SWITCH0Port4 = 4U, /*!< Pseudo port4 for SWITCH */
 } netc_hw_port_idx_t;
-
-/*! @brief Ethernet MAC port resource for the NETC module */
-typedef enum _netc_hw_eth_port_idx
-{
-    kNETC_ENETC0EthPort   = 0U, /*!< Ethernet MAC port for ENETC0 */
-    kNETC_SWITCH0EthPort0 = 1U, /*!< Ethernet MAC port0 for SWITCH */
-    kNETC_SWITCH0EthPort1 = 2U, /*!< Ethernet MAC port1 for SWITCH */
-    kNETC_SWITCH0EthPort2 = 3U, /*!< Ethernet MAC port2 for SWITCH */
-    kNETC_SWITCH0EthPort3 = 4U, /*!< Ethernet MAC port3 for SWITCH */
-} netc_hw_eth_port_idx_t;
 
 /*! @brief Traffic class enumerator */
 typedef enum _netc_hw_tc_idx
@@ -331,6 +315,7 @@ typedef enum _netc_hw_congestion_group_idx
 /*! @brief Defines the MII/RGMII mode for data interface between the MAC and the PHY. */
 typedef enum _netc_hw_mii_mode
 {
+    kNETC_XgmiiMode = 0U, /*!< XGMII mode for data interface. */
     kNETC_MiiMode   = 1U, /*!< MII mode for data interface. */
     kNETC_GmiiMode  = 2U, /*!< GMII mode for data interface. */
     kNETC_RmiiMode  = 3U, /*!< RMII mode for data interface. */
@@ -342,7 +327,10 @@ typedef enum _netc_hw_mii_speed
 {
     kNETC_MiiSpeed10M   = 0U, /*!< Speed 10 Mbps. */
     kNETC_MiiSpeed100M  = 1U, /*!< Speed 100 Mbps. */
-    kNETC_MiiSpeed1000M = 2U  /*!< Speed 1000 Mbps. */
+    kNETC_MiiSpeed1000M = 2U, /*!< Speed 1000 Mbps. */
+    kNETC_MiiSpeed2500M = 3U, /*!< Speed 2500 Mbps. */
+    kNETC_MiiSpeed5G    = 4U, /*!< Speed 5Gbps. */
+    kNETC_MiiSpeed10G   = 5U, /*!< Speed 10Gbps Mbps. */
 } netc_hw_mii_speed_t;
 
 /*! @brief Defines the half or full duplex for the MII data interface. */
@@ -433,14 +421,6 @@ typedef struct _netc_enetc_discard_statistic
     uint32_t multicastVlanFilt; /*!< Multicast frame discard count due to VLAN filtering */
     uint32_t boradcastVlanFilt; /*!< Broadcast frame discard count due to VLAN filtering */
 } netc_enetc_port_discard_statistic_t;
-
-/*! @brief ENETC Port Ingress Congestion Management config */
-typedef struct _netc_icm_config_t
-{
-    // Note High/Low priority HTA CBS config is bypassed. It is not per-port
-    uint32_t pauseOnThresh; /*!< PPAUOFFTR */
-    uint32_t pauseOffThres; /*!< PPAUONTR */
-} netc_enetc_port_icm_config_t;
 
 /*! @brief ENETC Port outer/inner native VLAN config */
 typedef struct _netc_enetc_native_vlan_config_t
@@ -596,6 +576,8 @@ typedef struct _netc_port_tx_tc_config
 {
     bool enPreemption : 1; /*!< Frames from traffic class are transmitted on the preemptable MAC, not supported on
                           internal port (ENETC 1 port and Switch port 4)*/
+    bool enTcGate : 1; /*!< Enable the traffic class gate when no gate control list is operational, or when time gate
+                            scheduling is disabled. */
     bool enableTsd : 1;    /*!< Enable Time Specific Departure traffic class, only applicable to ENETC */
     bool enableCbs : 1;    /*!< Enable Credit based shaper for traffic class  */
     netc_port_tc_sdu_config_t sduCfg;
@@ -662,8 +644,10 @@ typedef struct _netc_port_ethmac
 {
     bool enableRevMii : 1;                /*!< Enable RevMII mode. */
     netc_port_ts_select_t txTsSelect : 1; /*!< Tx timestamp clock source. */
+    bool isTsPointPhy : 1; /*!< True: Timestamp is captured based on PHY SFD detect pulse on Rx and Tx for 2-step timestamping.
+                                False: Based on SFD detect at boundary of MAC merge layer and pins/protocol gaskets. */
     netc_hw_mii_mode_t miiMode : 3;       /*!< MII mode. */
-    netc_hw_mii_speed_t miiSpeed : 2;     /*!< MII Speed. */
+    netc_hw_mii_speed_t miiSpeed : 3;     /*!< MII Speed. */
     netc_hw_mii_duplex_t miiDuplex : 1;   /*!< MII duplex. */
     bool enTxPad : 1; /*!< Enable ETH MAC Tx Padding, which will pad the frame to a minimum of 60 bytes and append 4
                          octets of FCS. */
@@ -676,12 +660,19 @@ typedef struct _netc_port_ethmac
     uint8_t mergeVerifyTime : 7; /*!< The nominal wait time between verification attempts in milliseconds, range in 1 ~
                                     128 */
     netc_hw_preemption_mode_t preemptMode : 2; /*!< When set to not zero, PMAC frames may be preempted by EMAC frames */
+    bool rgmiiClkStop : 1; /*!< True: RGMII transmit clock is stoppable during low power idle. False: It's not stoppable. */
 #if !(defined(FSL_FEATURE_NETC_HAS_ERRATA_051255) && FSL_FEATURE_NETC_HAS_ERRATA_051255)
     bool enOneStepTS : 1;        /*!< Enable IEEE-1588 Single-Step timestamp */
     bool enChUpdate : 1;         /*!< Enable correction UDP checksum when enable Single-Step timestamp */
     uint16_t oneStepOffset : 10; /*!< Start offset from the beginning of a frame where the field to update is found
                                     (index to MS byte) */
 #endif
+    bool enableHalfDuplexFlowCtrl : 1; /*!< Enable/Disable half-duplex flow control. */
+    uint16_t maxBackPressOn; /*!< Maximum amount of time backpressure can stay asserted before stopping to prevent excess
+                                     defer on link partner, in byte times. */
+    uint16_t minBackPressOff; /*!< Minimum amount of time backpressure will stay off after reaching the ON max, before
+                                      backpressure can reassert after checking if icm_pause_notification is still or again
+                                      asserted, in byte times. */
 } netc_port_ethmac_t;
 
 /*! @brief Defines the Port's Stream Gate Open Gate Check mode. */
@@ -702,7 +693,10 @@ typedef struct _netc_port_common
     uint8_t rxPpduBco;   /*!< Port receive PPDU Byte count overhead which includes IPG, SFD and Preamble */
     uint8_t txMacsecBco; /*!< Port transmit MACSec byte count overhead which due to MACSec encapsulation */
     uint8_t txPpduBco;   /*!< Port transmit PPDU Byte count overhead which includes IPG, SFD and Preamble */
-    bool stompFcs : 1;   /*!< Enable stomp the FCS error frame, not effective on ports connected to a pseudo-MAC */
+#if (defined(FSL_FEATURE_NETC_HAS_PORT_FCSEA) && FSL_FEATURE_NETC_HAS_PORT_FCSEA)
+    bool stompFcs : 1; /*!< Enable stomp the FCS error frame, not effective on ports connected to a pseudo-MAC, only
+                          applies to device with ASIL-B safety requirements */
+#endif
     netc_port_sg_ogc_mode_t ogcMode : 1; /*!< Stream Gate Open Gate Check mode, 0b is check whether SFD is within the
                          open gate interval, 1b is check whether the entire frame is within the open gate interval */
     uint32_t pDelay : 24;                /*!< Link propagation delay in ns */
@@ -727,12 +721,12 @@ typedef struct _netc_port_common
  */
 
 /*! @brief Defines the Ethernet MAC physical port type. */
-typedef enum _netc_port_phy_mac_tpye
+typedef enum _netc_port_phy_mac_type
 {
     kNETC_ExpressMAC = 0U, /*!< The MAC which handles express traffic when frame preemption is enabled or handles all
-                              traffic when frame preemption is disabled. */
+                                traffic when frame preemption is disabled. */
     kNETC_PreemptableMAC   /*!< The MAC which handles preemptive traffic when frame preemption is enabled. */
-} netc_port_phy_mac_tpye_t;
+} netc_port_phy_mac_type_t;
 
 /*! @brief Definesthe state of the mac merge sublayer with respect to verification as defined in IEEE Std 802.3br-2016.
  */
@@ -880,6 +874,7 @@ typedef enum _netc_tb_access_mode
     kNETC_TernaryKeyMatch    /*!< Ternary Match Key Element Match */
 } netc_tb_access_mode_t;
 
+/*! @brief NTMP version */
 typedef enum _netc_cbd_version
 {
     kNETC_NtmpV1_0 = 0U, /*!< NTMP Version 1.0 */
@@ -2300,6 +2295,12 @@ typedef struct _netc_tb_vf_cfge
     uint32_t baseETEID; /*!< Base Egress Treatment Entry ID for the secondary Egress Treatment group */
 } netc_tb_vf_cfge_t;
 
+/*! @brief Vlan Filter table search criteria format */
+typedef struct _netc_tb_vf_search_criteria
+{
+    uint32_t resumeEntryId; /*!< Resume Entry ID, when starting a search, pass the NULL Entry ID. */
+} netc_tb_vf_search_criteria_t;
+
 /*! @brief Vlan Filter table request data buffer */
 typedef struct _netc_tb_vf_req_data
 {
@@ -2307,7 +2308,7 @@ typedef struct _netc_tb_vf_req_data
     union
     {
         uint32_t entryID;
-        uint32_t sCriteria; /*!< Resume Entry ID, when starting a search, pass the NULL Entry ID. */
+        netc_tb_vf_search_criteria_t sCriteria; /*!< Active when access method is kNETC_Search */
         netc_tb_vf_keye_t keye;
     };
     netc_tb_vf_cfge_t cfge; /*!< Present only for update or add commands */
@@ -2401,33 +2402,33 @@ typedef struct _netc_tb_fdb_acte
 } netc_tb_fdb_acte_t;
 
 /*! @brief FDB table search criteria Key Element Match Criteria */
-typedef enum _etc_tb_fdb_sc_keye_mc
+typedef enum _netc_tb_fdb_sc_keye_mc
 {
     kNETC_FDBKeyeMacthAny          = 0x0, /*!< Match any Key Element Criteria */
     kNETC_FDBKeyeMacthFID          = 0x1, /*!< Match Key Element FID */
     kNETC_FDBKeyeMacthMacMulticast = 0x2, /*!< Match Key Element MAC Multicast bit (MAC_ADDR most
                                                 significant byte's least significant bit) */
     kNETC_FDBKeyeMacthBoth = 0x3          /*!< Match both FID field and MAC Multicast bit */
-} etc_tb_fdb_sc_keye_mc_t;
+} netc_tb_fdb_sc_keye_mc_t;
 
 /*! @brief FDB table search criteria Configuration Element Match Criteria */
-typedef enum _etc_tb_fdb_sc_cfge_mc
+typedef enum _netc_tb_fdb_sc_cfge_mc
 {
     kNETC_FDBCfgeMacthAny        = 0x0, /*!< Match any Configuration Element Criteria */
     kNETC_FDBCfgeMacthDynamic    = 0x1, /*!< Match Configuration Element dynamic field */
     kNETC_FDBCfgeMacthPortBitmap = 0x2, /*!< Match Configuration Element portBitmap field */
     kNETC_FDBCfgeMacthBoth       = 0x3  /*!< Match both dynamic field and portBitmap */
-} etc_tb_fdb_sc_cfge_mc_t;
+} netc_tb_fdb_sc_cfge_mc_t;
 
 /*! @brief FDB table search criteria Activity Element Match Criteria */
-typedef enum _etc_tb_fdb_sc_acte_mc
+typedef enum _netc_tb_fdb_sc_acte_mc
 {
     kNETC_FDBActeMacthAny   = 0x0, /*!< Match any Activity Element Criteria */
     kNETC_FDBActeMatchExact = 0x1  /*!<  Exact match with Activity Element */
-} etc_tb_fdb_sc_acte_mc_t;
+} netc_tb_fdb_sc_acte_mc_t;
 
 /*! @brief FDB table search criteria format */
-typedef struct _etc_tb_fdb_search_criteria
+typedef struct _netc_tb_fdb_search_criteria
 {
     uint32_t resumeEntryId;  /*!< Resume Entry ID, pass the NULL Entry ID when starting a search */
     netc_tb_fdb_keye_t keye; /*!< Key Element data which used to match against the table entries */
@@ -2435,11 +2436,11 @@ typedef struct _etc_tb_fdb_search_criteria
     struct
     {
         netc_tb_fdb_acte_t acte;            /*!< Activity Element data which used to match against the table entries */
-        etc_tb_fdb_sc_keye_mc_t keyeMc : 2; /*!< Key Element data match criteria */
+        netc_tb_fdb_sc_keye_mc_t keyeMc : 2; /*!< Key Element data match criteria */
         uint8_t : 6;
-        etc_tb_fdb_sc_cfge_mc_t cfgeMc : 3; /*!< Configuration Element data match criteria */
+        netc_tb_fdb_sc_cfge_mc_t cfgeMc : 3; /*!< Configuration Element data match criteria */
         uint8_t : 5;
-        etc_tb_fdb_sc_acte_mc_t acteMc : 1; /*!< Activity Element data match criteria */
+        netc_tb_fdb_sc_acte_mc_t acteMc : 1; /*!< Activity Element data match criteria */
         uint8_t : 7;
     };
 } netc_tb_fdb_search_criteria_t;
@@ -2833,6 +2834,11 @@ typedef struct _netc_tb_tgs_req_data
     netc_tb_tgs_cfge_t cfge; /*!< Present only for commands which perform a update */
 } netc_tb_tgs_req_data_t;
 
+#if (defined(__CC_ARM) || defined(__ARMCC_VERSION))
+/* Ignore the "field with variable sized type not at the end of a struct or class" warning. */
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wgnu-variable-sized-type-not-at-end"
+#endif
 /*! @brief Time Gate Scheduling table request response data buffer */
 typedef struct _netc_tb_tgs_rsp_data
 {
@@ -2842,6 +2848,9 @@ typedef struct _netc_tb_tgs_rsp_data
     netc_tb_tgs_cfge_t cfge; /*!< Present only for commands which perform a query */
     netc_tb_tgs_olse_t olse; /*!< Present only for commands which perform a query */
 } netc_tb_tgs_rsp_data_t;
+#if (defined(__CC_ARM) || defined(__ARMCC_VERSION))
+#pragma clang diagnostic pop
+#endif
 
 /*! @brief Time Gate Scheduling table data buffer, set with max size */
 typedef struct _netc_tb_tgs_data
@@ -3506,15 +3515,6 @@ typedef struct _netc_si_config
     uint32_t tcBWWeight; /*!< SI traffic class bandwidth weight. */
 } netc_si_config_t;
 
-/*! @brief Configure SI vlan offload - Insert/Removal. */
-typedef struct _netc_si_vlan_offload_config
-{
-    bool en;
-    bool enInsert;
-    bool enRemoval;
-    netc_vlan_t vlan;
-} netc_si_vlan_offload_config_t;
-
 /*!
  * @brief Transmit Buffer Descriptor format.
  *
@@ -3968,4 +3968,4 @@ extern "C" {
 #if defined(__cplusplus)
 }
 #endif
-#endif /* _FSL_NETC_H_ */
+#endif /* FSL_NETC_H_ */

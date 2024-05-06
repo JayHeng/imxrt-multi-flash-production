@@ -6,8 +6,8 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-#ifndef _FSL_COMMON_ARM_H_
-#define _FSL_COMMON_ARM_H_
+#ifndef FSL_COMMON_ARM_H_
+#define FSL_COMMON_ARM_H_
 
 /*
  * For CMSIS pack RTE.
@@ -220,6 +220,12 @@ static inline void _SDK_AtomicLocalClearAndSet4Byte(volatile uint32_t *addr, uin
          ((2UL == sizeof(*(addr))) ? _SDK_AtomicLocalAdd2Byte((volatile uint16_t *)(volatile void *)(addr), (uint16_t)(val)) : \
                                      _SDK_AtomicLocalAdd4Byte((volatile uint32_t *)(volatile void *)(addr), (uint32_t)(val))))
 
+#define SDK_ATOMIC_LOCAL_SUB(addr, val)                                                                                        \
+    ((1UL == sizeof(*(addr))) ?                                                                                                \
+         _SDK_AtomicLocalSub1Byte((volatile uint8_t *)(volatile void *)(addr), (uint8_t)(val)) :                               \
+         ((2UL == sizeof(*(addr))) ? _SDK_AtomicLocalSub2Byte((volatile uint16_t *)(volatile void *)(addr), (uint16_t)(val)) : \
+                                     _SDK_AtomicLocalSub4Byte((volatile uint32_t *)(volatile void *)(addr), (uint32_t)(val))))
+
 #define SDK_ATOMIC_LOCAL_SET(addr, bits)                                                                                        \
     ((1UL == sizeof(*(addr))) ?                                                                                                 \
          _SDK_AtomicLocalSet1Byte((volatile uint8_t *)(volatile void *)(addr), (uint8_t)(bits)) :                               \
@@ -255,7 +261,16 @@ static inline void _SDK_AtomicLocalClearAndSet4Byte(volatile uint32_t *addr, uin
         s_atomicOldInt = DisableGlobalIRQ(); \
         *(addr) += (val);                    \
         EnableGlobalIRQ(s_atomicOldInt);     \
-    } while (0)
+    } while (false)
+
+#define SDK_ATOMIC_LOCAL_SUB(addr, val)      \
+    do                                       \
+    {                                        \
+        uint32_t s_atomicOldInt;             \
+        s_atomicOldInt = DisableGlobalIRQ(); \
+        *(addr) -= (val);                    \
+        EnableGlobalIRQ(s_atomicOldInt);     \
+    } while (false)
 
 #define SDK_ATOMIC_LOCAL_SET(addr, bits)     \
     do                                       \
@@ -264,7 +279,7 @@ static inline void _SDK_AtomicLocalClearAndSet4Byte(volatile uint32_t *addr, uin
         s_atomicOldInt = DisableGlobalIRQ(); \
         *(addr) |= (bits);                   \
         EnableGlobalIRQ(s_atomicOldInt);     \
-    } while (0)
+    } while (false)
 
 #define SDK_ATOMIC_LOCAL_CLEAR(addr, bits)   \
     do                                       \
@@ -273,7 +288,7 @@ static inline void _SDK_AtomicLocalClearAndSet4Byte(volatile uint32_t *addr, uin
         s_atomicOldInt = DisableGlobalIRQ(); \
         *(addr) &= ~(bits);                  \
         EnableGlobalIRQ(s_atomicOldInt);     \
-    } while (0)
+    } while (false)
 
 #define SDK_ATOMIC_LOCAL_TOGGLE(addr, bits)  \
     do                                       \
@@ -282,7 +297,7 @@ static inline void _SDK_AtomicLocalClearAndSet4Byte(volatile uint32_t *addr, uin
         s_atomicOldInt = DisableGlobalIRQ(); \
         *(addr) ^= (bits);                   \
         EnableGlobalIRQ(s_atomicOldInt);     \
-    } while (0)
+    } while (false)
 
 #define SDK_ATOMIC_LOCAL_CLEAR_AND_SET(addr, clearBits, setBits) \
     do                                                           \
@@ -291,7 +306,7 @@ static inline void _SDK_AtomicLocalClearAndSet4Byte(volatile uint32_t *addr, uin
         s_atomicOldInt = DisableGlobalIRQ();                     \
         *(addr)        = (*(addr) & ~(clearBits)) | (setBits);   \
         EnableGlobalIRQ(s_atomicOldInt);                         \
-    } while (0)
+    } while (false)
 
 #endif
 /* @} */
@@ -716,19 +731,18 @@ static inline status_t IRQ_ClearPendingIRQ(IRQn_Type interrupt)
  */
 static inline uint32_t DisableGlobalIRQ(void)
 {
+    uint32_t mask;
+
 #if defined(CPSR_I_Msk)
-    uint32_t cpsr = __get_CPSR() & CPSR_I_Msk;
-
-    __disable_irq();
-
-    return cpsr;
+    mask = __get_CPSR() & CPSR_I_Msk;
+#elif defined(DAIF_I_BIT)
+    mask = __get_DAIF() & DAIF_I_BIT;
 #else
-    uint32_t regPrimask = __get_PRIMASK();
-
+    mask = __get_PRIMASK();
+#endif
     __disable_irq();
 
-    return regPrimask;
-#endif
+    return mask;
 }
 
 /*!
@@ -745,6 +759,11 @@ static inline void EnableGlobalIRQ(uint32_t primask)
 {
 #if defined(CPSR_I_Msk)
     __set_CPSR((__get_CPSR() & ~CPSR_I_Msk) | primask);
+#elif defined(DAIF_I_BIT)
+    if (0UL == primask)
+    {
+        __enable_irq();
+    }
 #else
     __set_PRIMASK(primask);
 #endif
@@ -800,10 +819,24 @@ void DisableDeepSleepIRQ(IRQn_Type interrupt);
 #endif /* FSL_FEATURE_POWERLIB_EXTEND */
 #endif /* FSL_FEATURE_SOC_SYSCON_COUNT */
 
+#if defined(DWT)
+/*!
+ * @brief Enable the counter to get CPU cycles.
+ */
+void MSDK_EnableCpuCycleCounter(void);
+
+/*!
+ * @brief Get the current CPU cycle count.
+ *
+ * @return Current CPU cycle count.
+ */
+uint32_t MSDK_GetCpuCycleCount(void);
+#endif
+
 #if defined(__cplusplus)
 }
 #endif /* __cplusplus*/
 
 /*! @} */
 
-#endif /* _FSL_COMMON_ARM_H_ */
+#endif /* FSL_COMMON_ARM_H_ */

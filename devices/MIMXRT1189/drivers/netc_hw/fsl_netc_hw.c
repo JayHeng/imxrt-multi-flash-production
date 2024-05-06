@@ -1,11 +1,17 @@
 /*
- * Copyright 2022 NXP
+ * Copyright 2022-2023 NXP
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #include "fsl_netc_hw.h"
 
+/* Component ID definition, used by tools. */
+#ifndef FSL_COMPONENT_ID
+#define FSL_COMPONENT_ID "platform.drivers.netc"
+#endif
+
+#if !(defined(FSL_FEATURE_NETC_HAS_NO_SWITCH) && FSL_FEATURE_NETC_HAS_NO_SWITCH)
 #define NETC_KC_CFG(x)                                                                   \
     (NETC_SW_ENETC_ISIDKC0CR0_ETP(x.etp) | NETC_SW_ENETC_ISIDKC0CR0_SQTP(x.sqtp) |       \
      NETC_SW_ENETC_ISIDKC0CR0_IPCPP(x.ipcpp) | NETC_SW_ENETC_ISIDKC0CR0_IVIDP(x.ividp) | \
@@ -13,6 +19,16 @@
      NETC_SW_ENETC_ISIDKC0CR0_SMACP(x.smacp) | NETC_SW_ENETC_ISIDKC0CR0_DMACP(x.dmacp) | \
      NETC_SW_ENETC_ISIDKC0CR0_SPMP(x.spmp) | NETC_SW_ENETC_ISIDKC0CR0_PORTP(x.portp) |   \
      NETC_SW_ENETC_ISIDKC0CR0_VALID(x.valid))
+#else
+#define NETC_KC_CFG(x)                                                                   \
+    (NETC_SW_ENETC_ISIDKC0CR0_ETP(x.etp) | NETC_SW_ENETC_ISIDKC0CR0_SQTP(x.sqtp) |       \
+     NETC_SW_ENETC_ISIDKC0CR0_IPCPP(x.ipcpp) | NETC_SW_ENETC_ISIDKC0CR0_IVIDP(x.ividp) | \
+     NETC_SW_ENETC_ISIDKC0CR0_OPCPP(x.opcpp) | NETC_SW_ENETC_ISIDKC0CR0_OVIDP(x.ovidp) | \
+     NETC_SW_ENETC_ISIDKC0CR0_SMACP(x.smacp) | NETC_SW_ENETC_ISIDKC0CR0_DMACP(x.dmacp) | \
+     NETC_SW_ENETC_ISIDKC0CR0_PORTP(x.portp) | \
+     NETC_SW_ENETC_ISIDKC0CR0_VALID(x.valid))
+#endif
+
 #define NETC_KC_PAYLOAD(x)                                                                                     \
     (NETC_SW_ENETC_ISIDKC0PF0CR_LBMASK(x.lbMask) | NETC_SW_ENETC_ISIDKC0PF0CR_FBMASK(x.fbMask) |               \
      NETC_SW_ENETC_ISIDKC0PF0CR_BYTE_OFFSET(x.byteOffset) | NETC_SW_ENETC_ISIDKC0PF0CR_NUM_BYTES(x.numBytes) | \
@@ -35,6 +51,7 @@ void NETC_PSFPKcProfileInit(NETC_SW_ENETC_Type *base, const netc_isi_kc_rule_t *
 {
     if (enKcPair1)
     {
+#if !(defined(FSL_FEATURE_NETC_HAS_NO_SWITCH) && FSL_FEATURE_NETC_HAS_NO_SWITCH)
         base->ISIDKC2PF0CR = NETC_KC_PAYLOAD(rule[0].payload[0]);
         base->ISIDKC2PF1CR = NETC_KC_PAYLOAD(rule[0].payload[1]);
         base->ISIDKC2PF2CR = NETC_KC_PAYLOAD(rule[0].payload[2]);
@@ -45,6 +62,7 @@ void NETC_PSFPKcProfileInit(NETC_SW_ENETC_Type *base, const netc_isi_kc_rule_t *
         base->ISIDKC3PF3CR = NETC_KC_PAYLOAD(rule[1].payload[3]);
         base->ISIDKC2CR0   = NETC_KC_CFG(rule[0]);
         base->ISIDKC3CR0   = NETC_KC_CFG(rule[1]);
+#endif
     }
     else
     {
@@ -69,7 +87,9 @@ void NETC_RxVlanCInit(NETC_SW_ENETC_Type *base, const netc_vlan_classify_config_
         NETC_SW_ENETC_CVLANR2_V(config->enableCustom2) | NETC_SW_ENETC_CVLANR2_ETYPE(config->custom2EtherType);
     if (enRtag)
     {
+#if !(defined(FSL_FEATURE_NETC_HAS_NO_SWITCH) && FSL_FEATURE_NETC_HAS_NO_SWITCH)
         base->PSRTAGETR = NETC_SW_ENETC_PSRTAGETR_ETHERTYPE(config->preStandRTAGType);
+#endif
     }
 }
 
@@ -89,9 +109,11 @@ void NETC_RxQosCInit(NETC_SW_ENETC_Type *base, const netc_qos_classify_profile_t
 
     if (enProfile1)
     {
+#if !(defined(FSL_FEATURE_NETC_HAS_NO_SWITCH) && FSL_FEATURE_NETC_HAS_NO_SWITCH)
         base->NUM_PROFILE[1].VLANIPVMPR0 = ipv[0];
         base->NUM_PROFILE[1].VLANIPVMPR1 = ipv[1];
         base->NUM_PROFILE[1].VLANDRMPR   = dr;
+#endif
     }
     else
     {
@@ -274,6 +296,30 @@ status_t NETC_UpdateIPFTableEntry(netc_cbdr_handle_t *handle, uint32_t entryID, 
     return NETC_CmdBDSendCommand(handle->base, handle->cmdr, &cmdBd, kNETC_NtmpV2_0);
 }
 
+status_t NETC_QueryIPFTableEntry(netc_cbdr_handle_t *handle, uint32_t entryID, netc_tb_ipf_config_t *config)
+{
+    netc_cmd_bd_t cmdBd = {0};
+    status_t status     = kStatus_Success;
+    (void)memset(handle->buffer, 0, sizeof(netc_tb_ipf_req_data_t));
+    handle->buffer->ipf.request.entryID                    = entryID;
+    handle->buffer->ipf.request.commonHeader.updateActions = 0U;
+    handle->buffer->ipf.request.commonHeader.queryActions  = 0U;
+    cmdBd.req.addr                                         = (uintptr_t)handle->buffer;
+    cmdBd.req.reqLength                                    = sizeof(netc_tb_ipf_req_data_t);
+    cmdBd.req.resLength                                    = sizeof(netc_tb_ipf_rsp_data_t);
+    cmdBd.req.tableId                                      = kNETC_IPFTable;
+    cmdBd.req.cmd                                          = kNETC_QueryEntry;
+    cmdBd.req.accessType = kNETC_EntryIDMatch;
+    status               = NETC_CmdBDSendCommand(handle->base, handle->cmdr, &cmdBd, kNETC_NtmpV2_0);
+    if (kStatus_Success == status)
+    {
+        config->keye = handle->buffer->ipf.response.keye;
+        config->cfge = handle->buffer->ipf.response.cfge;
+    }
+
+    return status;
+}
+
 status_t NETC_DelIPFTableEntry(netc_cbdr_handle_t *handle, uint32_t entryID)
 {
     netc_cmd_bd_t cmdBd = {0};
@@ -357,6 +403,67 @@ status_t NETC_AddISITableEntry(netc_cbdr_handle_t *handle, netc_tb_isi_config_t 
     return status;
 }
 
+status_t NETC_QueryISITableEntry(netc_cbdr_handle_t *handle, uint32_t entryID, netc_tb_isi_config_t *config)
+{
+    netc_cmd_bd_t cmdBd = {0};
+    status_t status     = kStatus_Success;
+    (void)memset(handle->buffer, 0, sizeof(netc_tb_isi_req_data_t));
+    handle->buffer->isi.request.entryID                    = entryID;
+    handle->buffer->isi.request.commonHeader.updateActions = 0U;
+    handle->buffer->isi.request.commonHeader.queryActions  = 0U;
+    cmdBd.req.addr                                         = (uintptr_t)handle->buffer;
+    cmdBd.req.reqLength                                    = sizeof(netc_tb_isi_req_data_t);
+    cmdBd.req.resLength                                    = sizeof(netc_tb_isi_rsp_data_t);
+    cmdBd.req.tableId                                      = kNETC_ISITable;
+    cmdBd.req.cmd                                          = kNETC_QueryEntry;
+    cmdBd.req.accessType = kNETC_EntryIDMatch;
+    status               = NETC_CmdBDSendCommand(handle->base, handle->cmdr, &cmdBd, kNETC_NtmpV2_0);
+    if (kStatus_Success == status)
+    {
+        if (0U != cmdBd.resp.numMatched)
+        {
+            config->keye = handle->buffer->isi.response.keye;
+            config->cfge = handle->buffer->isi.response.cfge;
+        }
+        else
+        {
+            status = kStatus_NETC_NotFound;
+        }
+    }
+
+    return status;
+}
+
+status_t NETC_QueryISITableEntryWithKey(netc_cbdr_handle_t *handle, netc_tb_isi_keye_t *keye, netc_tb_isi_rsp_data_t *rsp)
+{
+    netc_cmd_bd_t cmdBd = {0};
+    status_t status     = kStatus_Success;
+    (void)memset(handle->buffer, 0, sizeof(netc_tb_isi_req_data_t));
+    handle->buffer->isi.request.keye                       = *keye;
+    handle->buffer->isi.request.commonHeader.updateActions = 0U;
+    handle->buffer->isi.request.commonHeader.queryActions  = 0U;
+    cmdBd.req.addr                                         = (uintptr_t)handle->buffer;
+    cmdBd.req.reqLength                                    = sizeof(netc_tb_isi_req_data_t);
+    cmdBd.req.resLength                                    = sizeof(netc_tb_isi_rsp_data_t);
+    cmdBd.req.tableId                                      = kNETC_ISITable;
+    cmdBd.req.cmd                                          = kNETC_QueryEntry;
+    cmdBd.req.accessType                                   = kNETC_ExactKeyMatch;
+    status               = NETC_CmdBDSendCommand(handle->base, handle->cmdr, &cmdBd, kNETC_NtmpV2_0);
+    if (kStatus_Success == status)
+    {
+        if (0U != cmdBd.resp.numMatched)
+        {
+            *rsp = handle->buffer->isi.response;
+        }
+        else
+        {
+            status = kStatus_NETC_NotFound;
+        }
+    }
+
+    return status;
+}
+
 status_t NETC_DelISITableEntry(netc_cbdr_handle_t *handle, uint32_t entryID)
 {
     netc_cmd_bd_t cmdBd = {0};
@@ -397,6 +504,37 @@ status_t NETC_AddOrUpdateISTableEntry(netc_cbdr_handle_t *handle, netc_tb_is_con
     /* Only support ID Match Key Element Match */
     cmdBd.req.accessType = kNETC_EntryIDMatch;
     return NETC_CmdBDSendCommand(handle->base, handle->cmdr, &cmdBd, kNETC_NtmpV2_0);
+}
+
+status_t NETC_QueryISTableEntry(netc_cbdr_handle_t *handle, uint32_t entryID, netc_tb_is_config_t *config)
+{
+    netc_cmd_bd_t cmdBd = {0};
+    status_t status     = kStatus_Success;
+    (void)memset(handle->buffer, 0, sizeof(netc_tb_is_req_data_t));
+    handle->buffer->is.request.entryID                    = entryID;
+    handle->buffer->is.request.commonHeader.updateActions = 0U;
+    handle->buffer->is.request.commonHeader.queryActions  = 0U;
+    cmdBd.req.addr                                        = (uintptr_t)handle->buffer;
+    cmdBd.req.reqLength                                   = sizeof(netc_tb_is_req_data_t);
+    cmdBd.req.resLength                                   = sizeof(netc_tb_is_rsp_data_t);
+    cmdBd.req.tableId                                     = kNETC_ISTable;
+    cmdBd.req.cmd                                         = kNETC_QueryEntry;
+    cmdBd.req.accessType = kNETC_EntryIDMatch;
+    status               = NETC_CmdBDSendCommand(handle->base, handle->cmdr, &cmdBd, kNETC_NtmpV2_0);
+    if (kStatus_Success == status)
+    {
+        if (0U != cmdBd.resp.numMatched)
+        {
+            config->entryID = handle->buffer->is.response.entryID;
+            config->cfge = handle->buffer->is.response.cfge;
+        }
+        else
+        {
+            status = kStatus_NETC_NotFound;
+        }
+    }
+
+    return status;
 }
 
 status_t NETC_DelISTableEntry(netc_cbdr_handle_t *handle, uint32_t entryID)
@@ -473,6 +611,35 @@ status_t NETC_DelISFTableEntry(netc_cbdr_handle_t *handle, uint32_t entryID)
     cmdBd.req.cmd                                          = kNETC_DeleteEntry;
     cmdBd.req.accessType                                   = kNETC_EntryIDMatch;
     return NETC_CmdBDSendCommand(handle->base, handle->cmdr, &cmdBd, kNETC_NtmpV2_0);
+}
+
+status_t NETC_QueryISFTableEntry(netc_cbdr_handle_t *handle, netc_tb_isf_keye_t *keye, netc_tb_isf_rsp_data_t *rsp)
+{
+    netc_cmd_bd_t cmdBd = {0};
+    status_t status     = kStatus_Success;
+    (void)memset(handle->buffer, 0, sizeof(netc_tb_isf_req_data_t));
+    handle->buffer->isf.request.keye                       = *keye;
+    handle->buffer->isf.request.commonHeader.updateActions = 0U;
+    handle->buffer->isf.request.commonHeader.queryActions  = 0U;
+    cmdBd.req.addr                                         = (uintptr_t)handle->buffer;
+    cmdBd.req.reqLength                                    = sizeof(netc_tb_isf_req_data_t);
+    cmdBd.req.resLength                                    = sizeof(netc_tb_isf_rsp_data_t);
+    cmdBd.req.tableId                                      = kNETC_ISFTable;
+    cmdBd.req.cmd                                          = kNETC_QueryEntry;
+    cmdBd.req.accessType                                   = kNETC_ExactKeyMatch;
+    status = NETC_CmdBDSendCommand(handle->base, handle->cmdr, &cmdBd, kNETC_NtmpV2_0);
+    if (kStatus_Success == status)
+    {
+        if (0U != cmdBd.resp.numMatched)
+        {
+            *rsp = handle->buffer->isf.response;
+        }
+        else
+        {
+            status = kStatus_NETC_NotFound;
+        }
+    }
+    return status;
 }
 
 status_t NETC_AddISCTableEntry(netc_cbdr_handle_t *handle, uint32_t entryID)
@@ -601,6 +768,36 @@ status_t NETC_GetSGIState(netc_cbdr_handle_t *handle, uint32_t entryID, netc_tb_
     return status;
 }
 
+status_t NETC_QuerySGITableEntry(netc_cbdr_handle_t *handle, uint32_t entryID, netc_tb_sgi_rsp_data_t *rsp)
+{
+    netc_cmd_bd_t cmdBd = {0};
+    status_t status     = kStatus_Success;
+    (void)memset(handle->buffer, 0, sizeof(netc_tb_sgi_rsp_data_t));
+    handle->buffer->sgi.request.entryID                    = entryID;
+    handle->buffer->sgi.request.commonHeader.updateActions = 0U;
+    handle->buffer->sgi.request.commonHeader.queryActions  = 0U;
+    cmdBd.req.addr                                         = (uintptr_t)handle->buffer;
+    cmdBd.req.reqLength                                    = 8U;
+    cmdBd.req.resLength                                    = sizeof(netc_tb_sgi_rsp_data_t);
+    cmdBd.req.tableId                                      = kNETC_SGITable;
+    cmdBd.req.cmd                                          = kNETC_QueryEntry;
+    cmdBd.req.accessType                                   = kNETC_EntryIDMatch;
+    status = NETC_CmdBDSendCommand(handle->base, handle->cmdr, &cmdBd, kNETC_NtmpV2_0);
+    if (kStatus_Success == status)
+    {
+        if (cmdBd.resp.numMatched != 0U)
+        {
+            *rsp = handle->buffer->sgi.response;
+        }
+        else
+        {
+            status = kStatus_NETC_NotFound;
+        }
+    }
+
+    return status;
+}
+
 status_t NETC_AddSGCLTableEntry(netc_cbdr_handle_t *handle, netc_tb_sgcl_gcl_t *config)
 {
     netc_cmd_bd_t cmdBd = {0};
@@ -668,20 +865,27 @@ status_t NETC_GetSGCLGateList(netc_cbdr_handle_t *handle, netc_tb_sgcl_gcl_t *gc
     status = NETC_CmdBDSendCommand(handle->base, handle->cmdr, &cmdBd, kNETC_NtmpV2_0);
     if (kStatus_Success == status)
     {
-        if (((uint32_t)handle->buffer->sgcl.request.cfge.listLength + 1U) > length)
+        if (cmdBd.resp.numMatched != 0U)
         {
-            status = kStatus_InvalidArgument;
+            if (((uint32_t)handle->buffer->sgcl.request.cfge.listLength + 1U) > length)
+            {
+                status = kStatus_InvalidArgument;
+            }
+            else
+            {
+                gcl->cycleTime = handle->buffer->sgcl.request.cfge.cycleTime;
+                /* The entry numbers is LIST_LENGTH -1 */
+                gcl->numEntries = (uint32_t)handle->buffer->sgcl.request.cfge.listLength + 1U;
+                gcl->extOipv    = handle->buffer->sgcl.request.cfge.extOipv;
+                gcl->extIpv     = handle->buffer->sgcl.request.cfge.extIpv;
+                gcl->extCtd     = handle->buffer->sgcl.request.cfge.extCtd;
+                gcl->extGtst    = handle->buffer->sgcl.request.cfge.extGtst;
+                (void)memcpy(gcl->gcList, &handle->buffer->sgcl.request.cfge.ges[0], gcl->numEntries * 8U);
+            }
         }
         else
         {
-            gcl->cycleTime = handle->buffer->sgcl.request.cfge.cycleTime;
-            /* The entry numbers is LIST_LENGTH -1 */
-            gcl->numEntries = (uint32_t)handle->buffer->sgcl.request.cfge.listLength + 1U;
-            gcl->extOipv    = handle->buffer->sgcl.request.cfge.extOipv;
-            gcl->extIpv     = handle->buffer->sgcl.request.cfge.extIpv;
-            gcl->extCtd     = handle->buffer->sgcl.request.cfge.extCtd;
-            gcl->extGtst    = handle->buffer->sgcl.request.cfge.extGtst;
-            (void)memcpy(gcl->gcList, &handle->buffer->sgcl.request.cfge.ges[0], gcl->numEntries * 8U);
+            status = kStatus_NETC_NotFound;
         }
     }
     return status;
@@ -708,11 +912,12 @@ status_t NETC_GetSGCLState(netc_cbdr_handle_t *handle, uint32_t entryID, netc_tb
     return status;
 }
 
-status_t NETC_AddOrUpdateRPTableEntry(netc_cbdr_handle_t *handle, netc_tb_rp_config_t *config, bool isAdd)
+status_t NETC_AddOrUpdateRPTableEntry(netc_cbdr_handle_t *handle, netc_tb_rp_config_t *config, netc_tb_cmd_t cmd)
 {
+    status_t status;
     netc_cmd_bd_t cmdBd = {0};
     (void)memset(handle->buffer, 0, sizeof(netc_tb_rp_req_data_t));
-    /* Add entry to Rate Policer Table */
+    /* Add or Update entry to Rate Policer Table */
     handle->buffer->rp.request.entryID                    = config->entryID;
     handle->buffer->rp.request.cfge                       = config->cfge;
     handle->buffer->rp.request.fee                        = config->fee;
@@ -722,17 +927,28 @@ status_t NETC_AddOrUpdateRPTableEntry(netc_cbdr_handle_t *handle, netc_tb_rp_con
     cmdBd.req.reqLength                                   = sizeof(netc_tb_rp_req_data_t);
     cmdBd.req.resLength                                   = 0U;
     cmdBd.req.tableId                                     = kNETC_RPTable;
-    if (isAdd)
-    {
-        cmdBd.req.cmd = kNETC_AddEntry;
-    }
-    else
-    {
-        cmdBd.req.cmd = kNETC_UpdateEntry;
-    }
+    cmdBd.req.cmd                                         = cmd;
+
     /* Only support Entry ID Match */
     cmdBd.req.accessType = kNETC_EntryIDMatch;
-    return NETC_CmdBDSendCommand(handle->base, handle->cmdr, &cmdBd, kNETC_NtmpV2_0);
+    status = NETC_CmdBDSendCommand(handle->base, handle->cmdr, &cmdBd, kNETC_NtmpV2_0);
+    if (kStatus_Success == status)
+    {
+        if ((cmd == kNETC_AddEntry) && (cmdBd.resp.numMatched > 0U))
+        {
+            status = kStatus_NETC_EntryExists;
+        }
+        else if ((cmd == kNETC_UpdateEntry) && (cmdBd.resp.numMatched == 0U))
+        {
+            status = kStatus_NETC_NotFound;
+        }
+        else
+        {
+            /* Intentional empty */
+        }
+    }
+
+    return status;
 }
 
 status_t NETC_DelRPTableEntry(netc_cbdr_handle_t *handle, uint32_t entryID)
@@ -749,6 +965,35 @@ status_t NETC_DelRPTableEntry(netc_cbdr_handle_t *handle, uint32_t entryID)
     cmdBd.req.cmd                                         = kNETC_DeleteEntry;
     cmdBd.req.accessType                                  = kNETC_EntryIDMatch;
     return NETC_CmdBDSendCommand(handle->base, handle->cmdr, &cmdBd, kNETC_NtmpV2_0);
+}
+
+status_t NETC_QueryRPTableEntry(netc_cbdr_handle_t *handle, uint32_t entryID, netc_tb_rp_rsp_data_t *rsp)
+{
+    netc_cmd_bd_t cmdBd = {0};
+    status_t status = kStatus_Success;
+    (void)memset(handle->buffer, 0, sizeof(netc_tb_rp_rsp_data_t));
+    handle->buffer->rp.request.entryID                    = entryID;
+    handle->buffer->rp.request.commonHeader.updateActions = 0;
+    handle->buffer->rp.request.commonHeader.queryActions  = 0U;
+    cmdBd.req.addr                                        = (uintptr_t)handle->buffer;
+    cmdBd.req.reqLength                                   = 8U;
+    cmdBd.req.resLength                                   = sizeof(netc_tb_rp_rsp_data_t);
+    cmdBd.req.tableId                                     = kNETC_RPTable;
+    cmdBd.req.cmd                                         = kNETC_QueryEntry;
+    cmdBd.req.accessType                                  = kNETC_EntryIDMatch;
+    status = NETC_CmdBDSendCommand(handle->base, handle->cmdr, &cmdBd, kNETC_NtmpV2_0);
+    if (kStatus_Success == status)
+    {
+        if (cmdBd.resp.numMatched != 0U)
+        {
+            *rsp = handle->buffer->rp.response;
+        }
+        else 
+        {
+            status = kStatus_NETC_NotFound;
+        }
+    }
+    return status;
 }
 
 status_t NETC_GetRPStatistic(netc_cbdr_handle_t *handle, uint32_t entryID, netc_tb_rp_stse_t *statis)
@@ -778,37 +1023,22 @@ status_t NETC_ConfigTGSAdminList(netc_cbdr_handle_t *handle, netc_tb_tgs_gcl_t *
     status_t status     = kStatus_Success;
     netc_cmd_bd_t cmdBd = {0};
 
-    if ((config->numEntries > NETC_TB_TGS_MAX_ENTRY) || (config->gcList == NULL))
+    if ((config->numEntries > NETC_TB_TGS_MAX_ENTRY) || ((config->numEntries != 0U) && (config->gcList == NULL)))
     {
         return kStatus_InvalidArgument;
     }
 
     (void)memset(handle->buffer, 0, 28U);
-    /* Change length to 0 to removed the previous administrative gate control list */
-    handle->buffer->tgs.request.cfge.adminControlListLength = 0U;
-    handle->buffer->tgs.request.entryID                     = config->entryID;
-    handle->buffer->tgs.request.commonHeader.updateActions  = 1U;
-    handle->buffer->tgs.request.commonHeader.queryActions   = 0U;
-    cmdBd.req.addr                                          = (uintptr_t)handle->buffer;
-    cmdBd.req.reqLength                                     = 28U;
-    cmdBd.req.resLength                                     = 12U;
-    cmdBd.req.tableId                                       = kNETC_TGSTable;
-    cmdBd.req.cmd                                           = kNETC_UpdateEntry;
-    cmdBd.req.accessType                                    = kNETC_EntryIDMatch;
-    status = NETC_CmdBDSendCommand(handle->base, handle->cmdr, &cmdBd, kNETC_NtmpV2_0);
-    if (kStatus_Success != status)
-    {
-        return status;
-    }
-    /* Clear the response status and restore the administrative gate control list length */
-    (void)memset(handle->buffer, 0, 8U);
     handle->buffer->tgs.request.entryID                    = config->entryID;
     handle->buffer->tgs.request.commonHeader.updateActions = 1U;
     handle->buffer->tgs.request.commonHeader.queryActions  = 0U;
     /* Initialize port Time Gate Scheduling entry administrative gate control list */
     (void)memcpy((void *)&handle->buffer->tgs.request.cfge, (void *)&config->baseTime, 20);
-    (void)memcpy((void *)&handle->buffer->tgs.request.cfge.adminGcl[0], (void *)config->gcList,
-                 config->numEntries * 8U);
+    if (0U != config->numEntries)
+    {
+        (void)memcpy((void *)&handle->buffer->tgs.request.cfge.adminGcl[0], (void *)config->gcList,
+                     config->numEntries * 8U);
+    }
     cmdBd.req.addr       = (uintptr_t)handle->buffer;
     cmdBd.req.reqLength  = 28U + config->numEntries * 8U;
     cmdBd.req.resLength  = 12U;

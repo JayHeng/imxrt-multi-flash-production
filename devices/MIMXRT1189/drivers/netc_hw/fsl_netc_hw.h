@@ -1,11 +1,11 @@
 /*
- * Copyright 2021-2022 NXP
+ * Copyright 2021-2023 NXP
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-#ifndef _FSL_NETC_HW_H_
-#define _FSL_NETC_HW_H_
+#ifndef FSL_NETC_HW_H_
+#define FSL_NETC_HW_H_
 
 #include "fsl_netc.h"
 
@@ -16,11 +16,10 @@
  * @{
  */
 
-/*! @name MSIX table memory address offset. */
-/*@{*/
+/*! @brief MSIX table address offset. */
 #define NETC_MSIX_TABLE_OFFSET     (0x10000U)
+/*! @brief MSIX PBA address offset. */
 #define NETC_MSIX_TABLE_PBA_OFFSET (0x800U)
-/*@}*/
 
 /*! @brief Nanosecond in one second. */
 #define NETC_NANOSECOND_ONE_SECOND (1000000000UL)
@@ -48,7 +47,9 @@ typedef struct _netc_port_hw
     union
     {
         NETC_ETH_LINK_Type *eth;       /*!< MAC Port Address */
+#if !(defined(FSL_FEATURE_NETC_HAS_NO_SWITCH) && FSL_FEATURE_NETC_HAS_NO_SWITCH)
         NETC_PSEUDO_LINK_Type *pseudo; /*!< Pseudo link port address */
+#endif
     };
 } netc_port_hw_t;
 
@@ -67,6 +68,7 @@ typedef struct _netc_enetc_hw
     netc_msix_entry_t *msixTable; /*!< MSIX table address */
 } netc_enetc_hw_t;
 
+#if !(defined(FSL_FEATURE_NETC_HAS_NO_SWITCH) && FSL_FEATURE_NETC_HAS_NO_SWITCH)
 /*!
  * @brief Register group for the Switch peripheral hardware
  *
@@ -80,6 +82,7 @@ typedef struct _netc_switch_hw
     ENETC_GLOBAL_Type *global;                                     /*!< GLobal NETC Register Base Address */
     netc_msix_entry_t *msixTable;                                  /*!< MSIX table address */
 } netc_switch_hw_t;
+#endif
 
 /*!
  * @brief Register group for the Timer peripheral hardware
@@ -181,8 +184,7 @@ static inline uint16_t EP_IncreaseIndex(uint16_t index, uint32_t max)
 /*!
  * @brief Get the VSI index
  *
- * @param vsi  The VSI number
- * @param The VSI index, starts from 0 to max-1 represets VSI1 to VSI max.
+ * @param vsi  The VSI number.
  */
 uint16_t NETC_SIGetVsiIndex(netc_vsi_number_t vsi);
 
@@ -218,12 +220,13 @@ void NETC_PSFPKcProfileInit(NETC_SW_ENETC_Type *base, const netc_isi_kc_rule_t *
  * @return void
  */
 void NETC_RxVlanCInit(NETC_SW_ENETC_Type *base, const netc_vlan_classify_config_t *config, bool enRtag);
+
 /*!
  * @brief Initialize the ingress QoS classification
  *
- * @param handle
- * @param config
- * @return status_t
+ * @param base
+ * @param profile
+ * @param enProfile1
  */
 void NETC_RxQosCInit(NETC_SW_ENETC_Type *base, const netc_qos_classify_profile_t *profile, bool enProfile1);
 
@@ -295,6 +298,17 @@ status_t NETC_AddIPFTableEntry(netc_cbdr_handle_t *handle, netc_tb_ipf_config_t 
 status_t NETC_UpdateIPFTableEntry(netc_cbdr_handle_t *handle, uint32_t entryID, netc_tb_ipf_cfge_t *cfg);
 
 /*!
+ * @brief Query entry in the ingress Port Filter Table.
+ *
+ * @param handle
+ * @param entryID
+ * @param config
+ * @return status_t
+ * @return See @ref netc_cmd_error_t
+ */
+status_t NETC_QueryIPFTableEntry(netc_cbdr_handle_t *handle, uint32_t entryID, netc_tb_ipf_config_t *config);
+
+/*!
  * @brief Delete an entry in the ingress Port Filter Table.
  *
  * @param handle
@@ -346,6 +360,28 @@ status_t NETC_AddISITableEntry(netc_cbdr_handle_t *handle, netc_tb_isi_config_t 
 status_t NETC_DelISITableEntry(netc_cbdr_handle_t *handle, uint32_t entryID);
 
 /*!
+ * @brief Query Ingress Stream Identification table
+ *
+ * @param handle
+ * @param entryID
+ * @param config
+ * @return status_t
+ * @return See @ref netc_cmd_error_t
+ */
+status_t NETC_QueryISITableEntry(netc_cbdr_handle_t *handle, uint32_t entryID, netc_tb_isi_config_t *config);
+
+/*!
+ * @brief Query Ingress Stream Identification table with key
+ *
+ * @param handle
+ * @param keye
+ * @param rsp
+ * @return status_t
+ * @return See @ref netc_cmd_error_t
+ */
+status_t NETC_QueryISITableEntryWithKey(netc_cbdr_handle_t *handle, netc_tb_isi_keye_t *keye, netc_tb_isi_rsp_data_t *rsp);
+
+/*!
  * @brief Add or update entry in Ingress Stream table
  *
  * @param handle
@@ -355,6 +391,17 @@ status_t NETC_DelISITableEntry(netc_cbdr_handle_t *handle, uint32_t entryID);
  * @return See @ref netc_cmd_error_t
  */
 status_t NETC_AddOrUpdateISTableEntry(netc_cbdr_handle_t *handle, netc_tb_is_config_t *config, bool isAdd);
+
+/*!
+ * @brief Query Ingress Stream table
+ *
+ * @param handle
+ * @param entryID
+ * @param config
+ * @return status_t
+ * @return See @ref netc_cmd_error_t
+ */
+status_t NETC_QueryISTableEntry(netc_cbdr_handle_t *handle, uint32_t entryID, netc_tb_is_config_t *config);
 
 /*!
  * @brief Delete an entry in Ingress stream table
@@ -389,7 +436,7 @@ status_t NETC_AddISFTableEntry(netc_cbdr_handle_t *handle, netc_tb_isf_config_t 
 status_t NETC_UpdateISFTableEntry(netc_cbdr_handle_t *handle, uint32_t entryID, netc_tb_isf_cfge_t *cfg);
 
 /*!
- * @brief Delete an entry in Ingress stream identification table
+ * @brief Delete an entry in Ingress stream filter table
  *
  * @param handle
  * @param entryID
@@ -397,6 +444,17 @@ status_t NETC_UpdateISFTableEntry(netc_cbdr_handle_t *handle, uint32_t entryID, 
  * @return See @ref netc_cmd_error_t
  */
 status_t NETC_DelISFTableEntry(netc_cbdr_handle_t *handle, uint32_t entryID);
+
+/*!
+ * @brief Query entry from the Ingress stream filter table
+ *
+ * @param handle
+ * @param keye
+ * @param rsp
+ * @return status_t
+ * @return See @ref netc_cmd_error_t
+ */
+status_t NETC_QueryISFTableEntry(netc_cbdr_handle_t *handle, netc_tb_isf_keye_t *keye, netc_tb_isf_rsp_data_t *rsp);
 
 /*!
  * @brief Add entry in ingress stream count table
@@ -461,6 +519,17 @@ status_t NETC_DelSGITableEntry(netc_cbdr_handle_t *handle, uint32_t entryID);
 status_t NETC_GetSGIState(netc_cbdr_handle_t *handle, uint32_t entryID, netc_tb_sgi_sgise_t *statis);
 
 /*!
+ * @brief Query entry from the stream gate instance table
+ *
+ * @param handle
+ * @param entryID
+ * @param rsp
+ * @return status_t
+ * @return See @ref netc_cmd_error_t
+ */
+status_t NETC_QuerySGITableEntry(netc_cbdr_handle_t *handle, uint32_t entryID, netc_tb_sgi_rsp_data_t *rsp);
+
+/*!
  * @brief Add entry into Stream Gate Control List Table
  *
  * @param handle
@@ -503,18 +572,29 @@ status_t NETC_GetSGCLGateList(netc_cbdr_handle_t *handle, netc_tb_sgcl_gcl_t *gc
 status_t NETC_GetSGCLState(netc_cbdr_handle_t *handle, uint32_t entryID, netc_tb_sgcl_sgclse_t *state);
 
 /*!
- * @brief Add or update entry in Rate Policying table
+ * @brief Query entry from the Rate Policer table
  *
  * @param handle
- * @param config
- * @param isAdd
+ * @param entryID
+ * @param rsp
  * @return status_t
  * @return See @ref netc_cmd_error_t
  */
-status_t NETC_AddOrUpdateRPTableEntry(netc_cbdr_handle_t *handle, netc_tb_rp_config_t *config, bool isAdd);
+status_t NETC_QueryRPTableEntry(netc_cbdr_handle_t *handle, uint32_t entryID, netc_tb_rp_rsp_data_t *rsp);
 
 /*!
- * @brief Delete entry in the Rate policying table
+ * @brief Add or update entry in Rate Policer table
+ *
+ * @param handle
+ * @param config
+ * @param cmd
+ * @return status_t
+ * @return See @ref netc_cmd_error_t
+ */
+status_t NETC_AddOrUpdateRPTableEntry(netc_cbdr_handle_t *handle, netc_tb_rp_config_t *config, netc_tb_cmd_t cmd);
+
+/*!
+ * @brief Delete entry in the Rate Policer table
  *
  * @param handle
  * @param entryID
@@ -562,4 +642,4 @@ status_t NETC_GetTGSOperationList(netc_cbdr_handle_t *handle, netc_tb_tgs_gcl_t 
 #if defined(__cplusplus)
 }
 #endif
-#endif /* _FSL_NETC_HW_H_ */
+#endif /* FSL_NETC_HW_H_ */

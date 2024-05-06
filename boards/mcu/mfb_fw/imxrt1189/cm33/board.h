@@ -69,12 +69,12 @@
 
 #define USER_LED_INIT(output)                                             \
     RGPIO_PinWrite(BOARD_USER_LED_GPIO, BOARD_USER_LED_GPIO_PIN, output); \
-    BOARD_USER_LED_GPIO->PDDR |= (1U << BOARD_USER_LED_GPIO_PIN) /*!< Enable target USER_LED */
+    BOARD_USER_LED_GPIO->PDDR |= (1U << BOARD_USER_LED_GPIO_PIN)                        /*!< Enable target USER_LED */
 #define USER_LED_OFF() \
     RGPIO_PortClear(BOARD_USER_LED_GPIO, 1U << BOARD_USER_LED_GPIO_PIN)                 /*!< Turn off target USER_LED */
 #define USER_LED_ON() RGPIO_PortSet(BOARD_USER_LED_GPIO, 1U << BOARD_USER_LED_GPIO_PIN) /*!<Turn on target USER_LED*/
 #define USER_LED_TOGGLE() \
-    RGPIO_PortToggle(BOARD_USER_LED_GPIO, 1u << BOARD_USER_LED_GPIO_PIN) /*!< Toggle target USER_LED */
+    RGPIO_PortToggle(BOARD_USER_LED_GPIO, 1u << BOARD_USER_LED_GPIO_PIN)                /*!< Toggle target USER_LED */
 
 /*! @brief Define the port interrupt number for the board switches */
 #ifndef BOARD_USER_BUTTON_GPIO
@@ -90,16 +90,12 @@
 /*! @brief The board flash size */
 #define BOARD_FLASH_SIZE (0x1000000U)
 
-/* SKIP_SEMC_INIT can also be defined independently */
-#ifdef USE_SDRAM
-#define SKIP_SEMC_INIT
-#endif
-
-/*! @brief The ENET0 PHY address. */
-#define BOARD_ENET0_PHY_ADDRESS (0x02U) /* Phy address of enet port 0. */
-
-/*! @brief The ENET1 PHY address. */
-#define BOARD_ENET1_PHY_ADDRESS (0x01U) /* Phy address of enet port 1. */
+/*! @brief The Ethernet PHY addresses. */
+#define BOARD_EP0_PHY_ADDR       (0x03U)
+#define BOARD_SWT_PORT0_PHY_ADDR (0x02U)
+#define BOARD_SWT_PORT1_PHY_ADDR (0x05U)
+#define BOARD_SWT_PORT2_PHY_ADDR (0x04U)
+#define BOARD_SWT_PORT3_PHY_ADDR (0x07U)
 
 /* USB PHY condfiguration */
 #define BOARD_USB_PHY_D_CAL     (0x07U)
@@ -113,7 +109,7 @@
 #define BOARD_HAS_SDCARD (1U)
 
 /* @Brief Board accelerator sensor configuration */
-#define BOARD_ACCEL_I2C_BASEADDR LPI2C5
+#define BOARD_ACCEL_I2C_BASEADDR LPI2C2
 /* Clock divider for LPI2C clock source */
 #define BOARD_ACCEL_I2C_CLOCK_FREQ (CLOCK_GetRootClockFreq(kCLOCK_Root_Lpi2c0102))
 
@@ -207,6 +203,8 @@ void BOARD_FlexspiClockSafeConfig(void);
 AT_QUICKACCESS_SECTION_CODE(void BOARD_SetFlexspiClock(FLEXSPI_Type *base, uint8_t src, uint32_t divider));
 AT_QUICKACCESS_SECTION_CODE(void BOARD_DeinitFlash(FLEXSPI_Type *base));
 AT_QUICKACCESS_SECTION_CODE(void BOARD_InitFlash(FLEXSPI_Type *base));
+
+void BOARD_NETC_Init(void);
 #if defined(__cplusplus)
 }
 #endif /* __cplusplus */

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 NXP
+ * Copyright 2021-2022 NXP
  * All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
@@ -15,8 +15,8 @@
  * @{
  */
 
-/*! @brief ROM API version 1.1.1. */
-#define FSL_ROM_ROMAPI_VERSION (MAKE_VERSION(1U, 1U, 1U))
+/*! @brief ROM API version 1.1.2. */
+#define FSL_ROM_ROMAPI_VERSION (MAKE_VERSION(1U, 1U, 2U))
 /*! @brief ROM FLEXSPI NOR driver version 1.7.0. */
 #define FSL_ROM_FLEXSPINOR_DRIVER_VERSION (MAKE_VERSION(1U, 7U, 0U))
 
@@ -363,8 +363,9 @@ typedef enum _flexspi_operation
     kFLEXSPIOperation_Config,   /*!< FLEXSPI operation: Configure device mode, the TX FIFO size is fixed in LUT. */
     kFLEXSPIOperation_Write,    /*!< FLEXSPI operation: Write, only TX buffer is effective */
     kFLEXSPIOperation_Read,     /*!< FLEXSPI operation: Read, only Rx Buffer is effective. */
-    kFLEXSPIOperation_End = 3U, /*!< FLEXSPI operation: End. */
 } flexspi_operation_t;
+
+#define kFLEXSPIOperation_End   kFLEXSPIOperation_Read
 
 /*! @brief FLEXSPI Transfer Context */
 typedef struct _flexspi_xfer

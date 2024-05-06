@@ -6,8 +6,8 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-#ifndef _FSL_RGPIO_H_
-#define _FSL_RGPIO_H_
+#ifndef FSL_RGPIO_H_
+#define FSL_RGPIO_H_
 
 #include "fsl_common.h"
 
@@ -705,4 +705,4 @@ void FGPIO_CheckAttributeBytes(FGPIO_Type *base, rgpio_checker_attribute_t attri
  * @}
  */
 
-#endif /* _FSL_RGPIO_H_*/
+#endif /* FSL_RGPIO_H_*/

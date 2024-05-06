@@ -1,11 +1,10 @@
 /*
- * Copyright 2018-2022 NXP
- * All rights reserved.
+ * Copyright 2018-2023 NXP
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
-#ifndef _FSL_I3C_H_
-#define _FSL_I3C_H_
+#ifndef FSL_I3C_H_
+#define FSL_I3C_H_
 
 #include "fsl_common.h"
 
@@ -21,7 +20,7 @@
 /*! @name Driver version */
 /*@{*/
 /*! @brief I3C driver version */
-#define FSL_I3C_DRIVER_VERSION (MAKE_VERSION(2, 7, 1))
+#define FSL_I3C_DRIVER_VERSION (MAKE_VERSION(2, 10, 7))
 /*@}*/
 
 /*! @brief Timeout times for waiting flag. */
@@ -255,6 +254,14 @@ typedef enum _i3c_rx_trigger_level
     kI3C_RxTriggerUntilThreeQuarterOrMore = 3U, /*!< Trigger on 3/4 full or more. */
 } i3c_rx_trigger_level_t;
 
+/*! @brief I3C master read termination operations. */
+typedef enum _i3c_rx_term_ops
+{
+    kI3C_RxTermDisable = 0U, /*!< Master doesn't terminate read, used for CCC transfer. */
+    kI3C_RxAutoTerm = 1U,  /*!< Master auto terminate read after receiving specified bytes(<=255). */
+    kI3C_RxTermLastByte = 2U,  /*!< Master terminates read at any time after START, no length limitation. */
+} i3c_rx_term_ops_t;
+
 /*! @brief Structure with setting master IBI rules and slave registry. */
 typedef struct _i3c_register_ibi_addr
 {
@@ -269,6 +276,14 @@ typedef struct _i3c_baudrate
     uint32_t i3cPushPullBaud;  /*!< Desired I3C push-pull baud rate in Hertz. */
     uint32_t i3cOpenDrainBaud; /*!< Desired I3C open-drain baud rate in Hertz. */
 } i3c_baudrate_hz_t;
+
+/*! @brief I3C DAA baud rate configuration. */
+typedef struct _i3c_master_daa_baudrate
+{
+    uint32_t sourceClock_Hz;   /*!< FCLK, function clock in Hertz. */
+    uint32_t i3cPushPullBaud;  /*!< Desired I3C push-pull baud rate in Hertz. */
+    uint32_t i3cOpenDrainBaud; /*!< Desired I3C open-drain baud rate in Hertz. */
+} i3c_master_daa_baudrate_t;
 
 /*!
  * @brief Structure with settings to initialize the I3C master module.
@@ -319,6 +334,10 @@ enum _i3c_master_transfer_flags
     kI3C_TransferRepeatedStartFlag = 0x02U, /*!< Send a repeated start condition */
     kI3C_TransferNoStopFlag        = 0x04U, /*!< Don't send a stop condition. */
     kI3C_TransferWordsFlag         = 0x08U, /*!< Transfer in words, else transfer in bytes. */
+    kI3C_TransferDisableRxTermFlag = 0x10U, /*!< Disable Rx termination. Note: It's for I3C CCC transfer. */
+    kI3C_TransferRxAutoTermFlag =
+        0x20U, /*!< Set Rx auto-termination. Note: It's adaptive based on Rx size(<=255 bytes) except in I3C_MasterReceive. */
+    kI3C_TransferStartWithBroadcastAddr = 0x40U, /*!< Start transfer with 0x7E, then read/write data with device address. */
 };
 
 /*!
@@ -348,7 +367,7 @@ struct _i3c_master_handle
 {
     uint8_t state;                           /*!< Transfer state machine current state. */
     uint32_t remainingBytes;                 /*!< Remaining byte count in current state. */
-    bool isReadTerm;                         /*!< Is readterm configured. */
+    i3c_rx_term_ops_t rxTermOps;             /*!< Read termination operation. */
     i3c_master_transfer_t transfer;          /*!< Copy of the current transfer info. */
     uint8_t ibiAddress;                      /*!< Slave address which request IBI. */
     uint8_t *ibiBuff;                        /*!< Pointer to IBI buffer to keep ibi bytes. */
@@ -479,7 +498,9 @@ typedef enum _i3c_slave_activity_state
 typedef struct _i3c_slave_config
 {
     bool enableSlave;   /*!< Whether to enable slave. */
+#if !(defined(FSL_FEATURE_I3C_HAS_NO_SLAVE_IBI_MR_HJ) && FSL_FEATURE_I3C_HAS_NO_SLAVE_IBI_MR_HJ)
     bool isHotJoin;     /*!< Whether to enable slave hotjoin before enable slave. */
+#endif
     uint8_t staticAddr; /*!< Static address. */
     uint16_t vendorID;  /*!< Device vendor ID(manufacture ID). */
 #if !(defined(FSL_FEATURE_I3C_HAS_NO_SCONFIG_IDRAND) && FSL_FEATURE_I3C_HAS_NO_SCONFIG_IDRAND)
@@ -570,8 +591,6 @@ struct _i3c_slave_handle
     uint32_t transferredCount;              /*!< Count of bytes transferred. */
     i3c_slave_transfer_callback_t callback; /*!< Callback function called at transfer event. */
     void *userData;                         /*!< Callback parameter passed to callback. */
-    uint8_t *ibiData;                       /*!< IBI data buffer */
-    size_t ibiDataSize;                     /*!< IBI data size */
     uint8_t txFifoSize;                     /*!< Tx Fifo size */
 };
 
@@ -766,6 +785,9 @@ void I3C_MasterDeinit(I3C_Type *base);
 
 /* Not static so it can be used from fsl_i3c_dma.c. */
 status_t I3C_MasterCheckAndClearError(I3C_Type *base, uint32_t status);
+
+/* Not static so it can be used from fsl_i3c_dma.c. */
+status_t I3C_MasterWaitForCtrlDone(I3C_Type *base, bool waitIdle);
 
 /* Not static so it can be used from fsl_i3c_dma.c. */
 status_t I3C_CheckForBusyBus(I3C_Type *base);
@@ -1049,6 +1071,27 @@ static inline bool I3C_MasterGetBusIdleState(I3C_Type *base)
 }
 
 /*!
+ * @brief Sends a START signal and slave address on the I2C/I3C bus, receive size is also specified
+ * in the call.
+ *
+ * This function is used to initiate a new master mode transfer. First, the bus state is checked to ensure
+ * that another master is not occupying the bus. Then a START signal is transmitted, followed by the
+ * 7-bit address specified in the a address parameter. Note that this function does not actually wait
+ * until the START and address are successfully sent on the bus before returning.
+ *
+ * @param base The I3C peripheral base address.
+ * @param type The bus type to use in this transaction.
+ * @param address 7-bit slave device address, in bits [6:0].
+ * @param dir Master transfer direction, either #kI3C_Read or #kI3C_Write. This parameter is used to set
+ *      the R/w bit (bit 0) in the transmitted slave address.
+ * @param rxSize Read terminate size for the followed read transfer, limit to 255 bytes.
+ * @retval #kStatus_Success START signal and address were successfully enqueued in the transmit FIFO.
+ * @retval #kStatus_I3C_Busy Another master is currently utilizing the bus.
+ */
+status_t I3C_MasterStartWithRxSize(
+    I3C_Type *base, i3c_bus_type_t type, uint8_t address, i3c_direction_t dir, uint8_t rxSize);
+
+/*!
  * @brief Sends a START signal and slave address on the I2C/I3C bus.
  *
  * This function is used to initiate a new master mode transfer. First, the bus state is checked to ensure
@@ -1065,24 +1108,6 @@ static inline bool I3C_MasterGetBusIdleState(I3C_Type *base)
  * @retval #kStatus_I3C_Busy Another master is currently utilizing the bus.
  */
 status_t I3C_MasterStart(I3C_Type *base, i3c_bus_type_t type, uint8_t address, i3c_direction_t dir);
-
-/*!
- * @brief Sends a repeated START signal and slave address on the I2C/I3C bus.
- *
- * This function is used to send a Repeated START signal when a transfer is already in progress. Like
- * I3C_MasterStart(), it also sends the specified 7-bit address.
- *
- * @note This function exists primarily to maintain compatible APIs between I3C and I2C drivers,
- *      as well as to better document the intent of code that uses these APIs.
- *
- * @param base The I3C peripheral base address.
- * @param type The bus type to use in this transaction.
- * @param address 7-bit slave device address, in bits [6:0].
- * @param dir Master transfer direction, either #kI3C_Read or #kI3C_Write. This parameter is used to set
- *      the R/w bit (bit 0) in the transmitted slave address.
- * @retval #kStatus_Success Repeated START signal and address were successfully enqueued in the transmit FIFO.
- */
-status_t I3C_MasterRepeatedStart(I3C_Type *base, i3c_bus_type_t type, uint8_t address, i3c_direction_t dir);
 
 /*!
  * @brief Sends a repeated START signal and slave address on the I2C/I3C bus, receive size is also specified
@@ -1107,6 +1132,30 @@ status_t I3C_MasterRepeatedStart(I3C_Type *base, i3c_bus_type_t type, uint8_t ad
  */
 status_t I3C_MasterRepeatedStartWithRxSize(
     I3C_Type *base, i3c_bus_type_t type, uint8_t address, i3c_direction_t dir, uint8_t rxSize);
+
+/*!
+ * @brief Sends a repeated START signal and slave address on the I2C/I3C bus.
+ *
+ * This function is used to send a Repeated START signal when a transfer is already in progress. Like
+ * I3C_MasterStart(), it also sends the specified 7-bit address.
+ *
+ * @note This function exists primarily to maintain compatible APIs between I3C and I2C drivers,
+ *      as well as to better document the intent of code that uses these APIs.
+ *
+ * @param base The I3C peripheral base address.
+ * @param type The bus type to use in this transaction.
+ * @param address 7-bit slave device address, in bits [6:0].
+ * @param dir Master transfer direction, either #kI3C_Read or #kI3C_Write. This parameter is used to set
+ *      the R/w bit (bit 0) in the transmitted slave address.
+ * @retval #kStatus_Success Repeated START signal and address were successfully enqueued in the transmit FIFO.
+ */
+static inline status_t I3C_MasterRepeatedStart(I3C_Type *base,
+                                               i3c_bus_type_t type,
+                                               uint8_t address,
+                                               i3c_direction_t dir)
+{
+    return I3C_MasterRepeatedStartWithRxSize(base, type, address, dir, 0);
+}
 
 /*!
  * @brief Performs a polling send transfer on the I2C/I3C bus.
@@ -1220,20 +1269,42 @@ static inline uint8_t I3C_GetIBIAddress(I3C_Type *base)
 }
 
 /*!
- * @brief Performs a DAA in the i3c bus
+ * @brief Performs a DAA in the i3c bus with specified temporary baud rate.
  *
  * @param base The I3C peripheral base address.
  * @param addressList The pointer for address list which is used to do DAA.
  * @param count The address count in the address list.
+ * @param daaBaudRate The temporary baud rate in DAA process, NULL for using initial setting.
+ * The initial setting is set back between the completion of the DAA and the return of this function.
  * @retval #kStatus_Success The transaction was started successfully.
  * @retval #kStatus_I3C_Busy Either another master is currently utilizing the bus, or a non-blocking
  *      transaction is already in progress.
  * @retval #kStatus_I3C_SlaveCountExceed The I3C slave count has exceed the definition in I3C_MAX_DEVCNT.
  */
-status_t I3C_MasterProcessDAA(I3C_Type *base, uint8_t *addressList, uint32_t count);
+status_t I3C_MasterProcessDAASpecifiedBaudrate(I3C_Type *base,
+                                               uint8_t *addressList,
+                                               uint32_t count,
+                                               i3c_master_daa_baudrate_t *daaBaudRate);
 
 /*!
- * @brief Get device information list after DAA process is done
+ * @brief Performs a DAA in the i3c bus.
+ *
+ * @param base The I3C peripheral base address.
+ * @param addressList The pointer for address list which is used to do DAA.
+ * @param count The address count in the address list.
+ * The initial setting is set back between the completion of the DAA and the return of this function.
+ * @retval #kStatus_Success The transaction was started successfully.
+ * @retval #kStatus_I3C_Busy Either another master is currently utilizing the bus, or a non-blocking
+ *      transaction is already in progress.
+ * @retval #kStatus_I3C_SlaveCountExceed The I3C slave count has exceed the definition in I3C_MAX_DEVCNT.
+ */
+static inline status_t I3C_MasterProcessDAA(I3C_Type *base, uint8_t *addressList, uint32_t count)
+{
+    return I3C_MasterProcessDAASpecifiedBaudrate(base, addressList, count, NULL);
+}
+
+/*!
+ * @brief Get device information list after DAA process is done.
  *
  * @param base The I3C peripheral base address.
  * @param[out] count The pointer to store the available device count.
@@ -1336,7 +1407,7 @@ void I3C_MasterTransferAbort(I3C_Type *base, i3c_master_handle_t *handle);
  * @note This function does not need to be called unless you are reimplementing the
  *  nonblocking API's interrupt handler routines to add special functionality.
  * @param base The I3C peripheral base address.
- * @param handle Pointer to the I3C master driver handle.
+ * @param intHandle Pointer to the I3C master driver handle.
  */
 void I3C_MasterTransferHandleIRQ(I3C_Type *base, void *intHandle);
 
@@ -1658,6 +1729,7 @@ static inline void I3C_SlaveGetFifoCounts(I3C_Type *base, size_t *rxCount, size_
 /*! @name Bus operations */
 /*@{*/
 
+#if !(defined(FSL_FEATURE_I3C_HAS_NO_SLAVE_IBI_MR_HJ) && FSL_FEATURE_I3C_HAS_NO_SLAVE_IBI_MR_HJ)
 /*!
  * @brief I3C slave request event.
  *
@@ -1665,6 +1737,7 @@ static inline void I3C_SlaveGetFifoCounts(I3C_Type *base, size_t *rxCount, size_
  * @param event I3C slave event of type #i3c_slave_event_t
  */
 void I3C_SlaveRequestEvent(I3C_Type *base, i3c_slave_event_t event);
+#endif
 
 /*!
  * @brief Performs a polling send transfer on the I3C bus.
@@ -1769,32 +1842,35 @@ void I3C_SlaveTransferAbort(I3C_Type *base, i3c_slave_handle_t *handle);
  * @note This function does not need to be called unless you are reimplementing the
  *  non blocking API's interrupt handler routines to add special functionality.
  * @param base The I3C peripheral base address.
- * @param handle Pointer to struct: _i3c_slave_handle structure which stores the transfer state.
+ * @param intHandle Pointer to struct: _i3c_slave_handle structure which stores the transfer state.
  */
 void I3C_SlaveTransferHandleIRQ(I3C_Type *base, void *intHandle);
 
+#if !(defined(FSL_FEATURE_I3C_HAS_NO_SLAVE_IBI_MR_HJ) && FSL_FEATURE_I3C_HAS_NO_SLAVE_IBI_MR_HJ)
 /*!
- * @brief I3C slave request IBI event with multiple data payload.
+ * @brief I3C slave request IBI event with data payload(mandatory and extended).
  *
  * @param base The I3C peripheral base address.
- * @param handle Pointer to struct: _i3c_slave_handle structure which stores the transfer state.
  * @param data Pointer to IBI data to be sent in the request.
  * @param dataSize IBI data size.
  */
-void I3C_SlaveRequestIBIWithData(I3C_Type *base, i3c_slave_handle_t *handle, uint8_t *data, size_t dataSize);
+void I3C_SlaveRequestIBIWithData(I3C_Type *base, uint8_t *data, size_t dataSize);
 
 /*!
  * @brief I3C slave request IBI event with single data.
+ * @deprecated Do not use this function. It has been superseded by @ref I3C_SlaveRequestIBIWithData.
  *
  * @param base The I3C peripheral base address.
  * @param data IBI data to be sent in the request.
  * @param dataSize IBI data size.
  */
 void I3C_SlaveRequestIBIWithSingleData(I3C_Type *base, uint8_t data, size_t dataSize);
+#endif /* !(defined(FSL_FEATURE_I3C_HAS_NO_SLAVE_IBI_MR_HJ) && FSL_FEATURE_I3C_HAS_NO_SLAVE_IBI_MR_HJ) */
+
 /*@}*/
 /*! @} */
 #if defined(__cplusplus)
 }
 #endif
 
-#endif /* _FSL_I3C_H_ */
+#endif /* FSL_I3C_H_ */

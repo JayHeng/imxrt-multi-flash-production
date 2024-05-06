@@ -15,30 +15,11 @@
 /*! @brief MDIO hold time in nanosecond. */
 #define NETC_MDIO_HOLD_TIME_NS_MIN (10U)
 
-/* TODO: Move to header. */
-#define NETC_FEATURE_ENETC_ETH_PORT_NUM (1U)
-
 /*! @brief Pointers to netc function bases for each instance. */
 static ENETC_PCI_TYPE0_Type *const s_netcFuncBases[] = ENETC_PCI_TYPE0_BASE_PTRS;
 
 /*! @brief Pointers to eth link bases for each instance. */
 static NETC_ETH_LINK_Type *const s_netcEthLinkBases[] = NETC_ETH_LINK_BASE_PTRS;
-
-static uint32_t NETC_MDIOGetFuncInstance(netc_hw_eth_port_idx_t port)
-{
-    uint32_t instance;
-
-    if ((uint32_t)port > NETC_FEATURE_ENETC_ETH_PORT_NUM - 1U)
-    {
-        instance = 2;
-    }
-    else
-    {
-        instance = 3U + (uint32_t)port;
-    }
-
-    return instance;
-}
 
 static netc_mdio_hw_t *NETC_MDIOGetOpBase(netc_mdio_handle_t *handle)
 {
@@ -251,6 +232,7 @@ static bool NETC_PIMDIO_IsSMIBusy(NETC_ETH_LINK_Type *base)
 
 static void NETC_PIMDIO_Write(NETC_ETH_LINK_Type *base, uint8_t phyAddr, uint8_t regAddr, uint16_t data)
 {
+    base->PM0_MDIO_CFG &= ~NETC_ETH_LINK_PM0_MDIO_CFG_ENC45_MASK;
     base->PM0_MDIO_CTL  = NETC_ETH_LINK_PM0_MDIO_CTL_PORT_ADDR(phyAddr) | NETC_ETH_LINK_PM0_MDIO_CTL_DEV_ADDR(regAddr);
     base->PM0_MDIO_DATA = data;
     while (NETC_PIMDIO_IsSMIBusy(base))
@@ -260,6 +242,7 @@ static void NETC_PIMDIO_Write(NETC_ETH_LINK_Type *base, uint8_t phyAddr, uint8_t
 
 static void NETC_PIMDIO_Read(NETC_ETH_LINK_Type *base, uint8_t phyAddr, uint8_t regAddr, uint16_t *pData)
 {
+    base->PM0_MDIO_CFG &= ~NETC_ETH_LINK_PM0_MDIO_CFG_ENC45_MASK;
     base->PM0_MDIO_CTL = NETC_ETH_LINK_PM0_MDIO_CTL_READ_MASK | NETC_ETH_LINK_PM0_MDIO_CTL_PORT_ADDR(phyAddr) |
                          NETC_ETH_LINK_PM0_MDIO_CTL_DEV_ADDR(regAddr);
     while (NETC_PIMDIO_IsSMIBusy(base))
@@ -268,6 +251,55 @@ static void NETC_PIMDIO_Read(NETC_ETH_LINK_Type *base, uint8_t phyAddr, uint8_t 
 
     *pData = (uint16_t)base->PM0_MDIO_DATA;
 }
+
+/* Internal MDIO supports C45 */
+#if defined(NETC_ETH_LINK_PM0_MDIO_ADDR_REGADDR_MASK)
+static void NETC_PIMDIO_C45Write(
+    NETC_ETH_LINK_Type *base, uint8_t portAddr, uint8_t devAddr, uint16_t regAddr, uint16_t data)
+{
+    base->PM0_MDIO_CFG |= NETC_ETH_LINK_PM0_MDIO_CFG_ENC45_MASK;
+    base->PM0_MDIO_CTL = NETC_ETH_LINK_PM0_MDIO_CTL_PORT_ADDR(portAddr) |
+                         NETC_ETH_LINK_PM0_MDIO_CTL_DEV_ADDR(devAddr);
+    base->PM0_MDIO_ADDR = NETC_ETH_LINK_PM0_MDIO_ADDR_REGADDR(regAddr);
+
+    while (NETC_PIMDIO_IsSMIBusy(base))
+    {
+    }
+
+    base->PM0_MDIO_DATA = NETC_ETH_LINK_PM0_MDIO_DATA_MDIO_DATA(data);
+    while (NETC_PIMDIO_IsSMIBusy(base))
+    {
+    }
+}
+
+static status_t NETC_PIMDIO_C45Read(
+    NETC_ETH_LINK_Type *base, uint8_t portAddr, uint8_t devAddr, uint16_t regAddr, uint16_t *pData)
+{
+    base->PM0_MDIO_CFG |= NETC_ETH_LINK_PM0_MDIO_CFG_ENC45_MASK;
+    base->PM0_MDIO_CTL = NETC_ETH_LINK_PM0_MDIO_CTL_PORT_ADDR(portAddr) |
+                         NETC_ETH_LINK_PM0_MDIO_CTL_DEV_ADDR(devAddr);
+    base->PM0_MDIO_ADDR = NETC_ETH_LINK_PM0_MDIO_ADDR_REGADDR(regAddr);
+
+    while (NETC_PIMDIO_IsSMIBusy(base))
+    {
+    }
+
+    base->PM0_MDIO_CTL = NETC_ETH_LINK_PM0_MDIO_CTL_READ(1U) | NETC_ETH_LINK_PM0_MDIO_CTL_PORT_ADDR(portAddr) |
+                         NETC_ETH_LINK_PM0_MDIO_CTL_DEV_ADDR(devAddr);
+
+    while (NETC_PIMDIO_IsSMIBusy(base))
+    {
+    }
+
+    if ((base->PM0_MDIO_CFG & 0x2U) != 0U)
+    {
+        return kStatus_Fail;
+    }
+
+    *pData = (uint16_t)base->PM0_MDIO_DATA;
+    return kStatus_Success;
+}
+#endif
 
 /*
  * MDIO API Layer MDIO Access functions
@@ -288,7 +320,7 @@ status_t NETC_MDIOInit(netc_mdio_handle_t *handle, netc_mdio_config_t *config)
     /* Port MDIO needs EP/Switch to enable the register access permission. */
     if (handle->mdio.type != kNETC_EMdio)
     {
-        instance = NETC_MDIOGetFuncInstance(handle->mdio.port);
+        instance = NETC_SocGetFuncInstance(handle->mdio.port);
         if ((s_netcFuncBases[instance]->PCI_CFH_CMD & funcFlags) != funcFlags)
         {
             return kStatus_Fail;
@@ -307,14 +339,14 @@ status_t NETC_MDIOInit(netc_mdio_handle_t *handle, netc_mdio_config_t *config)
             mdioBase = (netc_mdio_hw_t *)(uintptr_t)&EMDIO_BASE->EMDIO_CFG;
 
             /* Reset EMDIO submodule */
-            NETC_F1_PCI_HDR_TYPE0->PCI_CFC_PCIE_DEV_CTL |= ENETC_PCI_TYPE0_PCI_CFC_PCIE_DEV_CTL_INIT_FLR_MASK;
-            while ((NETC_F1_PCI_HDR_TYPE0->PCI_CFC_PCIE_DEV_CTL & ENETC_PCI_TYPE0_PCI_CFC_PCIE_DEV_CTL_INIT_FLR_MASK) !=
+            EMDIO_PCI_HDR_TYPE0->PCI_CFC_PCIE_DEV_CTL |= ENETC_PCI_TYPE0_PCI_CFC_PCIE_DEV_CTL_INIT_FLR_MASK;
+            while ((EMDIO_PCI_HDR_TYPE0->PCI_CFC_PCIE_DEV_CTL & ENETC_PCI_TYPE0_PCI_CFC_PCIE_DEV_CTL_INIT_FLR_MASK) !=
                    0U)
             {
             }
 
             /* Enable master bus and memory access for PCIe and MSI-X */
-            NETC_F1_PCI_HDR_TYPE0->PCI_CFH_CMD |=
+            EMDIO_PCI_HDR_TYPE0->PCI_CFH_CMD |=
                 (ENETC_PCI_TYPE0_PCI_CFH_CMD_MEM_ACCESS_MASK | ENETC_PCI_TYPE0_PCI_CFH_CMD_BUS_MASTER_EN_MASK);
         }
         else
@@ -371,7 +403,12 @@ status_t NETC_MDIOC45Write(
 
     if (handle->mdio.type == kNETC_InternalMdio)
     {
+#if defined(NETC_ETH_LINK_PM0_MDIO_ADDR_REGADDR_MASK)
+        NETC_PIMDIO_C45Write(s_netcEthLinkBases[handle->mdio.port], portAddr, devAddr, regAddr, data);
+        result = kStatus_Success;
+#else
         result = kStatus_NETC_Unsupported;
+#endif
     }
     else
     {
@@ -388,7 +425,11 @@ status_t NETC_MDIOC45Read(
 
     if (handle->mdio.type == kNETC_InternalMdio)
     {
+#if defined(NETC_ETH_LINK_PM0_MDIO_ADDR_REGADDR_MASK)
+        result = NETC_PIMDIO_C45Read(s_netcEthLinkBases[handle->mdio.port], portAddr, devAddr, regAddr, pData);
+#else
         result = kStatus_NETC_Unsupported;
+#endif
     }
     else
     {

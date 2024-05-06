@@ -20,7 +20,7 @@
  * Definitions
  ******************************************************************************/
 /*! @brief DCDC driver version. */
-#define FSL_DCDC_DRIVER_VERSION (MAKE_VERSION(2, 0, 0)) /*!< Version 2.0.0. */
+#define FSL_DCDC_DRIVER_VERSION (MAKE_VERSION(2, 0, 1)) /*!< Version 2.0.1. */
 
 /*! @brief The array of VDD1P0 target voltage. */
 #define VDD1P0_TARGET_VOLTAGE                                                                                         \
@@ -276,14 +276,6 @@ typedef struct _dcdc_internal_regulator_config
     uint32_t feedbackPoint; /*!< Available range is 0~3. Select the feedback point of the internal regulator. */
 } dcdc_internal_regulator_config_t;
 
-/*!
- * @brief Configuration for DCDC low power.
- */
-typedef struct _dcdc_low_power_config
-{
-    bool enableAdjustHystereticValue; /*!< Adjust hysteretic value in low power from 12.5mV to 25mV. */
-} dcdc_low_power_config_t;
-
 /*******************************************************************************
  * API
  ******************************************************************************/
@@ -398,6 +390,7 @@ static inline void DCDC_EnableVDD1P0LowPowerMode(DCDC_Type *base, dcdc_core_slic
  * @brief Sets the target value(ranges from 0.6V to 1.375V) of VDD1P0 in buck mode, 25mV each step.
  *
  * @param base DCDC peripheral base address.
+ * @param core Core for DCDC to control.
  * @param targetVoltage The target value of VDD1P0 in buck mode, see @ref dcdc_1P0_target_vol_t.
  */
 static inline void DCDC_SetVDD1P0BuckModeTargetVoltage(DCDC_Type *base,
@@ -466,6 +459,7 @@ static inline void DCDC_GPC_SetVDD1P0BuckModeTargetVoltage(DCDC_Type *base,
  * @brief Sets the target value(ranges from 0.625V to 1.4V) of VDD1P0 in low power mode, 25mV each step.
  *
  * @param base DCDC peripheral base address.
+ * @param core Core for DCDC to control.
  * @param targetVoltage The target value of VDD1P0 in low power mode, see @ref dcdc_1P0_target_vol_t.
  */
 static inline void DCDC_GPC_SetVDD1P0LowPowerModeTargetVoltage(DCDC_Type *base,
@@ -488,6 +482,13 @@ static inline void DCDC_GPC_SetVDD1P0LowPowerModeTargetVoltage(DCDC_Type *base,
     }
 }
 
+/*!
+ * @brief Enable VDD1P0 in low power mode.
+ *
+ * @param base DCDC peripheral base address.
+ * @param core Core for DCDC to control.
+ * @param enable Enable the output or not.
+ */
 static inline void DCDC_GPC_EnableVDD1P0LowPowerMode(DCDC_Type *base, dcdc_core_slice_t core, bool enable)
 {
     if (core == kDCDC_CORE0)
@@ -508,6 +509,7 @@ static inline void DCDC_GPC_EnableVDD1P0LowPowerMode(DCDC_Type *base, dcdc_core_
  * @brief Sets the target value(ranges from 1.5V to 2.275V) of VDD1P8, 25mV each step.
  *
  * @param base DCDC peripheral base address.
+ * @param core Core for DCDC to control.
  * @param targetVoltage The target value of VDD1P8, see @ref dcdc_1P8_target_vol_t.
  */
 static inline void DCDC_SetVDD1P8TargetVoltage(DCDC_Type *base,
@@ -623,19 +625,6 @@ void DCDC_SetDetectionConfig(DCDC_Type *base, const dcdc_detection_config_t *con
 void DCDC_SetClockSource(DCDC_Type *base, dcdc_clock_source_t clockSource);
 
 /*!
- * @brief Gets the default setting for low power configuration.
- *
- * The default configuration are set according to responding registers' setting when powered on.
- * They are:
- * @code
- *   config->enableAdjustHystereticValue = false;
- * @endcode
- *
- * @param config Pointer to configuration structure. See to @ref dcdc_low_power_config_t.
- */
-void DCDC_GetDefaultLowPowerConfig(dcdc_low_power_config_t *config);
-
-/*!
  * @brief Sets the bangap trim value(0~31) to trim bandgap voltage.
  *
  * @param base DCDC peripheral base address.
@@ -725,21 +714,6 @@ static inline uint32_t DCDC_GetStatusFlags(DCDC_Type *base)
  * @name Application Guideline Interfaces
  * @{
  */
-
-/*!
- * @brief Boots DCDC into DCM(discontinous conduction mode).
- *
- * @code
- *  pwd_zcd=0x0;
- *  DM_CTRL = 1'b1;
- *  pwd_cmp_offset=0x0;
- *  dcdc_loopctrl_en_rcscale=0x3 or 0x5;
- *  DCM_set_ctrl=1'b1;
- * @endcode
- *
- * @param base DCDC peripheral base address.
- */
-void DCDC_BootIntoDCM(DCDC_Type *base);
 
 /*!
  * @brief Boots DCDC into CCM(continous conduction mode).

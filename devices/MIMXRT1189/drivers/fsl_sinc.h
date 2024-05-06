@@ -1,12 +1,12 @@
 /*
- * Copyright 2022 NXP
+ * Copyright 2022-2023 NXP
  *
  * All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-#ifndef _FSL_SINC_H_
-#define _FSL_SINC_H_
+#ifndef FSL_SINC_H_
+#define FSL_SINC_H_
 
 #include "fsl_common.h"
 
@@ -21,15 +21,48 @@
 
 /*! @name Driver version */
 /*@{*/
-/*! @brief lower_component_name driver version 2.0.0. */
-#define FSL_SINC_DRIVER_VERSION (MAKE_VERSION(2, 0, 0))
+/*! @brief lower_component_name driver version 2.1.3. */
+#define FSL_SINC_DRIVER_VERSION (MAKE_VERSION(2, 1, 3))
 /*@}*/
+#if defined(FSL_FEATURE_SINC_CHANNEL_COUNT)
+#define SINC_CHANNEL_COUNT (FSL_FEATURE_SINC_CHANNEL_COUNT)
+#else
+#error "The definition of FSL_FEATURE_SINC_CHANNEL_COUNT is missing!"
+#endif
+#define SINC_NORMAL_INT_REG_ID     (0ULL)
+#define SINC_NORMAL_INT_NAME_COCIE (0ULL)
+#define SINC_NORMAL_INT_NAME_CHFIE (1ULL)
+#define SINC_NORMAL_INT_NAME_ZCDIE (2ULL)
 
-#define SINC_INTERRUPT_NORMAL              (8ULL)
-#define SINC_INTERRUPT_ERROR               (0ULL)
-#define SINC_INTERRUPT_FIFO_CAD            (1ULL)
-#define SINC_ENCODE_INTERRUPT(type, value) (((uint64_t)(value)) << ((uint64_t)(type) << 2ULL))
+#define SINC_ERROR_INT_REG_ID      (1ULL)
+#define SINC_ERROR_INT_NAME_SCDIE  (0ULL)
+#define SINC_ERROR_INT_NAME_WLMTIE (1ULL)
+#define SINC_ERROR_INT_NAME_LLMTIE (2ULL)
+#define SINC_ERROR_INT_NAME_HLMTIE (3ULL)
 
+#define SINC_FIFO_CAD_INT_REG_ID (2ULL)
+#define SINC_FIFO_CAD_INT_FUNFIE (0ULL)
+#define SINC_FIFO_CAD_INT_FOVFIE (1ULL)
+#define SINC_FIFO_CAD_INT_CADIE  (2ULL)
+#define SINC_FIFO_CAD_INT_SATIE  (3ULL)
+
+#define SINC_ENCODE_INTERRUPT(regId, name, channelId)                                           \
+    ((((1ULL << (uint64_t)(channelId))) << ((uint64_t)(name) * (uint64_t)(SINC_CHANNEL_COUNT))) \
+     << (uint64_t)(regId)*20ULL)
+
+#define SINC_DECODE_INTERRUPT(interruptMask)                               \
+    normalIntMask  = ((uint32_t)(interruptMask) & (0xFFFFFUL));            \
+    errorIntMask   = ((uint32_t)((interruptMask) >> 20ULL) & (0xFFFFFUL)); \
+    fifoCadIntMask = ((uint32_t)((interruptMask) >> 40ULL) & (0xFFFFFUL))
+
+#define SINC_FIND_INT_FIELD_VALUE(mask, name)                                     \
+    ((((uint32_t)(mask) >> ((uint32_t)(name) * ((uint32_t)SINC_CHANNEL_COUNT))) & \
+      ((1UL << ((uint32_t)SINC_CHANNEL_COUNT)) - 1UL))                            \
+     << (8UL * (uint32_t)(name)))
+
+#define SINC_FIND_STATUS_FIELD_VALUE(statusValue, name)                \
+    (((uint64_t)(statusValue) & (0xFFUL << ((uint64_t)(name)*8UL))) >> \
+     ((uint64_t)(name) * (8UL - ((uint64_t)SINC_CHANNEL_COUNT))))
 /*!
  * @brief The enumeration of SINC module's interrupts.
  * @anchor sinc_interrupt_enable_t
@@ -38,105 +71,154 @@ enum _sinc_interrupt_enable
 {
     /* Normal interrupts enable. */
     /* Enable the conversion complete interrupt for channel 0. */
-    kSINC_CH0ConvCompleteIntEnable = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_NORMAL, SINC_NIE_COCIE0_MASK),
+    kSINC_CH0ConvCompleteIntEnable = SINC_ENCODE_INTERRUPT(SINC_NORMAL_INT_REG_ID, SINC_NORMAL_INT_NAME_COCIE, 0ULL),
     /* Enable the conversion complete interrupt for channel 1. */
-    kSINC_CH1ConvCompleteIntEnable = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_NORMAL, SINC_NIE_COCIE1_MASK),
+    kSINC_CH1ConvCompleteIntEnable = SINC_ENCODE_INTERRUPT(SINC_NORMAL_INT_REG_ID, SINC_NORMAL_INT_NAME_COCIE, 1ULL),
     /* Enable the conversion complete interrupt for channel 2. */
-    kSINC_CH2ConvCompleteIntEnable = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_NORMAL, SINC_NIE_COCIE2_MASK),
+    kSINC_CH2ConvCompleteIntEnable = SINC_ENCODE_INTERRUPT(SINC_NORMAL_INT_REG_ID, SINC_NORMAL_INT_NAME_COCIE, 2ULL),
     /* Enable the conversion complete interrupt for channel 3. */
-    kSINC_CH3ConvCompleteIntEnable = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_NORMAL, SINC_NIE_COCIE3_MASK),
+    kSINC_CH3ConvCompleteIntEnable = SINC_ENCODE_INTERRUPT(SINC_NORMAL_INT_REG_ID, SINC_NORMAL_INT_NAME_COCIE, 3ULL),
+#if (SINC_CHANNEL_COUNT >= 5UL)
+    /* Enable the conversion complete interrupt for channel 4. */
+    kSINC_CH4ConvCompleteIntEnable = SINC_ENCODE_INTERRUPT(SINC_NORMAL_INT_REG_ID, SINC_NORMAL_INT_NAME_COCIE, 4ULL),
+#endif
 
     /* Enable the data output ready interrupt for channel 0. */
-    kSINC_CH0DataReadyIntEnable = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_NORMAL, SINC_NIE_CHFIE0_MASK),
+    kSINC_CH0DataReadyIntEnable = SINC_ENCODE_INTERRUPT(SINC_NORMAL_INT_REG_ID, SINC_NORMAL_INT_NAME_CHFIE, 0ULL),
     /* Enable the data output ready interrupt for channel 1. */
-    kSINC_CH1DataReadyIntEnable = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_NORMAL, SINC_NIE_CHFIE1_MASK),
+    kSINC_CH1DataReadyIntEnable = SINC_ENCODE_INTERRUPT(SINC_NORMAL_INT_REG_ID, SINC_NORMAL_INT_NAME_CHFIE, 1ULL),
     /* Enable the data output ready interrupt for channel 2. */
-    kSINC_CH2DataReadyIntEnable = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_NORMAL, SINC_NIE_CHFIE2_MASK),
+    kSINC_CH2DataReadyIntEnable = SINC_ENCODE_INTERRUPT(SINC_NORMAL_INT_REG_ID, SINC_NORMAL_INT_NAME_CHFIE, 2ULL),
     /* Enable the data output ready interrupt for channel 3. */
-    kSINC_CH3DataReadyIntEnable = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_NORMAL, SINC_NIE_CHFIE3_MASK),
+    kSINC_CH3DataReadyIntEnable = SINC_ENCODE_INTERRUPT(SINC_NORMAL_INT_REG_ID, SINC_NORMAL_INT_NAME_CHFIE, 3ULL),
+#if (SINC_CHANNEL_COUNT >= 5UL)
+    /* Enable the data output ready interrupt for channel 4. */
+    kSINC_CH4DataReadyIntEnable = SINC_ENCODE_INTERRUPT(SINC_NORMAL_INT_REG_ID, SINC_NORMAL_INT_NAME_CHFIE, 4ULL),
+#endif
 
     /* Enable the zero cross detected interrupt for channel 0. */
-    kSINC_CH0ZeroCrossDetectedIntEnable = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_NORMAL, SINC_NIE_ZCDIE0_MASK),
+    kSINC_CH0ZeroCrossDetectedIntEnable =
+        SINC_ENCODE_INTERRUPT(SINC_NORMAL_INT_REG_ID, SINC_NORMAL_INT_NAME_ZCDIE, 0ULL),
     /* Enable the zero cross detected interrupt for channel 1. */
-    kSINC_CH1ZeroCrossDetectedIntEnable = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_NORMAL, SINC_NIE_ZCDIE1_MASK),
+    kSINC_CH1ZeroCrossDetectedIntEnable =
+        SINC_ENCODE_INTERRUPT(SINC_NORMAL_INT_REG_ID, SINC_NORMAL_INT_NAME_ZCDIE, 1ULL),
     /* Enable the zero cross detected interrupt for channel 2. */
-    kSINC_CH2ZeroCrossDetectedIntEnable = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_NORMAL, SINC_NIE_ZCDIE2_MASK),
+    kSINC_CH2ZeroCrossDetectedIntEnable =
+        SINC_ENCODE_INTERRUPT(SINC_NORMAL_INT_REG_ID, SINC_NORMAL_INT_NAME_ZCDIE, 2ULL),
     /* Enable the zero cross detected interrupt for channel 3. */
-    kSINC_CH3ZeroCrossDetectedIntEnable = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_NORMAL, SINC_NIE_ZCDIE3_MASK),
+    kSINC_CH3ZeroCrossDetectedIntEnable =
+        SINC_ENCODE_INTERRUPT(SINC_NORMAL_INT_REG_ID, SINC_NORMAL_INT_NAME_ZCDIE, 3ULL),
+#if (SINC_CHANNEL_COUNT >= 5UL)
+    /* Enable the zero cross detected interrupt for channel 4. */
+    kSINC_CH4ZeroCrossDetectedIntEnable =
+        SINC_ENCODE_INTERRUPT(SINC_NORMAL_INT_REG_ID, SINC_NORMAL_INT_NAME_ZCDIE, 4ULL),
+#endif
 
     /* Error interrupts enable. */
     /* Enable the short circuit detected interrupt for channel 0. */
-    kSINC_CH0SCDIntEnable = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_ERROR, SINC_EIE_SCDIE0_MASK),
+    kSINC_CH0SCDIntEnable = SINC_ENCODE_INTERRUPT(SINC_ERROR_INT_REG_ID, SINC_ERROR_INT_NAME_SCDIE, 0ULL),
     /* Enable the short circuit detected interrupt for channel 1. */
-    kSINC_CH1SCDIntEnable = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_ERROR, SINC_EIE_SCDIE1_MASK),
+    kSINC_CH1SCDIntEnable = SINC_ENCODE_INTERRUPT(SINC_ERROR_INT_REG_ID, SINC_ERROR_INT_NAME_SCDIE, 1ULL),
     /* Enable the short circuit detected interrupt for channel 2. */
-    kSINC_CH2SCDIntEnable = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_ERROR, SINC_EIE_SCDIE2_MASK),
+    kSINC_CH2SCDIntEnable = SINC_ENCODE_INTERRUPT(SINC_ERROR_INT_REG_ID, SINC_ERROR_INT_NAME_SCDIE, 2ULL),
     /* Enable the short circuit detected interrupt for channel 3. */
-    kSINC_CH3SCDIntEnable = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_ERROR, SINC_EIE_SCDIE3_MASK),
+    kSINC_CH3SCDIntEnable = SINC_ENCODE_INTERRUPT(SINC_ERROR_INT_REG_ID, SINC_ERROR_INT_NAME_SCDIE, 3ULL),
+#if (SINC_CHANNEL_COUNT >= 5UL)
+    /* Enable the short circuit detected interrupt for channel 4. */
+    kSINC_CH4SCDIntEnable = SINC_ENCODE_INTERRUPT(SINC_ERROR_INT_REG_ID, SINC_ERROR_INT_NAME_SCDIE, 4ULL),
+#endif
 
     /* Enable the window limit interrupt for channel 0. */
-    kSINC_CH0WindowLimitIntEnable = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_ERROR, SINC_EIE_WLMTIE0_MASK),
+    kSINC_CH0WindowLimitIntEnable = SINC_ENCODE_INTERRUPT(SINC_ERROR_INT_REG_ID, SINC_ERROR_INT_NAME_WLMTIE, 0ULL),
     /* Enable the window limit interrupt for channel 1. */
-    kSINC_CH1WindowLimitIntEnable = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_ERROR, SINC_EIE_WLMTIE1_MASK),
+    kSINC_CH1WindowLimitIntEnable = SINC_ENCODE_INTERRUPT(SINC_ERROR_INT_REG_ID, SINC_ERROR_INT_NAME_WLMTIE, 1ULL),
     /* Enable the window limit interrupt for channel 2. */
-    kSINC_CH2WindowLimitIntEnable = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_ERROR, SINC_EIE_WLMTIE2_MASK),
+    kSINC_CH2WindowLimitIntEnable = SINC_ENCODE_INTERRUPT(SINC_ERROR_INT_REG_ID, SINC_ERROR_INT_NAME_WLMTIE, 2ULL),
     /* Enable the window limit interrupt for channel 3. */
-    kSINC_CH3WindowLimitIntEnable = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_ERROR, SINC_EIE_WLMTIE3_MASK),
+    kSINC_CH3WindowLimitIntEnable = SINC_ENCODE_INTERRUPT(SINC_ERROR_INT_REG_ID, SINC_ERROR_INT_NAME_WLMTIE, 3ULL),
+#if (SINC_CHANNEL_COUNT >= 5UL)
+    /* Enable the window limit interrupt for channel 4. */
+    kSINC_CH4WindowLimitIntEnable = SINC_ENCODE_INTERRUPT(SINC_ERROR_INT_REG_ID, SINC_ERROR_INT_NAME_WLMTIE, 4ULL),
+#endif
 
     /* Enable the low limit interrupt for channel 0. */
-    kSINC_CH0LowLimitIntEnable = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_ERROR, SINC_EIE_LLMTIE0_MASK),
+    kSINC_CH0LowLimitIntEnable = SINC_ENCODE_INTERRUPT(SINC_ERROR_INT_REG_ID, SINC_ERROR_INT_NAME_LLMTIE, 0ULL),
     /* Enable the low limit interrupt for channel 1. */
-    kSINC_CH1LowLimitIntEnable = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_ERROR, SINC_EIE_LLMTIE1_MASK),
+    kSINC_CH1LowLimitIntEnable = SINC_ENCODE_INTERRUPT(SINC_ERROR_INT_REG_ID, SINC_ERROR_INT_NAME_LLMTIE, 1ULL),
     /* Enable the low limit interrupt for channel 2. */
-    kSINC_CH2LowLimitIntEnable = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_ERROR, SINC_EIE_LLMTIE2_MASK),
+    kSINC_CH2LowLimitIntEnable = SINC_ENCODE_INTERRUPT(SINC_ERROR_INT_REG_ID, SINC_ERROR_INT_NAME_LLMTIE, 2ULL),
     /* Enable the low limit interrupt for channel 3. */
-    kSINC_CH3LowLimitIntEnable = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_ERROR, SINC_EIE_LLMTIE3_MASK),
+    kSINC_CH3LowLimitIntEnable = SINC_ENCODE_INTERRUPT(SINC_ERROR_INT_REG_ID, SINC_ERROR_INT_NAME_LLMTIE, 3ULL),
+#if (SINC_CHANNEL_COUNT >= 5UL)
+    /* Enable the low limit interrupt for channel 4. */
+    kSINC_CH4LowLimitIntEnable = SINC_ENCODE_INTERRUPT(SINC_ERROR_INT_REG_ID, SINC_ERROR_INT_NAME_LLMTIE, 4ULL),
+#endif
 
     /* Enable the high limit interrupt for channel 0. */
-    kSINC_CH0HighLimitIntEnable = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_ERROR, SINC_EIE_HLMTIE0_MASK),
+    kSINC_CH0HighLimitIntEnable = SINC_ENCODE_INTERRUPT(SINC_ERROR_INT_REG_ID, SINC_ERROR_INT_NAME_HLMTIE, 0ULL),
     /* Enable the high limit interrupt for channel 1. */
-    kSINC_CH1HighLimitIntEnable = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_ERROR, SINC_EIE_HLMTIE1_MASK),
+    kSINC_CH1HighLimitIntEnable = SINC_ENCODE_INTERRUPT(SINC_ERROR_INT_REG_ID, SINC_ERROR_INT_NAME_HLMTIE, 1ULL),
     /* Enable the high limit interrupt for channel 2. */
-    kSINC_CH2HighLimitIntEnable = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_ERROR, SINC_EIE_HLMTIE2_MASK),
+    kSINC_CH2HighLimitIntEnable = SINC_ENCODE_INTERRUPT(SINC_ERROR_INT_REG_ID, SINC_ERROR_INT_NAME_HLMTIE, 2ULL),
     /* Enable the high limit interrupt for channel 3. */
-    kSINC_CH3HighLimitIntEnable = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_ERROR, SINC_EIE_HLMTIE3_MASK),
+    kSINC_CH3HighLimitIntEnable = SINC_ENCODE_INTERRUPT(SINC_ERROR_INT_REG_ID, SINC_ERROR_INT_NAME_HLMTIE, 3ULL),
+#if (SINC_CHANNEL_COUNT >= 5UL)
+    /* Enable the high limit interrupt for channel 4. */
+    kSINC_CH4HighLimitIntEnable = SINC_ENCODE_INTERRUPT(SINC_ERROR_INT_REG_ID, SINC_ERROR_INT_NAME_HLMTIE, 4ULL),
+#endif
 
     /* FIFO and CAD(clock-absence detector) Error interrupts enable. */
     /* Enable the FIFO underflow interrupt for channel 0. */
-    kSINC_CH0FifoUnderflowIntEnable = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_FIFO_CAD, SINC_FIFOIE_FUNFIE0_MASK),
+    kSINC_CH0FifoUnderflowIntEnable = SINC_ENCODE_INTERRUPT(SINC_FIFO_CAD_INT_REG_ID, SINC_FIFO_CAD_INT_FUNFIE, 0ULL),
     /* Enable the FIFO underflow interrupt for channel 1. */
-    kSINC_CH1FifoUnderflowIntEnable = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_FIFO_CAD, SINC_FIFOIE_FUNFIE1_MASK),
+    kSINC_CH1FifoUnderflowIntEnable = SINC_ENCODE_INTERRUPT(SINC_FIFO_CAD_INT_REG_ID, SINC_FIFO_CAD_INT_FUNFIE, 1ULL),
     /* Enable the FIFO underflow interrupt for channel 2. */
-    kSINC_CH2FifoUnderflowIntEnable = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_FIFO_CAD, SINC_FIFOIE_FUNFIE2_MASK),
+    kSINC_CH2FifoUnderflowIntEnable = SINC_ENCODE_INTERRUPT(SINC_FIFO_CAD_INT_REG_ID, SINC_FIFO_CAD_INT_FUNFIE, 2ULL),
     /* Enable the FIFO underflow interrupt for channel 3. */
-    kSINC_CH3FifoUnderflowIntEnable = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_FIFO_CAD, SINC_FIFOIE_FUNFIE3_MASK),
+    kSINC_CH3FifoUnderflowIntEnable = SINC_ENCODE_INTERRUPT(SINC_FIFO_CAD_INT_REG_ID, SINC_FIFO_CAD_INT_FUNFIE, 3ULL),
+#if (SINC_CHANNEL_COUNT >= 5UL)
+    /* Enable the FIFO underflow interrupt for channel 4. */
+    kSINC_CH4FifoUnderflowIntEnable = SINC_ENCODE_INTERRUPT(SINC_FIFO_CAD_INT_REG_ID, SINC_FIFO_CAD_INT_FUNFIE, 4ULL),
+#endif
 
     /* Enable the FIFO overflow interrupt for channel 0. */
-    kSINC_CH0FifoOverflowIntEnable = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_FIFO_CAD, SINC_FIFOIE_FOVFIE0_MASK),
+    kSINC_CH0FifoOverflowIntEnable = SINC_ENCODE_INTERRUPT(SINC_FIFO_CAD_INT_REG_ID, SINC_FIFO_CAD_INT_FOVFIE, 0ULL),
     /* Enable the FIFO overflow interrupt for channel 1. */
-    kSINC_CH1FifoOverflowIntEnable = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_FIFO_CAD, SINC_FIFOIE_FOVFIE1_MASK),
+    kSINC_CH1FifoOverflowIntEnable = SINC_ENCODE_INTERRUPT(SINC_FIFO_CAD_INT_REG_ID, SINC_FIFO_CAD_INT_FOVFIE, 1ULL),
     /* Enable the FIFO overflow interrupt for channel 2. */
-    kSINC_CH2FifoOverflowIntEnable = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_FIFO_CAD, SINC_FIFOIE_FOVFIE2_MASK),
+    kSINC_CH2FifoOverflowIntEnable = SINC_ENCODE_INTERRUPT(SINC_FIFO_CAD_INT_REG_ID, SINC_FIFO_CAD_INT_FOVFIE, 2ULL),
     /* Enable the FIFO overflow interrupt for channel 3. */
-    kSINC_CH3FifoOverflowIntEnable = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_FIFO_CAD, SINC_FIFOIE_FOVFIE3_MASK),
+    kSINC_CH3FifoOverflowIntEnable = SINC_ENCODE_INTERRUPT(SINC_FIFO_CAD_INT_REG_ID, SINC_FIFO_CAD_INT_FOVFIE, 3ULL),
+#if (SINC_CHANNEL_COUNT >= 5UL)
+    /* Enable the FIFO overflow interrupt for channel 4. */
+    kSINC_CH4FifoOverflowIntEnable = SINC_ENCODE_INTERRUPT(SINC_FIFO_CAD_INT_REG_ID, SINC_FIFO_CAD_INT_FOVFIE, 4ULL),
+#endif
 
     /* Enable the clock absence interrupt for channel 0. */
-    kSINC_CH0CADIntEnable = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_FIFO_CAD, SINC_FIFOIE_CADIE0_MASK),
+    kSINC_CH0CADIntEnable = SINC_ENCODE_INTERRUPT(SINC_FIFO_CAD_INT_REG_ID, SINC_FIFO_CAD_INT_CADIE, 0ULL),
     /* Enable the clock absence interrupt for channel 1. */
-    kSINC_CH1CADIntEnable = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_FIFO_CAD, SINC_FIFOIE_CADIE1_MASK),
+    kSINC_CH1CADIntEnable = SINC_ENCODE_INTERRUPT(SINC_FIFO_CAD_INT_REG_ID, SINC_FIFO_CAD_INT_CADIE, 1ULL),
     /* Enable the clock absence interrupt for channel 2. */
-    kSINC_CH2CADIntEnable = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_FIFO_CAD, SINC_FIFOIE_CADIE2_MASK),
+    kSINC_CH2CADIntEnable = SINC_ENCODE_INTERRUPT(SINC_FIFO_CAD_INT_REG_ID, SINC_FIFO_CAD_INT_CADIE, 2ULL),
     /* Enable the clock absence interrupt for channel 3. */
-    kSINC_CH3CADIntEnable = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_FIFO_CAD, SINC_FIFOIE_CADIE3_MASK),
+    kSINC_CH3CADIntEnable = SINC_ENCODE_INTERRUPT(SINC_FIFO_CAD_INT_REG_ID, SINC_FIFO_CAD_INT_CADIE, 3ULL),
+#if (SINC_CHANNEL_COUNT >= 5UL)
+    /* Enable the clock absence interrupt for channel 4. */
+    kSINC_CH4CADIntEnable = SINC_ENCODE_INTERRUPT(SINC_FIFO_CAD_INT_REG_ID, SINC_FIFO_CAD_INT_CADIE, 4ULL),
+#endif
 
     /* Enable the saturation interrupt for channel 0. */
-    kSINC_CH0SaturationIntEnable = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_FIFO_CAD, SINC_FIFOIE_SATIE0_MASK),
+    kSINC_CH0SaturationIntEnable = SINC_ENCODE_INTERRUPT(SINC_FIFO_CAD_INT_REG_ID, SINC_FIFO_CAD_INT_SATIE, 0ULL),
     /* Enable the saturation interrupt for channel 1. */
-    kSINC_CH1SaturationIntEnable = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_FIFO_CAD, SINC_FIFOIE_SATIE1_MASK),
+    kSINC_CH1SaturationIntEnable = SINC_ENCODE_INTERRUPT(SINC_FIFO_CAD_INT_REG_ID, SINC_FIFO_CAD_INT_SATIE, 1ULL),
     /* Enable the saturation interrupt for channel 2. */
-    kSINC_CH2SaturationIntEnable = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_FIFO_CAD, SINC_FIFOIE_SATIE2_MASK),
+    kSINC_CH2SaturationIntEnable = SINC_ENCODE_INTERRUPT(SINC_FIFO_CAD_INT_REG_ID, SINC_FIFO_CAD_INT_SATIE, 2ULL),
     /* Enable the saturation interrupt for channel 3. */
-    kSINC_CH3SaturationIntEnable = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_FIFO_CAD, SINC_FIFOIE_SATIE3_MASK),
+    kSINC_CH3SaturationIntEnable = SINC_ENCODE_INTERRUPT(SINC_FIFO_CAD_INT_REG_ID, SINC_FIFO_CAD_INT_SATIE, 3ULL),
+#if (SINC_CHANNEL_COUNT >= 5UL)
+    /* Enable the saturation interrupt for channel 4. */
+    kSINC_CH4SaturationIntEnable = SINC_ENCODE_INTERRUPT(SINC_FIFO_CAD_INT_REG_ID, SINC_FIFO_CAD_INT_SATIE, 4ULL),
+#endif
 };
 
 /*!
@@ -147,105 +229,154 @@ enum _sinc_interrupt_status
 {
     /* Normal interrupts status. */
     /* One conversion has finished and data is available in channel 0. */
-    kSINC_CH0ConvCompleteIntStatus = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_NORMAL, SINC_NIS_COC0_MASK),
+    kSINC_CH0ConvCompleteIntStatus = SINC_ENCODE_INTERRUPT(SINC_NORMAL_INT_REG_ID, SINC_NORMAL_INT_NAME_COCIE, 0ULL),
     /* One conversion has finished and data is available in channel 1. */
-    kSINC_CH1ConvCompleteIntStatus = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_NORMAL, SINC_NIS_COC1_MASK),
+    kSINC_CH1ConvCompleteIntStatus = SINC_ENCODE_INTERRUPT(SINC_NORMAL_INT_REG_ID, SINC_NORMAL_INT_NAME_COCIE, 1ULL),
     /* One conversion has finished and data is available in channel 2. */
-    kSINC_CH2ConvCompleteIntStatus = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_NORMAL, SINC_NIS_COC2_MASK),
+    kSINC_CH2ConvCompleteIntStatus = SINC_ENCODE_INTERRUPT(SINC_NORMAL_INT_REG_ID, SINC_NORMAL_INT_NAME_COCIE, 2ULL),
     /* One conversion has finished and data is available in channel 3. */
-    kSINC_CH3ConvCompleteIntStatus = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_NORMAL, SINC_NIS_COC3_MASK),
+    kSINC_CH3ConvCompleteIntStatus = SINC_ENCODE_INTERRUPT(SINC_NORMAL_INT_REG_ID, SINC_NORMAL_INT_NAME_COCIE, 3ULL),
+#if (SINC_CHANNEL_COUNT >= 5UL)
+    /* One conversion has finished and data is available in channel 4. */
+    kSINC_CH4ConvCompleteIntStatus = SINC_ENCODE_INTERRUPT(SINC_NORMAL_INT_REG_ID, SINC_NORMAL_INT_NAME_COCIE, 4ULL),
+#endif /* (SINC_CHANNEL_COUNT >= 5UL) */
 
     /* The FIFO of channel 0 has exceeded its watermark level and the data is available in channel 0 result register. */
-    kSINC_CH0DataReadyIntStatus = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_NORMAL, SINC_NIS_CHF0_MASK),
+    kSINC_CH0DataReadyIntStatus = SINC_ENCODE_INTERRUPT(SINC_NORMAL_INT_REG_ID, SINC_NORMAL_INT_NAME_CHFIE, 0ULL),
     /* The FIFO of channel 1 has exceeded its watermark level and the data is available in channel 1 result register. */
-    kSINC_CH1DataReadyIntStatus = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_NORMAL, SINC_NIS_CHF1_MASK),
+    kSINC_CH1DataReadyIntStatus = SINC_ENCODE_INTERRUPT(SINC_NORMAL_INT_REG_ID, SINC_NORMAL_INT_NAME_CHFIE, 1ULL),
     /* The FIFO of channel 2 has exceeded its watermark level and the data is available in channel 2 result register. */
-    kSINC_CH2DataReadyIntStatus = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_NORMAL, SINC_NIS_CHF2_MASK),
+    kSINC_CH2DataReadyIntStatus = SINC_ENCODE_INTERRUPT(SINC_NORMAL_INT_REG_ID, SINC_NORMAL_INT_NAME_CHFIE, 2ULL),
     /* The FIFO of channel 3 has exceeded its watermark level and the data is available in channel 3 result register. */
-    kSINC_CH3DataReadyIntStatus = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_NORMAL, SINC_NIS_CHF3_MASK),
+    kSINC_CH3DataReadyIntStatus = SINC_ENCODE_INTERRUPT(SINC_NORMAL_INT_REG_ID, SINC_NORMAL_INT_NAME_CHFIE, 3ULL),
+#if (SINC_CHANNEL_COUNT >= 5UL)
+    /* The FIFO of channel 4 has exceeded its watermark level and the data is available in channel 4 result register. */
+    kSINC_CH4DataReadyIntStatus = SINC_ENCODE_INTERRUPT(SINC_NORMAL_INT_REG_ID, SINC_NORMAL_INT_NAME_CHFIE, 4ULL),
+#endif /* (SINC_CHANNEL_COUNT >= 5UL) */
 
     /* The resulting data on channel 0 crossed zero and changed sign. */
-    kSINC_CH0ZeroCrossDetectedIntStatus = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_NORMAL, SINC_NIS_ZCD0_MASK),
+    kSINC_CH0ZeroCrossDetectedIntStatus =
+        SINC_ENCODE_INTERRUPT(SINC_NORMAL_INT_REG_ID, SINC_NORMAL_INT_NAME_ZCDIE, 0ULL),
     /* The resulting data on channel 1 crossed zero and changed sign. */
-    kSINC_CH1ZeroCrossDetectedIntStatus = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_NORMAL, SINC_NIS_ZCD1_MASK),
+    kSINC_CH1ZeroCrossDetectedIntStatus =
+        SINC_ENCODE_INTERRUPT(SINC_NORMAL_INT_REG_ID, SINC_NORMAL_INT_NAME_ZCDIE, 1ULL),
     /* The resulting data on channel 2 crossed zero and changed sign. */
-    kSINC_CH2ZeroCrossDetectedIntStatus = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_NORMAL, SINC_NIS_ZCD2_MASK),
+    kSINC_CH2ZeroCrossDetectedIntStatus =
+        SINC_ENCODE_INTERRUPT(SINC_NORMAL_INT_REG_ID, SINC_NORMAL_INT_NAME_ZCDIE, 2ULL),
     /* The resulting data on channel 3 crossed zero and changed sign. */
-    kSINC_CH3ZeroCrossDetectedIntStatus = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_NORMAL, SINC_NIS_ZCD3_MASK),
+    kSINC_CH3ZeroCrossDetectedIntStatus =
+        SINC_ENCODE_INTERRUPT(SINC_NORMAL_INT_REG_ID, SINC_NORMAL_INT_NAME_ZCDIE, 3ULL),
+#if (SINC_CHANNEL_COUNT >= 5UL)
+    /* The resulting data on channel 4 crossed zero and changed sign. */
+    kSINC_CH4ZeroCrossDetectedIntStatus =
+        SINC_ENCODE_INTERRUPT(SINC_NORMAL_INT_REG_ID, SINC_NORMAL_INT_NAME_ZCDIE, 4ULL),
+#endif /* (SINC_CHANNEL_COUNT >= 5UL) */
 
     /* Error interrupts Status. */
     /* SINC detected a short circuit on channel 0. */
-    kSINC_CH0SCDIntStatus = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_ERROR, SINC_EIS_SCD0_MASK),
+    kSINC_CH0SCDIntStatus = SINC_ENCODE_INTERRUPT(SINC_ERROR_INT_REG_ID, SINC_ERROR_INT_NAME_SCDIE, 0ULL),
     /* SINC detected a short circuit on channel 1. */
-    kSINC_CH1SCDIntStatus = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_ERROR, SINC_EIS_SCD1_MASK),
+    kSINC_CH1SCDIntStatus = SINC_ENCODE_INTERRUPT(SINC_ERROR_INT_REG_ID, SINC_ERROR_INT_NAME_SCDIE, 1ULL),
     /* SINC detected a short circuit on channel 2. */
-    kSINC_CH2SCDIntStatus = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_ERROR, SINC_EIS_SCD2_MASK),
+    kSINC_CH2SCDIntStatus = SINC_ENCODE_INTERRUPT(SINC_ERROR_INT_REG_ID, SINC_ERROR_INT_NAME_SCDIE, 2ULL),
     /* SINC detected a short circuit on channel 3. */
-    kSINC_CH3SCDIntStatus = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_ERROR, SINC_EIS_SCD3_MASK),
+    kSINC_CH3SCDIntStatus = SINC_ENCODE_INTERRUPT(SINC_ERROR_INT_REG_ID, SINC_ERROR_INT_NAME_SCDIE, 3ULL),
+#if (SINC_CHANNEL_COUNT >= 5UL)
+    /* SINC detected a short circuit on channel 4. */
+    kSINC_CH4SCDIntStatus = SINC_ENCODE_INTERRUPT(SINC_ERROR_INT_REG_ID, SINC_ERROR_INT_NAME_SCDIE, 4ULL),
+#endif /* (SINC_CHANNEL_COUNT >= 5UL) */
 
     /* Indicates channel 0 exceeded its window limit. */
-    kSINC_CH0WindowLimitIntStatus = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_ERROR, SINC_EIS_WLMT0_MASK),
+    kSINC_CH0WindowLimitIntStatus = SINC_ENCODE_INTERRUPT(SINC_ERROR_INT_REG_ID, SINC_ERROR_INT_NAME_WLMTIE, 0ULL),
     /* Indicates channel 1 exceeded its window limit. */
-    kSINC_CH1WindowLimitIntStatus = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_ERROR, SINC_EIS_WLMT1_MASK),
+    kSINC_CH1WindowLimitIntStatus = SINC_ENCODE_INTERRUPT(SINC_ERROR_INT_REG_ID, SINC_ERROR_INT_NAME_WLMTIE, 1ULL),
     /* Indicates channel 2 exceeded its window limit. */
-    kSINC_CH2WindowLimitIntStatus = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_ERROR, SINC_EIS_WLMT2_MASK),
+    kSINC_CH2WindowLimitIntStatus = SINC_ENCODE_INTERRUPT(SINC_ERROR_INT_REG_ID, SINC_ERROR_INT_NAME_WLMTIE, 2ULL),
     /* Indicates channel 3 exceeded its window limit. */
-    kSINC_CH3WindowLimitIntStatus = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_ERROR, SINC_EIS_WLMT3_MASK),
+    kSINC_CH3WindowLimitIntStatus = SINC_ENCODE_INTERRUPT(SINC_ERROR_INT_REG_ID, SINC_ERROR_INT_NAME_WLMTIE, 3ULL),
+#if (SINC_CHANNEL_COUNT >= 5UL)
+    /* Indicates channel 4 exceeded its window limit. */
+    kSINC_CH4WindowLimitIntStatus = SINC_ENCODE_INTERRUPT(SINC_ERROR_INT_REG_ID, SINC_ERROR_INT_NAME_WLMTIE, 4ULL),
+#endif /* (SINC_CHANNEL_COUNT >= 5UL) */
 
     /* Indicates channel 0 exceeded its low limit. */
-    kSINC_CH0LowLimitIntStatus = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_ERROR, SINC_EIS_LLMT0_MASK),
+    kSINC_CH0LowLimitIntStatus = SINC_ENCODE_INTERRUPT(SINC_ERROR_INT_REG_ID, SINC_ERROR_INT_NAME_LLMTIE, 0ULL),
     /* Indicates channel 1 exceeded its window limit. */
-    kSINC_CH1LowLimitIntStatus = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_ERROR, SINC_EIS_LLMT1_MASK),
+    kSINC_CH1LowLimitIntStatus = SINC_ENCODE_INTERRUPT(SINC_ERROR_INT_REG_ID, SINC_ERROR_INT_NAME_LLMTIE, 1ULL),
     /* Indicates channel 2 exceeded its window limit. */
-    kSINC_CH2LowLimitIntStatus = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_ERROR, SINC_EIS_LLMT2_MASK),
+    kSINC_CH2LowLimitIntStatus = SINC_ENCODE_INTERRUPT(SINC_ERROR_INT_REG_ID, SINC_ERROR_INT_NAME_LLMTIE, 2ULL),
     /* Indicates channel 3 exceeded its window limit. */
-    kSINC_CH3LowLimitIntStatus = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_ERROR, SINC_EIS_LLMT3_MASK),
+    kSINC_CH3LowLimitIntStatus = SINC_ENCODE_INTERRUPT(SINC_ERROR_INT_REG_ID, SINC_ERROR_INT_NAME_LLMTIE, 3ULL),
+#if (SINC_CHANNEL_COUNT >= 5UL)
+    /* Indicates channel 4 exceeded its window limit. */
+    kSINC_CH4LowLimitIntStatus = SINC_ENCODE_INTERRUPT(SINC_ERROR_INT_REG_ID, SINC_ERROR_INT_NAME_LLMTIE, 4ULL),
+#endif /* (SINC_CHANNEL_COUNT >= 5UL) */
 
     /* Indicates channel 0 exceeded its high limit. */
-    kSINC_CH0HighLimitIntStatus = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_ERROR, SINC_EIS_HLMT0_MASK),
+    kSINC_CH0HighLimitIntStatus = SINC_ENCODE_INTERRUPT(SINC_ERROR_INT_REG_ID, SINC_ERROR_INT_NAME_HLMTIE, 0ULL),
     /* Indicates channel 1 exceeded its high limit. */
-    kSINC_CH1HighLimitIntStatus = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_ERROR, SINC_EIS_HLMT1_MASK),
+    kSINC_CH1HighLimitIntStatus = SINC_ENCODE_INTERRUPT(SINC_ERROR_INT_REG_ID, SINC_ERROR_INT_NAME_HLMTIE, 1ULL),
     /* Indicates channel 2 exceeded its high limit. */
-    kSINC_CH2HighLimitIntStatus = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_ERROR, SINC_EIS_HLMT2_MASK),
+    kSINC_CH2HighLimitIntStatus = SINC_ENCODE_INTERRUPT(SINC_ERROR_INT_REG_ID, SINC_ERROR_INT_NAME_HLMTIE, 2ULL),
     /* Indicates channel 3 exceeded its high limit. */
-    kSINC_CH3HighLimitIntStatus = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_ERROR, SINC_EIS_HLMT3_MASK),
+    kSINC_CH3HighLimitIntStatus = SINC_ENCODE_INTERRUPT(SINC_ERROR_INT_REG_ID, SINC_ERROR_INT_NAME_HLMTIE, 3ULL),
+#if (SINC_CHANNEL_COUNT >= 5UL)
+    /* Indicates channel 4 exceeded its high limit. */
+    kSINC_CH4HighLimitIntStatus = SINC_ENCODE_INTERRUPT(SINC_ERROR_INT_REG_ID, SINC_ERROR_INT_NAME_HLMTIE, 4ULL),
+#endif /* (SINC_CHANNEL_COUNT >= 5UL) */
 
     /* FIFO and CAD(clock-absence detector) Error interrupts Status. */
     /* A FIFO underflow occurred on channel 0. */
-    kSINC_CH0FifoUnderflowIntStatus = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_FIFO_CAD, SINC_FIFOIS_FUNF0_MASK),
+    kSINC_CH0FifoUnderflowIntStatus = SINC_ENCODE_INTERRUPT(SINC_FIFO_CAD_INT_REG_ID, SINC_FIFO_CAD_INT_FUNFIE, 0ULL),
     /* A FIFO underflow occurred on channel 1. */
-    kSINC_CH1FifoUnderflowIntStatus = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_FIFO_CAD, SINC_FIFOIS_FUNF1_MASK),
+    kSINC_CH1FifoUnderflowIntStatus = SINC_ENCODE_INTERRUPT(SINC_FIFO_CAD_INT_REG_ID, SINC_FIFO_CAD_INT_FUNFIE, 1ULL),
     /* A FIFO underflow occurred on channel 2. */
-    kSINC_CH2FifoUnderflowIntStatus = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_FIFO_CAD, SINC_FIFOIS_FUNF2_MASK),
+    kSINC_CH2FifoUnderflowIntStatus = SINC_ENCODE_INTERRUPT(SINC_FIFO_CAD_INT_REG_ID, SINC_FIFO_CAD_INT_FUNFIE, 2ULL),
     /* A FIFO underflow occurred on channel 3. */
-    kSINC_CH3FifoUnderflowIntStatus = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_FIFO_CAD, SINC_FIFOIS_FUNF3_MASK),
+    kSINC_CH3FifoUnderflowIntStatus = SINC_ENCODE_INTERRUPT(SINC_FIFO_CAD_INT_REG_ID, SINC_FIFO_CAD_INT_FUNFIE, 3ULL),
+#if (SINC_CHANNEL_COUNT >= 5UL)
+    /* A FIFO underflow occurred on channel 4. */
+    kSINC_CH4FifoUnderflowIntStatus = SINC_ENCODE_INTERRUPT(SINC_FIFO_CAD_INT_REG_ID, SINC_FIFO_CAD_INT_FUNFIE, 4ULL),
+#endif /* (SINC_CHANNEL_COUNT >= 5UL) */
 
     /* A FIFO overflow occurred on channel 0. */
-    kSINC_CH0FifoOverflowIntStatus = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_FIFO_CAD, SINC_FIFOIS_FOVF0_MASK),
+    kSINC_CH0FifoOverflowIntStatus = SINC_ENCODE_INTERRUPT(SINC_FIFO_CAD_INT_REG_ID, SINC_FIFO_CAD_INT_FOVFIE, 0ULL),
     /* A FIFO overflow occurred on channel 1. */
-    kSINC_CH1FifoOverflowIntStatus = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_FIFO_CAD, SINC_FIFOIS_FOVF1_MASK),
+    kSINC_CH1FifoOverflowIntStatus = SINC_ENCODE_INTERRUPT(SINC_FIFO_CAD_INT_REG_ID, SINC_FIFO_CAD_INT_FOVFIE, 1ULL),
     /* A FIFO overflow occurred on channel 2. */
-    kSINC_CH2FifoOverflowIntStatus = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_FIFO_CAD, SINC_FIFOIS_FOVF2_MASK),
+    kSINC_CH2FifoOverflowIntStatus = SINC_ENCODE_INTERRUPT(SINC_FIFO_CAD_INT_REG_ID, SINC_FIFO_CAD_INT_FOVFIE, 2ULL),
     /* A FIFO overflow occurred on channel 3. */
-    kSINC_CH3FifoOverflowIntStatus = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_FIFO_CAD, SINC_FIFOIS_FOVF3_MASK),
+    kSINC_CH3FifoOverflowIntStatus = SINC_ENCODE_INTERRUPT(SINC_FIFO_CAD_INT_REG_ID, SINC_FIFO_CAD_INT_FOVFIE, 3ULL),
+#if (SINC_CHANNEL_COUNT >= 5UL)
+    /* A FIFO overflow occurred on channel 4. */
+    kSINC_CH4FifoOverflowIntStatus = SINC_ENCODE_INTERRUPT(SINC_FIFO_CAD_INT_REG_ID, SINC_FIFO_CAD_INT_FOVFIE, 4ULL),
+#endif /* (SINC_CHANNEL_COUNT >= 5UL) */
 
     /* SINC detected the absence of a clock on channel 0. */
-    kSINC_CH0CADIntStatus = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_FIFO_CAD, SINC_FIFOIS_CAD0_MASK),
+    kSINC_CH0CADIntStatus = SINC_ENCODE_INTERRUPT(SINC_FIFO_CAD_INT_REG_ID, SINC_FIFO_CAD_INT_CADIE, 0ULL),
     /* SINC detected the absence of a clock on channel 1. */
-    kSINC_CH1CADIntStatus = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_FIFO_CAD, SINC_FIFOIS_CAD1_MASK),
+    kSINC_CH1CADIntStatus = SINC_ENCODE_INTERRUPT(SINC_FIFO_CAD_INT_REG_ID, SINC_FIFO_CAD_INT_CADIE, 1ULL),
     /* SINC detected the absence of a clock on channel 2. */
-    kSINC_CH2CADIntStatus = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_FIFO_CAD, SINC_FIFOIS_CAD2_MASK),
+    kSINC_CH2CADIntStatus = SINC_ENCODE_INTERRUPT(SINC_FIFO_CAD_INT_REG_ID, SINC_FIFO_CAD_INT_CADIE, 2ULL),
     /* SINC detected the absence of a clock on channel 3. */
-    kSINC_CH3CADIntStatus = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_FIFO_CAD, SINC_FIFOIS_CAD3_MASK),
+    kSINC_CH3CADIntStatus = SINC_ENCODE_INTERRUPT(SINC_FIFO_CAD_INT_REG_ID, SINC_FIFO_CAD_INT_CADIE, 3ULL),
+#if (SINC_CHANNEL_COUNT >= 5UL)
+    /* SINC detected the absence of a clock on channel 4. */
+    kSINC_CH4CADIntStatus = SINC_ENCODE_INTERRUPT(SINC_FIFO_CAD_INT_REG_ID, SINC_FIFO_CAD_INT_CADIE, 4ULL),
+#endif /* (SINC_CHANNEL_COUNT >= 5UL) */
 
     /* Channel 0 is saturated. */
-    kSINC_CH0SaturationIntStatus = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_FIFO_CAD, SINC_FIFOIS_SAT0_MASK),
+    kSINC_CH0SaturationIntStatus = SINC_ENCODE_INTERRUPT(SINC_FIFO_CAD_INT_REG_ID, SINC_FIFO_CAD_INT_SATIE, 0ULL),
     /* Channel 1 is saturated. */
-    kSINC_CH1SaturationIntStatus = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_FIFO_CAD, SINC_FIFOIS_SAT1_MASK),
+    kSINC_CH1SaturationIntStatus = SINC_ENCODE_INTERRUPT(SINC_FIFO_CAD_INT_REG_ID, SINC_FIFO_CAD_INT_SATIE, 1ULL),
     /* Channel 2 is saturated. */
-    kSINC_CH2SaturationIntStatus = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_FIFO_CAD, SINC_FIFOIS_SAT2_MASK),
+    kSINC_CH2SaturationIntStatus = SINC_ENCODE_INTERRUPT(SINC_FIFO_CAD_INT_REG_ID, SINC_FIFO_CAD_INT_SATIE, 2ULL),
     /* Channel 3 is saturated. */
-    kSINC_CH3SaturationIntStatus = SINC_ENCODE_INTERRUPT(SINC_INTERRUPT_FIFO_CAD, SINC_FIFOIS_SAT3_MASK),
+    kSINC_CH3SaturationIntStatus = SINC_ENCODE_INTERRUPT(SINC_FIFO_CAD_INT_REG_ID, SINC_FIFO_CAD_INT_SATIE, 3ULL),
+#if (SINC_CHANNEL_COUNT >= 5UL)
+    /* Channel 4 is saturated. */
+    kSINC_CH4SaturationIntStatus = SINC_ENCODE_INTERRUPT(SINC_FIFO_CAD_INT_REG_ID, SINC_FIFO_CAD_INT_SATIE, 4ULL),
+#endif /* (SINC_CHANNEL_COUNT >= 5UL) */
 };
 
 /*!
@@ -631,18 +762,19 @@ typedef struct _sinc_channel_conv_option
     sinc_conv_trigger_source_t convTriggerSource; /*!< Specify conversion trigger source, please
                                                         refer to @ref sinc_conv_trigger_source_t. */
 
-    bool enableChPrimaryFilter;          /*!< Enable/disable channel's primary filter. */
-    sinc_primary_filter_order_t pfOrder; /*!< Specify the order of primary filter, please
-                                             refer to @ref sinc_primary_filter_order_t.  */
-    uint16_t u16pfOverSampleRatio;       /*!< Control primary filter's OSR, the minimum permissible value is 3,
-                                             low value produce unpredictable result, the maximum permissible value depend on
-                                             PF order and the desired data format, if PF order is third order and data format
-                                             is signed, the maximum OSR value is 1289, if PF order is third order and data
-                                             format is unsigned, the maximum OSR value is 1624, otherwise the maximum OSR
-                                             value is 2047. */
+    bool enableChPrimaryFilter;                   /*!< Enable/disable channel's primary filter. */
+    sinc_primary_filter_order_t pfOrder;          /*!< Specify the order of primary filter, please
+                                                      refer to @ref sinc_primary_filter_order_t.  */
+    uint16_t u16pfOverSampleRatio;                /*!< Control primary filter's OSR, the minimum permissible value is 3,
+                                                      low value produce unpredictable result, the maximum permissible value depend on
+                                                      PF order and the desired data format, if PF order is third order and data format
+                                                      is signed, the maximum OSR value is 1289, if PF order is third order and data
+                                                      format is unsigned, the maximum OSR value is 1624, otherwise the maximum OSR
+                                                      value is 2047. Please note that the OSR for equation is
+                                                      u16pfOverSampleRatio + 1*/
 
-    sin_primary_filter_hpf_alpha_coeff_t pfHpfAlphaCoeff; /*!< Specify HPF's alpha coeff, please
-                                                              refer to @ref sin_primary_filter_hpf_alpha_coeff_t.  */
+    sin_primary_filter_hpf_alpha_coeff_t pfHpfAlphaCoeff;   /*!< Specify HPF's alpha coeff, please
+                                                                refer to @ref sin_primary_filter_hpf_alpha_coeff_t.  */
 
     sinc_primary_filter_shift_direction_t pfShiftDirection; /*!< Select shift direction, right or left. */
     uint8_t u8pfShiftBitsNum; /*!< Specify the number of bits to shift the data, ranges from 0 to 15. */
@@ -662,8 +794,8 @@ typedef struct _sinc_channel_protection_option
                                                       refer to @ref sinc_limit_detector_mode_t. */
     bool bEnableLmtBreakSignal;                   /*!< Enable/disable limit break signal,
                                                       the details of break signal is depended on detector mode. */
-    uint32_t u32LowLimitThreshold;  /*!< Specify the low-limit threshold value, range from 0 to 0xFFFFFFUL. */
-    uint32_t u32HighLimitThreshold; /*!< Specify the high-limit threshold value, range from 0 to 0xFFFFFFUL. */
+    uint32_t u32LowLimitThreshold;          /*!< Specify the low-limit threshold value, range from 0 to 0xFFFFFFUL. */
+    uint32_t u32HighLimitThreshold;         /*!< Specify the high-limit threshold value, range from 0 to 0xFFFFFFUL. */
 
     sinc_scd_operate_mode_t scdOperateMode; /*!< Enable/disable scd, and set SCD operate timming.  */
     uint8_t u8ScdLimitThreshold;            /*!< Range from 2 to 255, 0 and 1 are prohibited. */
@@ -682,16 +814,16 @@ typedef struct _sinc_channel_protection_option
  */
 typedef struct _sinc_channel_config
 {
-    bool bEnableChannel;     /*!< Enable/disable channel. */
-    bool bEnableFifo;        /*!< Enable/disable channel's FIFO. */
-    uint8_t u8FifoWaterMark; /*!< Specify the fifo watermark, range from 0 to 15. */
-    bool bEnablePrimaryDma;  /*!< Used to enable/disable primary DMA. */
+    bool bEnableChannel;                      /*!< Enable/disable channel. */
+    bool bEnableFifo;                         /*!< Enable/disable channel's FIFO. */
+    uint8_t u8FifoWaterMark;                  /*!< Specify the fifo watermark, range from 0 to 15. */
+    bool bEnablePrimaryDma;                   /*!< Used to enable/disable primary DMA. */
 #if (defined(FSL_FEATURE_SINC_CACFR_HAS_ADMASEL) && FSL_FEATURE_SINC_CACFR_HAS_ADMASEL)
     sinc_alternate_dma_source_t altDmaSource; /*!< Set channel's alternate DMA source, please refer
                                                   to @ref sinc_alternate_dma_source_t. */
 #endif /* (defined(FSL_FEATURE_SINC_CACFR_HAS_ADMASEL) && FSL_FEATURE_SINC_CACFR_HAS_ADMASEL) */
-    sinc_result_data_format_t dataFormat; /*!< Set channel's result data format, please refer
-                                              to @ref sinc_result_data_format_t. */
+    sinc_result_data_format_t dataFormat;       /*!< Set channel's result data format, please refer
+                                                    to @ref sinc_result_data_format_t. */
 
     sinc_channel_input_option_t *chInputOption; /*!< The pointer to @ref sinc_channel_input_option_t that contains
                                                    channel input options. */
@@ -714,9 +846,10 @@ typedef struct _sinc_config
     bool disableModClk1Output; /*!< Disable/enable modulator clock1 output. */
     bool disableModClk2Output; /*!< Disable/enable modulator clock2 output. */
 
-    sinc_channel_config_t *channelsConfigArray[4]; /*!< The array that contains 4 elements, and the type of each element
-                                                   is \b sinc_channel_config_t *, channelsConfigArray[0] corresponding
-                                                   to channel0, channelsConfigArray[1] corresponding to channel1,
+    sinc_channel_config_t *channelsConfigArray[SINC_CHANNEL_COUNT]; /*!< The array that contains 4 elements, and the
+                                                   type of each element is \b sinc_channel_config_t *,
+                                                   channelsConfigArray[0] corresponding to channel0,
+                                                   channelsConfigArray[1] corresponding to channel1,
                                                    channelsConfigArray[2] corresponding to channel2,
                                                    channelsConfigArray[3] corresponding to channel3, if some channels
                                                    are not used, the corresponding elements should be set as NULL. */
@@ -1389,7 +1522,7 @@ uint8_t SINC_GetChannelConversionCount(SINC_Type *base, sinc_channel_id_t chId);
  */
 static inline bool SINC_CheckChannelConvProgress(SINC_Type *base, sinc_channel_id_t chId)
 {
-    return ((base->SR & (SINC_SR_CIP0_MASK << (uint32_t)chId)) != 0UL);
+    return ((base->SR & (((uint32_t)SINC_SR_CIP0_MASK) << (uint32_t)chId)) != 0UL);
 }
 
 /*!
@@ -1403,7 +1536,7 @@ static inline bool SINC_CheckChannelConvProgress(SINC_Type *base, sinc_channel_i
  */
 static inline bool SINC_CheckChannelReadyForConv(SINC_Type *base, sinc_channel_id_t chId)
 {
-    return ((base->SR & (SINC_SR_CHRDY0_MASK << (uint32_t)chId)) != 0UL);
+    return ((base->SR & (((uint32_t)SINC_SR_CHRDY0_MASK) << (uint32_t)chId)) != 0UL);
 }
 
 /*! @} */
@@ -1694,6 +1827,7 @@ static inline void SINC_SetChannelZcdOperateMode(SINC_Type *base,
  * @{
  */
 
+#if !((defined(FSL_FEATURE_SINC_CACFR_HAS_NO_PTMUX) && FSL_FEATURE_SINC_CACFR_HAS_NO_PTMUX))
 /*!
  * @brief Set selected channel's pulse trigger mux.
  *
@@ -1708,6 +1842,7 @@ static inline void SINC_SetChannelPulseTriggerMux(SINC_Type *base,
     base->CHANNEL[(uint8_t)chId].CACFR =
         ((base->CHANNEL[(uint8_t)chId].CACFR & ~SINC_CACFR_PTMUX_MASK) | SINC_CACFR_PTMUX(pulseTrigMux));
 }
+#endif /* !(defined(FSL_FEATURE_SINC_CACFR_HAS_NO_PTMUX) && FSL_FEATURE_SINC_CACFR_HAS_NO_PTMUX) */
 
 /*!
  * @brief Set selected channel's debug output.
@@ -1775,9 +1910,31 @@ static inline uint32_t SINC_GetChannelDebugData(SINC_Type *base, sinc_channel_id
  */
 static inline void SINC_EnableInterrupts(SINC_Type *base, uint64_t interruptMasks)
 {
-    base->EIE |= ((uint32_t)(interruptMasks & 0xF0F0F0FULL));
-    base->FIFOIE |= ((uint32_t)((interruptMasks & 0xF0F0F0F0ULL) >> 4UL));
-    base->NIE |= ((uint32_t)(interruptMasks >> 32UL) & 0xF0F0FUL);
+    uint32_t normalIntMask;
+    uint32_t errorIntMask;
+    uint32_t fifoCadIntMask;
+
+    /*
+     * #define SINC_DECODE_INTERRUPT(interruptMask)    \
+     *      normalIntMask = ((uint32_t)(interruptMask) & (0xFFFFFUL));  \
+     *      errorIntMask = ((uint32_t)((interruptMask) >> 20ULL) & (0xFFFFFUL));  \
+     *      fifoCadIntMask = ((uint32_t)((interruptMask) >> 40ULL) & (0xFFFFFUL))
+     */
+    SINC_DECODE_INTERRUPT(interruptMasks);
+
+    base->NIE |= SINC_FIND_INT_FIELD_VALUE(normalIntMask, SINC_NORMAL_INT_NAME_COCIE) |
+                 SINC_FIND_INT_FIELD_VALUE(normalIntMask, SINC_NORMAL_INT_NAME_CHFIE) |
+                 SINC_FIND_INT_FIELD_VALUE(normalIntMask, SINC_NORMAL_INT_NAME_ZCDIE);
+
+    base->EIE |= SINC_FIND_INT_FIELD_VALUE(errorIntMask, SINC_ERROR_INT_NAME_SCDIE) |
+                 SINC_FIND_INT_FIELD_VALUE(errorIntMask, SINC_ERROR_INT_NAME_WLMTIE) |
+                 SINC_FIND_INT_FIELD_VALUE(errorIntMask, SINC_ERROR_INT_NAME_LLMTIE) |
+                 SINC_FIND_INT_FIELD_VALUE(errorIntMask, SINC_ERROR_INT_NAME_HLMTIE);
+
+    base->FIFOIE |= SINC_FIND_INT_FIELD_VALUE(fifoCadIntMask, SINC_FIFO_CAD_INT_FUNFIE) |
+                    SINC_FIND_INT_FIELD_VALUE(fifoCadIntMask, SINC_FIFO_CAD_INT_FOVFIE) |
+                    SINC_FIND_INT_FIELD_VALUE(fifoCadIntMask, SINC_FIFO_CAD_INT_CADIE) |
+                    SINC_FIND_INT_FIELD_VALUE(fifoCadIntMask, SINC_FIFO_CAD_INT_SATIE);
 }
 
 /*!
@@ -1788,9 +1945,31 @@ static inline void SINC_EnableInterrupts(SINC_Type *base, uint64_t interruptMask
  */
 static inline void SINC_DisableInterrupts(SINC_Type *base, uint64_t interruptMasks)
 {
-    base->EIE &= ~((uint32_t)(interruptMasks & 0xF0F0F0FULL));
-    base->FIFOIE &= ~((uint32_t)((interruptMasks & 0xF0F0F0F0ULL) >> 4UL));
-    base->NIE &= ~((uint32_t)(interruptMasks >> 32UL) & 0xF0F0FUL);
+    uint32_t normalIntMask;
+    uint32_t errorIntMask;
+    uint32_t fifoCadIntMask;
+
+    /*
+     * #define SINC_DECODE_INTERRUPT(interruptMask)    \
+     *      normalIntMask = ((uint32_t)(interruptMask) & (0xFFFFFUL));  \
+     *      errorIntMask = ((uint32_t)((interruptMask) >> 20ULL) & (0xFFFFFUL));  \
+     *      fifoCadIntMask = ((uint32_t)((interruptMask) >> 40ULL) & (0xFFFFFUL))
+     */
+    SINC_DECODE_INTERRUPT(interruptMasks);
+
+    base->NIE &= ~(SINC_FIND_INT_FIELD_VALUE(normalIntMask, SINC_NORMAL_INT_NAME_COCIE) |
+                   SINC_FIND_INT_FIELD_VALUE(normalIntMask, SINC_NORMAL_INT_NAME_CHFIE) |
+                   SINC_FIND_INT_FIELD_VALUE(normalIntMask, SINC_NORMAL_INT_NAME_ZCDIE));
+
+    base->EIE &= ~(SINC_FIND_INT_FIELD_VALUE(errorIntMask, SINC_ERROR_INT_NAME_SCDIE) |
+                   SINC_FIND_INT_FIELD_VALUE(errorIntMask, SINC_ERROR_INT_NAME_WLMTIE) |
+                   SINC_FIND_INT_FIELD_VALUE(errorIntMask, SINC_ERROR_INT_NAME_LLMTIE) |
+                   SINC_FIND_INT_FIELD_VALUE(errorIntMask, SINC_ERROR_INT_NAME_HLMTIE));
+
+    base->FIFOIE &= ~(SINC_FIND_INT_FIELD_VALUE(fifoCadIntMask, SINC_FIFO_CAD_INT_FUNFIE) |
+                      SINC_FIND_INT_FIELD_VALUE(fifoCadIntMask, SINC_FIFO_CAD_INT_FOVFIE) |
+                      SINC_FIND_INT_FIELD_VALUE(fifoCadIntMask, SINC_FIFO_CAD_INT_CADIE) |
+                      SINC_FIND_INT_FIELD_VALUE(fifoCadIntMask, SINC_FIFO_CAD_INT_SATIE));
 }
 
 /*!
@@ -1802,7 +1981,28 @@ static inline void SINC_DisableInterrupts(SINC_Type *base, uint64_t interruptMas
  */
 static inline uint64_t SINC_GetInterruptStatus(SINC_Type *base)
 {
-    return (uint64_t)(((uint64_t)(base->EIS)) | ((uint64_t)(base->FIFOIS) << 4ULL) | ((uint64_t)(base->NIS) << 32ULL));
+    uint64_t allIntStatusValue     = 0ULL;
+    uint32_t normalIntStatusValue  = base->NIS;
+    uint32_t errorIntStatusValue   = base->EIS;
+    uint32_t fifoCadIntStatusValue = base->FIFOIS;
+
+    allIntStatusValue |= ((uint64_t)SINC_FIND_STATUS_FIELD_VALUE(normalIntStatusValue, SINC_NORMAL_INT_NAME_COCIE) |
+                          (uint64_t)SINC_FIND_STATUS_FIELD_VALUE(normalIntStatusValue, SINC_NORMAL_INT_NAME_CHFIE) |
+                          (uint64_t)SINC_FIND_STATUS_FIELD_VALUE(normalIntStatusValue, SINC_NORMAL_INT_NAME_ZCDIE));
+
+    allIntStatusValue |= (((uint64_t)SINC_FIND_STATUS_FIELD_VALUE(errorIntStatusValue, SINC_ERROR_INT_NAME_SCDIE) |
+                           (uint64_t)SINC_FIND_STATUS_FIELD_VALUE(errorIntStatusValue, SINC_ERROR_INT_NAME_WLMTIE) |
+                           (uint64_t)SINC_FIND_STATUS_FIELD_VALUE(errorIntStatusValue, SINC_ERROR_INT_NAME_LLMTIE) |
+                           (uint64_t)SINC_FIND_STATUS_FIELD_VALUE(errorIntStatusValue, SINC_ERROR_INT_NAME_HLMTIE))
+                          << 20ULL);
+
+    allIntStatusValue |= (((uint64_t)SINC_FIND_STATUS_FIELD_VALUE(fifoCadIntStatusValue, SINC_FIFO_CAD_INT_FUNFIE) |
+                           (uint64_t)SINC_FIND_STATUS_FIELD_VALUE(fifoCadIntStatusValue, SINC_FIFO_CAD_INT_FOVFIE) |
+                           (uint64_t)SINC_FIND_STATUS_FIELD_VALUE(fifoCadIntStatusValue, SINC_FIFO_CAD_INT_CADIE) |
+                           (uint64_t)SINC_FIND_STATUS_FIELD_VALUE(fifoCadIntStatusValue, SINC_FIFO_CAD_INT_SATIE))
+                          << 40ULL);
+
+    return (uint64_t)allIntStatusValue;
 }
 
 /*!
@@ -1814,9 +2014,31 @@ static inline uint64_t SINC_GetInterruptStatus(SINC_Type *base)
  */
 static inline void SINC_ClearInterruptStatus(SINC_Type *base, uint64_t statusMasks)
 {
-    base->EIS    = ((uint32_t)(statusMasks & 0xF0F0F0FULL));
-    base->FIFOIS = ((uint32_t)((statusMasks & 0xF0F0F0F0ULL) >> 4UL));
-    base->NIS    = ((uint32_t)(statusMasks >> 32UL) & 0xF0F0FUL);
+    uint32_t normalIntMask;
+    uint32_t errorIntMask;
+    uint32_t fifoCadIntMask;
+
+    /*
+     * #define SINC_DECODE_INTERRUPT(interruptMask)    \
+     *      normalIntMask = ((uint32_t)(interruptMask) & (0xFFFFFUL));  \
+     *      errorIntMask = ((uint32_t)((interruptMask) >> 20ULL) & (0xFFFFFUL));  \
+     *      fifoCadIntMask = ((uint32_t)((interruptMask) >> 40ULL) & (0xFFFFFUL))
+     */
+    SINC_DECODE_INTERRUPT(statusMasks);
+
+    base->EIS = (SINC_FIND_INT_FIELD_VALUE(errorIntMask, SINC_ERROR_INT_NAME_SCDIE) |
+                 SINC_FIND_INT_FIELD_VALUE(errorIntMask, SINC_ERROR_INT_NAME_WLMTIE) |
+                 SINC_FIND_INT_FIELD_VALUE(errorIntMask, SINC_ERROR_INT_NAME_LLMTIE) |
+                 SINC_FIND_INT_FIELD_VALUE(errorIntMask, SINC_ERROR_INT_NAME_HLMTIE));
+
+    base->FIFOIS = (SINC_FIND_INT_FIELD_VALUE(fifoCadIntMask, SINC_FIFO_CAD_INT_FUNFIE) |
+                    SINC_FIND_INT_FIELD_VALUE(fifoCadIntMask, SINC_FIFO_CAD_INT_FOVFIE) |
+                    SINC_FIND_INT_FIELD_VALUE(fifoCadIntMask, SINC_FIFO_CAD_INT_CADIE) |
+                    SINC_FIND_INT_FIELD_VALUE(fifoCadIntMask, SINC_FIFO_CAD_INT_SATIE));
+
+    base->NIS = (SINC_FIND_INT_FIELD_VALUE(normalIntMask, SINC_NORMAL_INT_NAME_COCIE) |
+                 SINC_FIND_INT_FIELD_VALUE(normalIntMask, SINC_NORMAL_INT_NAME_CHFIE) |
+                 SINC_FIND_INT_FIELD_VALUE(normalIntMask, SINC_NORMAL_INT_NAME_ZCDIE));
 }
 
 /*! @} */
@@ -1832,4 +2054,4 @@ extern "C" {
 /*!
  * @}
  */
-#endif /* __FSL_SINC_H__ */
+#endif /* FSL_SINC_H__ */

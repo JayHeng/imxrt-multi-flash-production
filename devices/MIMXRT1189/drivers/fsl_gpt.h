@@ -6,8 +6,8 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-#ifndef _FSL_GPT_H_
-#define _FSL_GPT_H_
+#ifndef FSL_GPT_H_
+#define FSL_GPT_H_
 
 #include "fsl_common.h"
 
@@ -506,4 +506,4 @@ static inline void GPT_ClearStatusFlags(GPT_Type *base, gpt_status_flag_t flags)
 
 /*! @}*/
 
-#endif /* _FSL_GPT_H_ */
+#endif /* FSL_GPT_H_ */

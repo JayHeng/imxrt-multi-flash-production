@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 NXP
+ * Copyright 2021-2023 NXP
  * All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
@@ -210,7 +210,7 @@ void TRDC_SetProcessorDomainAssignment(TRDC_Type *base, const trdc_processor_dom
 #if defined(FSL_FEATURE_TRDC_PROCESSOR_MASTER_COUNT) && (FSL_FEATURE_TRDC_PROCESSOR_MASTER_COUNT > 1)
     base->MDA_DFMT0[master].MDA_W_DFMT0[regNum] = pid._u32 | TRDC_MDA_W_DFMT0_VLD_MASK;
 #else
-    base->MDA_W0_0_DFMT0                           = pid._u32 | TRDC_MDA_W0_0_DFMT0_VLD_MASK;
+    base->MDA_W0_0_DFMT0 = pid._u32 | TRDC_MDA_W0_0_DFMT0_VLD_MASK;
 #endif
 }
 
@@ -263,11 +263,6 @@ void TRDC_SetNonProcessorDomainAssignment(TRDC_Type *base,
  *
  * Each processor has a corresponding process identifier (PID) which can be used to group tasks into different domains.
  * Secure privileged software saves and restores the PID as part of any context switch.
-This data structure defines an array of 32-bit values, one per MDA module, that define the PID. Since this register
-resource is only applicable to processor cores, the data structure is typically sparsely populated. The HWCFG[2-3]
-registers provide a bitmap of the implemented PIDn registers. This data structure is indexed using the corresponding MDA
-instance number. Depending on the operating clock domain of each DAC instance, there may be optional information stored
-in the corresponding PIDm register to properly implement the LK2 = 2 functionality.
  *
  * param base TRDC peripheral base address.
  * param master Which processor master to configure, refer to trdc_master_t in processor header file.
@@ -276,7 +271,7 @@ in the corresponding PIDm register to properly implement the LK2 = 2 functionali
 void TRDC_SetPid(TRDC_Type *base, uint8_t master, const trdc_pid_config_t *pidConfig)
 {
     assert(pidConfig != NULL);
-    assert(master < FSL_FEATURE_TRDC_PROCESSOR_MASTER_COUNT);
+    assert(master < (sizeof(base->PID) / 4U));
     assert(FSL_FEATURE_TRDC_INSTANCE_HAS_PID_CONFIGURATIONn(base) != 0);
 
     trdc_reg32_convert_t pid;
@@ -381,7 +376,7 @@ void TRDC_SetFlashLogicalWindow(TRDC_Type *base, const trdc_flw_config_t *flwCon
     base->TRDC_FLW_CTL   = TRDC_TRDC_FLW_CTL_V(flwConfiguration->enable) | TRDC_TRDC_FLW_CTL_LK(flwConfiguration->lock);
 }
 
-#if (((__CORTEX_M == 0U) && (defined(__ICCARM__))) || (defined(__XCC__)))
+#if (((__CORTEX_M == 0U) && (defined(__ICCARM__))) || (defined(__XTENSA__)))
 /*!
  * @brief Count the leading zeros.
  *
@@ -486,7 +481,7 @@ status_t TRDC_GetAndClearFirstSpecificDomainError(TRDC_Type *base, trdc_domain_e
     else
     {
         /* Get the first error controller index. */
-#if (((__CORTEX_M == 0U) && (defined(__ICCARM__))) || (defined(__XCC__)))
+#if (((__CORTEX_M == 0U) && (defined(__ICCARM__))) || (defined(__XTENSA__)))
         errorIndex = 31U - TRDC_CountLeadingZeros(errorBitMap);
 #else
         errorIndex = 31U - __CLZ(errorBitMap);
@@ -646,13 +641,29 @@ void TRDC_MrcRegionNseClear(TRDC_Type *base, uint8_t mrcIdx, uint16_t regionMask
  *
  * param base TRDC peripheral base address.
  * param mrcIdx MRC index.
- * param domianMask Bit mask of the domians whose NSE bits to clear.
+ * param domainMask Bit mask of the domians whose NSE bits to clear.
  */
-void TRDC_MrcDomainNseClear(TRDC_Type *base, uint8_t mrcIdx, uint16_t domianMask)
+void TRDC_MrcDomainNseClear(TRDC_Type *base, uint8_t mrcIdx, uint16_t domainMask)
 {
     assert(NULL != base);
 
-    base->MRC_INDEX[mrcIdx].MRC_NSE_RGN_CLR_ALL = ((uint32_t)domianMask);
+    uint8_t domainCount  = (uint8_t)((base->TRDC_HWCFG0 & TRDC_TRDC_HWCFG0_NDID_MASK) >> TRDC_TRDC_HWCFG0_NDID_SHIFT);
+    uint8_t maxDomainId = 0U;
+    uint16_t tmpDomainMask = domainMask;
+
+    while (tmpDomainMask != 0U)
+    {
+        tmpDomainMask >>= 1U;
+        maxDomainId++;
+    }
+
+    /* Check whether the domain mask contains invalid domain. */
+    if (maxDomainId > domainCount)
+    {
+        assert(false);
+    }
+
+    base->MRC_INDEX[mrcIdx].MRC_NSE_RGN_CLR_ALL = ((uint32_t)domainMask << 16U);
 }
 
 /*!
@@ -748,15 +759,16 @@ void TRDC_MbcNseClearAll(TRDC_Type *base, uint8_t mbcIdx, uint16_t domainMask, u
     assert(NULL != base);
 
     uint8_t dmainCount  = (uint8_t)((base->TRDC_HWCFG0 & TRDC_TRDC_HWCFG0_NDID_MASK) >> TRDC_TRDC_HWCFG0_NDID_SHIFT);
-    uint8_t maxDomianId = 0U;
+    uint8_t maxDomainId = 0U;
+    uint16_t tmpDomainMask = domainMask;
 
-    while (domainMask != 0U)
+    while (tmpDomainMask != 0U)
     {
-        domainMask >>= 1U;
-        maxDomianId++;
+        tmpDomainMask >>= 1U;
+        maxDomainId++;
     }
 
-    if ((maxDomianId - 1U) > dmainCount)
+    if (maxDomainId > dmainCount)
     {
         assert(false);
     }

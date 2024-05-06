@@ -314,6 +314,7 @@ void CLOCK_InitPfd(clock_pll_t pll, clock_pfd_t pfd, uint8_t frac)
 
     *pfdUpdate ^= ((uint32_t)ANADIG_PLL_SYS_PLL2_UPDATE_PFD0_UPDATE_MASK << (uint32_t)pfd);
     *pfdCtrl &= ~((uint32_t)ANADIG_PLL_SYS_PLL2_PFD_PFD0_DIV1_CLKGATE_MASK << (8UL * (uint32_t)pfd));
+
     /* Wait for stablizing */
     while (stable == (*pfdCtrl & ((uint32_t)ANADIG_PLL_SYS_PLL2_PFD_PFD0_STABLE_MASK << (8UL * (uint32_t)pfd))))
     {
@@ -381,7 +382,8 @@ uint32_t CLOCK_GetPfdFreq(clock_pll_t pll, clock_pfd_t pfd)
     frac = frac >> (8UL * (uint32_t)pfd);
     assert(frac >= (uint32_t)PFD_FRAC_MIN);
     assert(frac <= (uint32_t)PFD_FRAC_MAX);
-    return ((frac != 0UL) ? (pllFreq / frac * 18UL) : 0UL);
+
+    return ((frac != 0UL) ? ((uint32_t)(((double)pllFreq) * (double)18UL / (double)frac)) : 0UL);
 }
 #else
 uint32_t CLOCK_GetPfdFreq(clock_pll_t pll, clock_pfd_t pfd)
@@ -392,12 +394,12 @@ uint32_t CLOCK_GetPfdFreq(clock_pll_t pll, clock_pfd_t pfd)
     switch (pll)
     {
         case kCLOCK_PllSys2:
-            /* SYS_PLL2_PFD0 OBS index starts from 234 */
-            freq = CLOCK_GetFreqFromObs(pfd + 234, 2);
+            /* SYS_PLL2_PFD0 OBS index starts from CCM_OBS_PLL_528_PFD0 */
+            freq = CLOCK_GetFreqFromObs(0, pfd + CCM_OBS_PLL_528_PFD0);
             break;
         case kCLOCK_PllSys3:
-            /* SYS_PLL3_PFD0 OBS index starts from 241 */
-            freq = CLOCK_GetFreqFromObs(pfd + 241, 2);
+            /* SYS_PLL3_PFD0 OBS index starts from CCM_OBS_PLL_480_PFD0 */
+            freq = CLOCK_GetFreqFromObs(0, pfd + CCM_OBS_PLL_480_PFD0);
             break;
         default:
             assert(false);
@@ -932,11 +934,6 @@ void CLOCK_InitSysPll1(const clock_sys_pll1_config_t *config)
     div         = 41U;
     numerator   = 178956970UL;
 
-    if (config->ssEnable && (config->ss != NULL))
-    {
-        return;
-    }
-
     /* configure pll */
     ANATOP_PllConfigure(ETHERNET_PLL, div, numerator, 0U, denominator,
                         (config->ssEnable && (config->ss != NULL)) ? config->ss : NULL);
@@ -1221,8 +1218,8 @@ static uint32_t CLOCK_GetAudioPllFreq(void)
 
     div      = (AUDIO_PLL->CTRL0.RW & PLL_CTRL0_DIV_SELECT_MASK) >> PLL_CTRL0_DIV_SELECT_SHIFT;
     post_div = (AUDIO_PLL->CTRL0.RW & PLL_CTRL0_POST_DIV_SEL_MASK) >> PLL_CTRL0_POST_DIV_SEL_SHIFT;
-    denom    = AUDIO_PLL->DENOMINATOR.RW;
-    numer    = AUDIO_PLL->NUMERATOR.RW;
+    denom    = (double)(AUDIO_PLL->DENOMINATOR.RW);
+    numer    = (double)(AUDIO_PLL->NUMERATOR.RW);
 
     tmpDouble = ((double)XTAL_FREQ * ((double)div + (numer / denom)) / (double)(uint32_t)(1UL << post_div));
     freq      = (uint32_t)tmpDouble;
@@ -1250,35 +1247,35 @@ uint32_t CLOCK_GetPllFreq(clock_pll_t pll)
             freq    = XTAL_FREQ / (2UL * postDiv);
             freq *= divSelect;
 #else
-            freq = CLOCK_GetFreqFromObs(CCM_OBS_ARM_PLL_OUT);
+            freq = CLOCK_GetFreqFromObs(0, CCM_OBS_PLL_ARM_OUT);
 #endif
             break;
         case kCLOCK_PllSys1:
 #ifndef GET_FREQ_FROM_OBS
             freq = PLL_SYS1_1G_FREQ;
 #else
-            freq = CLOCK_GetFreqFromObs(CCM_OBS_PLL_SYS1_1G_OUT);
+            freq = CLOCK_GetFreqFromObs(0, CCM_OBS_PLL_1G_OUT);
 #endif
             break;
         case kCLOCK_PllSys2:
 #ifndef GET_FREQ_FROM_OBS
             freq = PLL_SYS2_528_FREQ;
 #else
-            freq = CLOCK_GetFreqFromObs(CCM_OBS_PLL_SYS2_528_OUT);
+            freq = CLOCK_GetFreqFromObs(0, CCM_OBS_PLL_528_OUT);
 #endif
             break;
         case kCLOCK_PllSys3:
 #ifndef GET_FREQ_FROM_OBS
             freq = PLL_SYS3_480_FREQ;
 #else
-            freq = CLOCK_GetFreqFromObs(CCM_OBS_PLL_SYS3_480_OUT);
+            freq = CLOCK_GetFreqFromObs(0, CCM_OBS_PLL_480_OUT);
 #endif
             break;
         case kCLOCK_PllAudio:
 #ifndef GET_FREQ_FROM_OBS
             freq = CLOCK_GetAudioPllFreq();
 #else
-            freq = CLOCK_GetFreqFromObs(CCM_OBS_PLL_AUDIO_OUT);
+            freq = CLOCK_GetFreqFromObs(0, CCM_OBS_PLL_AUDIO_OUT);
 #endif
             break;
         default:
@@ -1286,7 +1283,6 @@ uint32_t CLOCK_GetPllFreq(clock_pll_t pll)
             assert(false);
             break;
     }
-    assert(freq != 0UL);
     return freq;
 }
 
@@ -1299,14 +1295,14 @@ uint32_t CLOCK_GetFreq(clock_name_t name)
 #ifndef GET_FREQ_FROM_OBS
             freq = 24000000U;
 #else
-            freq = CLOCK_GetFreqFromObs(CCM_OBS_OSC_RC_16M);
+            freq = CLOCK_GetFreqFromObs(0, CCM_OBS_OSC_RC_24M);
 #endif
             break;
         case kCLOCK_OscRc400M:
 #ifndef GET_FREQ_FROM_OBS
             freq = 400000000U;
 #else
-            freq = CLOCK_GetFreqFromObs(CCM_OBS_OSC_RC_400M);
+            freq = CLOCK_GetFreqFromObs(0, CCM_OBS_OSC_RC_400M);
 #endif
             break;
         case kCLOCK_Osc24MOut:
@@ -1314,7 +1310,7 @@ uint32_t CLOCK_GetFreq(clock_name_t name)
 #ifndef GET_FREQ_FROM_OBS
             freq = 24000000U;
 #else
-            freq = CLOCK_GetFreqFromObs(CCM_OBS_OSC_24M_OUT);
+            freq = CLOCK_GetFreqFromObs(0, CCM_OBS_OSC_24M_OUT);
 #endif
             break;
         case kCLOCK_ArmPllOut:
@@ -1380,6 +1376,90 @@ uint32_t CLOCK_GetFreq(clock_name_t name)
             break;
     }
     assert(freq != 0UL);
+    return freq;
+}
+
+/*!
+ * @brief Get the CCM CPU/core/system frequency.
+ *
+ * @return  Clock frequency; If the clock is invalid, returns 0.
+ */
+uint32_t CLOCK_GetM7Freq(void)
+{
+    uint32_t freq = 0, mux;
+    mux           = CLOCK_GetRootClockMux(kCLOCK_Root_M7);
+
+    switch (s_clockSourceName[kCLOCK_Root_M7][mux])
+    {
+        case kCLOCK_OscRc24M:
+#ifndef GET_FREQ_FROM_OBS
+            freq = 24000000U;
+#else
+            freq = CLOCK_GetFreqFromObs(0, CCM_OBS_OSC_RC_24M);
+#endif
+            break;
+        case kCLOCK_OscRc400M:
+#ifndef GET_FREQ_FROM_OBS
+            freq = 400000000U;
+#else
+            freq = CLOCK_GetFreqFromObs(0, CCM_OBS_OSC_RC_400M);
+#endif
+            break;
+        case kCLOCK_ArmPllOut:
+            freq = CLOCK_GetPllFreq(kCLOCK_PllArm);
+            break;
+        case kCLOCK_SysPll3Out:
+            freq = CLOCK_GetPllFreq(kCLOCK_PllSys3);
+            break;
+        default:
+            /* Wrong input parameter name. */
+            assert(false);
+            break;
+    }
+    freq = freq / (CLOCK_GetRootClockDiv(kCLOCK_Root_M7));
+    assert(freq);
+    return freq;
+}
+
+/*!
+ * @brief Get the CCM CPU/core/system frequency.
+ *
+ * @return  Clock frequency; If the clock is invalid, returns 0.
+ */
+uint32_t CLOCK_GetM33Freq(void)
+{
+    uint32_t freq = 0, mux;
+    mux           = CLOCK_GetRootClockMux(kCLOCK_Root_M33);
+
+    switch (s_clockSourceName[kCLOCK_Root_M33][mux])
+    {
+        case kCLOCK_OscRc24M:
+#ifndef GET_FREQ_FROM_OBS
+            freq = 24000000U;
+#else
+            freq = CLOCK_GetFreqFromObs(0, CCM_OBS_OSC_RC_24M);
+#endif
+            break;
+        case kCLOCK_OscRc400M:
+#ifndef GET_FREQ_FROM_OBS
+            freq = 400000000U;
+#else
+            freq = CLOCK_GetFreqFromObs(0, CCM_OBS_OSC_RC_400M);
+#endif
+            break;
+        case kCLOCK_ArmPllOut:
+            freq = CLOCK_GetPllFreq(kCLOCK_PllArm);
+            break;
+        case kCLOCK_SysPll3Out:
+            freq = CLOCK_GetPllFreq(kCLOCK_PllSys3);
+            break;
+        default:
+            /* Wrong input parameter name. */
+            assert(false);
+            break;
+    }
+    freq = freq / (CLOCK_GetRootClockDiv(kCLOCK_Root_M33));
+    assert(freq);
     return freq;
 }
 
@@ -1630,7 +1710,6 @@ bool CLOCK_EnableUsbhs0PhyPllClock(clock_usb_phy_src_t src, uint32_t freq)
     USBPHY1->PLL_SIC_SET = (USBPHY_PLL_SIC_PLL_EN_USB_CLKS_MASK);
 
     USBPHY1->CTRL_CLR = USBPHY_CTRL_CLR_CLKGATE_MASK;
-    USBPHY1->PWD_SET  = 0x0;
 
     while (0UL == (USBPHY1->PLL_SIC & USBPHY_PLL_SIC_PLL_LOCK_MASK))
     {
@@ -1736,7 +1815,6 @@ bool CLOCK_EnableUsbhs1PhyPllClock(clock_usb_phy_src_t src, uint32_t freq)
     USBPHY2->PLL_SIC_SET = (USBPHY_PLL_SIC_PLL_EN_USB_CLKS_MASK);
 
     USBPHY2->CTRL_CLR = USBPHY_CTRL_CLR_CLKGATE_MASK;
-    USBPHY2->PWD_SET  = 0x0;
 
     while (0UL == (USBPHY2->PLL_SIC & USBPHY_PLL_SIC_PLL_LOCK_MASK))
     {

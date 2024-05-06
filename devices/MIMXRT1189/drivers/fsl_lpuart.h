@@ -5,8 +5,8 @@
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
-#ifndef _FSL_LPUART_H_
-#define _FSL_LPUART_H_
+#ifndef FSL_LPUART_H_
+#define FSL_LPUART_H_
 
 #include "fsl_common.h"
 
@@ -22,7 +22,7 @@
 /*! @name Driver version */
 /*@{*/
 /*! @brief LPUART driver version. */
-#define FSL_LPUART_DRIVER_VERSION (MAKE_VERSION(2, 7, 0))
+#define FSL_LPUART_DRIVER_VERSION (MAKE_VERSION(2, 7, 6))
 /*@}*/
 
 /*! @brief Retry times for waiting flag. */
@@ -650,9 +650,9 @@ uint32_t LPUART_GetEnabledInterrupts(LPUART_Type *base);
  * @param base LPUART peripheral base address.
  * @return LPUART data register addresses which are used both by the transmitter and receiver.
  */
-static inline uint32_t LPUART_GetDataRegisterAddress(LPUART_Type *base)
+static inline uintptr_t LPUART_GetDataRegisterAddress(LPUART_Type *base)
 {
-    return (uint32_t) & (base->DATA);
+    return (uintptr_t) & (base->DATA);
 }
 
 /*!
@@ -778,6 +778,11 @@ static inline uint8_t LPUART_ReadByte(LPUART_Type *base)
 #if defined(FSL_FEATURE_LPUART_HAS_7BIT_DATA_SUPPORT) && FSL_FEATURE_LPUART_HAS_7BIT_DATA_SUPPORT
     uint32_t ctrl = base->CTRL;
     uint8_t result;
+    /*
+     * $Branch Coverage Justification$
+     * (ctrl & LPUART_CTRL_M7_MASK) == 0U) false is not covered.
+     * If ctrl & LPUART_CTRL_M7_MASK is 0, it can't be !0 in next judge.
+     */
     bool isSevenDataBits = (((ctrl & LPUART_CTRL_M7_MASK) != 0U) ||
                             (((ctrl & LPUART_CTRL_M7_MASK) == 0U) && ((ctrl & LPUART_CTRL_M_MASK) == 0U) &&
                              ((ctrl & LPUART_CTRL_PE_MASK) != 0U)));
@@ -1061,4 +1066,4 @@ void LPUART_TransferHandleErrorIRQ(LPUART_Type *base, void *irqHandle);
 
 /*! @}*/
 
-#endif /* _FSL_LPUART_H_ */
+#endif /* FSL_LPUART_H_ */

@@ -1,10 +1,10 @@
 /*
- * Copyright 2022 NXP
+ * Copyright 2022-2023 NXP
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
-#ifndef _FSL_I3C_EDMA_H_
-#define _FSL_I3C_EDMA_H_
+#ifndef FSL_I3C_EDMA_H_
+#define FSL_I3C_EDMA_H_
 
 #include "fsl_i3c.h"
 #include "fsl_edma.h"
@@ -15,12 +15,12 @@
 
 /*! @name Driver version */
 /*@{*/
-/*! @brief I3C DMA driver version 2.0.0. */
-#define FSL_I3C_DMA_DRIVER_VERSION (MAKE_VERSION(2, 0, 1))
+/*! @brief I3C EDMA driver version. */
+#define FSL_I3C_EDMA_DRIVER_VERSION (MAKE_VERSION(2, 2, 9))
 /*@}*/
 
 /*!
- * @addtogroup i3c_master_dma_driver
+ * @addtogroup i3c_master_edma_driver
  * @{
  */
 
@@ -65,7 +65,7 @@ struct _i3c_master_edma_handle
 /*! @} */
 
 /*!
- * @addtogroup i3c_slave_dma_driver
+ * @addtogroup i3c_slave_edma_driver
  * @{
  */
 /* Forward declaration of the transfer descriptor and handle typedefs. */
@@ -95,7 +95,7 @@ typedef struct _i3c_slave_edma_transfer
  */
 typedef void (*i3c_slave_edma_callback_t)(I3C_Type *base, i3c_slave_edma_transfer_t *transfer, void *userData);
 /*!
- * @brief I3C slave dma handle structure.
+ * @brief I3C slave edma handle structure.
  * @note The contents of this structure are private and subject to change.
  */
 struct _i3c_slave_edma_handle
@@ -109,8 +109,6 @@ struct _i3c_slave_edma_handle
     edma_handle_t *rxDmaHandle;         /*!< Handle for receive DMA channel. */
     edma_handle_t *txDmaHandle;         /*!< Handle for transmit DMA channel. */
     void *userData;                     /*!< Callback parameter passed to callback. */
-    uint8_t *ibiData;                   /*!< IBI data buffer */
-    size_t ibiDataSize;                 /*!< IBI data size */
 };
 /*! @} */
 /*******************************************************************************
@@ -122,7 +120,7 @@ extern "C" {
 #endif
 
 /*!
- * @addtogroup i3c_master_dma_driver
+ * @addtogroup i3c_master_edma_driver
  * @{
  */
 
@@ -188,14 +186,14 @@ status_t I3C_MasterTransferGetCountEDMA(I3C_Type *base, i3c_master_edma_handle_t
  * @param base The I3C peripheral base address.
  * @param handle Pointer to the I3C master driver handle.
  */
-void I3C_MasterTransferAbortDMA(I3C_Type *base, i3c_master_edma_handle_t *handle);
+void I3C_MasterTransferAbortEDMA(I3C_Type *base, i3c_master_edma_handle_t *handle);
 
 /*!
  * @brief Reusable routine to handle master interrupts.
  * @note This function does not need to be called unless you are reimplementing the
  *  nonblocking API's interrupt handler routines to add special functionality.
  * @param base The I3C peripheral base address.
- * @param handle Pointer to the I3C master DMA driver handle.
+ * @param i3cHandle Pointer to the I3C master DMA driver handle.
  */
 void I3C_MasterTransferEDMAHandleIRQ(I3C_Type *base, void *i3cHandle);
 /*@}*/
@@ -203,7 +201,7 @@ void I3C_MasterTransferEDMAHandleIRQ(I3C_Type *base, void *i3cHandle);
 /*! @} */
 
 /*!
- * @addtogroup i3c_slave_dma_driver
+ * @addtogroup i3c_slave_edma_driver
  * @{
  */
 
@@ -256,7 +254,7 @@ status_t I3C_SlaveTransferEDMA(I3C_Type *base,
                                i3c_slave_edma_transfer_t *transfer,
                                uint32_t eventMask);
 /*!
- * @brief Abort a slave dma non-blocking transfer in a early time
+ * @brief Abort a slave edma non-blocking transfer in a early time
  *
  * @param base I3C peripheral base address
  * @param handle pointer to i3c_slave_edma_handle_t structure
@@ -268,7 +266,7 @@ void I3C_SlaveTransferAbortEDMA(I3C_Type *base, i3c_slave_edma_handle_t *handle)
  * @note This function does not need to be called unless you are reimplementing the
  *  nonblocking API's interrupt handler routines to add special functionality.
  * @param base The I3C peripheral base address.
- * @param handle Pointer to the I3C slave DMA driver handle.
+ * @param i3cHandle Pointer to the I3C slave DMA driver handle.
  */
 void I3C_SlaveTransferEDMAHandleIRQ(I3C_Type *base, void *i3cHandle);
 /*@}*/
@@ -278,4 +276,4 @@ void I3C_SlaveTransferEDMAHandleIRQ(I3C_Type *base, void *i3cHandle);
 }
 #endif
 
-#endif /* _FSL_I3C_EDMA_H_ */
+#endif /* FSL_I3C_EDMA_H_ */

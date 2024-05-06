@@ -4,10 +4,11 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-#ifndef _FSL_NETC_MDIO_H_
-#define _FSL_NETC_MDIO_H_
+#ifndef FSL_NETC_MDIO_H_
+#define FSL_NETC_MDIO_H_
 
 #include "fsl_netc.h"
+#include "fsl_netc_soc.h"
 #include "netc_hw/fsl_netc_hw.h"
 
 #if !(defined(__GNUC__) || defined(__ICCARM__))
@@ -266,4 +267,4 @@ void NETC_MDIOPhyStatusClearFlags(netc_mdio_handle_t *handle, uint16_t low2HighM
 #if defined(__cplusplus)
 }
 #endif
-#endif /* _FSL_NETC_MDIO_H_ */
+#endif /* FSL_NETC_MDIO_H_ */

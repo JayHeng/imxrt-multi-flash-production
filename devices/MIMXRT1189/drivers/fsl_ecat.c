@@ -7,6 +7,11 @@
 
 #include "fsl_ecat.h"
 
+/* Component ID definition, used by tools. */
+#ifndef FSL_COMPONENT_ID
+#define FSL_COMPONENT_ID "platform.drivers.ecat"
+#endif
+
 /* Read PHY register via ESC MII Management Interface. */
 status_t ECAT_EscMdioRead(ECAT_Type *ecat, uint8_t phy_addr, uint8_t reg_addr, uint16_t *data)
 {

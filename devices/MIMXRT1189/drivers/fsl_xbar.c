@@ -23,7 +23,7 @@
 #define XBAR_EXTRACT_OUTPUT(output) ((uint16_t)(output)&0xFFU)
 
 #define XBAR_CTRL_STAT_SHIFT 4U
-#define XBAR_CTRL_STAT_MASK  (1U << 4U)
+#define XBAR_CTRL_STAT_MASK  ((uint16_t)1U << 4U)
 
 #define XBAR_CTRL_ALL_STAT_MASK (XBAR_CTRL_STAT_MASK | (XBAR_CTRL_STAT_MASK << 8U))
 
@@ -52,14 +52,14 @@ static status_t XBAR_GetCtrlRegAndShift(xbar_output_signal_t output, volatile ui
     uint16_t inst        = XBAR_INST_FROM_OUTPUT(output);
     uint16_t outputIndex = XBAR_EXTRACT_OUTPUT(output);
 
-    if ((inst > ARRAY_SIZE(s_xbarInfo)) || (outputIndex > (s_xbarInfo[inst - 1].regCtrlNum * 2U)))
+    if ((inst > ARRAY_SIZE(s_xbarInfo)) || (outputIndex > (s_xbarInfo[inst - 1U].regCtrlNum * 2U)))
     {
         status = kStatus_InvalidArgument;
     }
     else
     {
-        *ctrlRegAddr = s_xbarInfo[inst - 1].baseAddr + ((s_xbarInfo[inst - 1].regCtrlOffset + outputIndex) / 2U);
-        *shift       = 8U * (outputIndex % 2U);
+        *ctrlRegAddr = s_xbarInfo[inst - 1U].baseAddr + ((s_xbarInfo[inst - 1U].regCtrlOffset + outputIndex) / 2U);
+        *shift       = (uint8_t)(uint16_t)(8U * (outputIndex % 2U));
         status       = kStatus_Success;
     }
 
@@ -122,15 +122,15 @@ status_t XBAR_SetSignalsConnection(xbar_input_signal_t input, xbar_output_signal
     volatile uint16_t *selRegAddr;
     uint8_t shiftInReg;
 
-    if ((inst > ARRAY_SIZE(s_xbarInfo)) || (outputIndex > (s_xbarInfo[inst - 1].regSelNum * 2U)))
+    if ((inst > ARRAY_SIZE(s_xbarInfo)) || (outputIndex > (s_xbarInfo[inst - 1U].regSelNum * 2U)))
     {
         status = kStatus_InvalidArgument;
     }
     else
     {
-        selRegAddr  = s_xbarInfo[inst - 1].baseAddr + ((s_xbarInfo[inst - 1].regSelOffset + outputIndex) / 2U);
-        shiftInReg  = 8U * (outputIndex % 2U);
-        *selRegAddr = (*selRegAddr & ~(0xFFU << shiftInReg)) | (inputIndex << shiftInReg);
+        selRegAddr  = s_xbarInfo[inst - 1U].baseAddr + ((s_xbarInfo[inst - 1U].regSelOffset + outputIndex) / 2U);
+        shiftInReg  = (uint8_t)(uint16_t)(8U * (outputIndex % 2U));
+        *selRegAddr = (*selRegAddr & ~((uint16_t)0xFFU << shiftInReg)) | (inputIndex << shiftInReg);
         status      = kStatus_Success;
     }
 
@@ -154,7 +154,7 @@ status_t XBAR_ClearOutputStatusFlag(xbar_output_signal_t output)
 
     if (status == kStatus_Success)
     {
-        *ctrlRegAddr = (*ctrlRegAddr & ~XBAR_CTRL_ALL_STAT_MASK) | (XBAR_CTRL_STAT_MASK << shiftInReg);
+        *ctrlRegAddr = (*ctrlRegAddr & (~XBAR_CTRL_ALL_STAT_MASK)) | (XBAR_CTRL_STAT_MASK << shiftInReg);
     }
 
     return status;
@@ -184,7 +184,7 @@ status_t XBAR_GetOutputStatusFlag(xbar_output_signal_t output, bool *flag)
 
     if (status == kStatus_Success)
     {
-        *flag = (0U != (*ctrlRegAddr & (XBAR_CTRL_STAT_MASK << shiftInReg)));
+        *flag = (0U != (*ctrlRegAddr & ((uint16_t)XBAR_CTRL_STAT_MASK << shiftInReg)));
     }
 
     return status;
@@ -219,7 +219,8 @@ status_t XBAR_SetOutputSignalConfig(xbar_output_signal_t output, const xbar_cont
 
     if (status == kStatus_Success)
     {
-        *ctrlRegAddr |= (((controlConfig->activeEdge) << shiftInReg) << 2) | ((controlConfig->requestType) << shiftInReg);
+        *ctrlRegAddr |= ((((uint16_t)controlConfig->activeEdge) << shiftInReg) << 2) |
+                        (((uint16_t)controlConfig->requestType) << shiftInReg);
     }
 
     return status;

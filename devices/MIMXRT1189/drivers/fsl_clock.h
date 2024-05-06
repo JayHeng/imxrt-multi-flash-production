@@ -40,7 +40,7 @@
 /*! @name Driver version */
 /*@{*/
 /*! @brief CLOCK driver version. */
-#define FSL_CLOCK_DRIVER_VERSION (MAKE_VERSION(2, 1, 0))
+#define FSL_CLOCK_DRIVER_VERSION (MAKE_VERSION(2, 1, 2))
 
 /* Definition for delay API in clock driver, users can redefine it to the real application. */
 #ifndef SDK_DEVICE_MAXIMUM_CPU_CLOCK_FREQUENCY
@@ -163,9 +163,9 @@
     }
 
 /*! @brief Clock gate name array for EWM. */
-#define EWM_CLOCKS \
-    {              \
-        kCLOCK_Ewm \
+#define EWM_CLOCKS  \
+    {               \
+        kCLOCK_Ewm0 \
     }
 
 /*! @brief Clock ip name array for FLEXCAN. */
@@ -310,7 +310,7 @@
     }
 
 /*! @brief Clock gate name array for Sema. */
-#define SEMA_CLOCKS                                  \
+#define SEMA42_CLOCKS                                  \
     {                                                \
         kCLOCK_IpInvalid, kCLOCK_Sema1, kCLOCK_Sema2 \
     }
@@ -411,7 +411,7 @@ typedef enum _clock_lpcg
     kCLOCK_Wdog3       = 21,  /*!< Clock LPCG Wdog3       */
     kCLOCK_Wdog4       = 22,  /*!< Clock LPCG Wdog4       */
     kCLOCK_Wdog5       = 23,  /*!< Clock LPCG Wdog5       */
-    kCLOCK_Ewm         = 24,  /*!< Clock LPCG Ewm         */
+    kCLOCK_Ewm0        = 24,  /*!< Clock LPCG Ewm0        */
     kCLOCK_Sema1       = 25,  /*!< Clock LPCG Sema1       */
     kCLOCK_Sema2       = 26,  /*!< Clock LPCG Sema2       */
     kCLOCK_Mu_A        = 27,  /*!< Clock LPCG Mu_A        */
@@ -1466,15 +1466,6 @@ typedef enum _clock_24MOsc_mode
 } clock_24MOsc_mode_t;
 
 /*!
- * @brief The enumeration of 16MHz RC oscillator clock source.
- */
-typedef enum _clock_16MOsc_source
-{
-    kCLOCK_16MOscSourceFrom16MOsc = 0U, /*!< Source from 16MHz RC oscialltor. */
-    kCLOCK_16MOscSourceFrom24MOsc = 1U, /*!< Source from 24MHz crystal oscillator. */
-} clock_16MOsc_source_t;
-
-/*!
  * @brief The enumeration of 1MHz output clock behavior, including disabling 1MHz output,
  * enabling locked 1MHz clock output, and enabling free-running 1MHz clock output.
  */
@@ -1704,20 +1695,14 @@ static inline uint32_t CLOCK_GetRootClockFreq(clock_root_t root)
  *
  * @return  Clock frequency; If the clock is invalid, returns 0.
  */
-static inline uint32_t CLOCK_GetM7Freq(void)
-{
-    return CLOCK_GetRootClockFreq(kCLOCK_Root_M7);
-}
+uint32_t CLOCK_GetM7Freq(void);
 
 /*!
  * @brief Get the CCM CPU/core/system frequency.
  *
  * @return  Clock frequency; If the clock is invalid, returns 0.
  */
-static inline uint32_t CLOCK_GetM33Freq(void)
-{
-    return CLOCK_GetRootClockFreq(kCLOCK_Root_M33);
-}
+uint32_t CLOCK_GetM33Freq(void);
 
 /*!
  * @brief Check if PLL is bypassed
@@ -2012,19 +1997,6 @@ uint16_t CLOCK_OSC_GetCurrentOscRc400MFastClockCount(void);
  */
 uint8_t CLOCK_OSC_GetCurrentOscRc400MTuneValue(void);
 
-/*!
- * @brief Configure the 16MHz oscillator.
- *
- * @param source Used to select the source for 16MHz RC oscillator, please refer to @ref clock_16MOsc_source_t.
- * @param enablePowerSave Enable/disable power save mode function at 16MHz OSC.
- *          - \b true Enable power save mode function at 16MHz osc.
- *          - \b false Disable power save mode function at 16MHz osc.
- * @param enableClockOut Enable/Disable clock output for 16MHz RCOSC.
- *          - \b true Enable clock output for 16MHz RCOSC.
- *          - \b false Disable clock output for 16MHz RCOSC.
- */
-void CLOCK_OSC_SetOsc16MConfig(clock_16MOsc_source_t source, bool enablePowerSave, bool enableClockOut);
-
 /* @} */
 
 /*!
@@ -2208,7 +2180,7 @@ uint32_t CLOCK_GetPllFreq(clock_pll_t pll);
  * @param pll Which PLL of targeting PFD to be operated.
  * @param pfd Which PFD clock to enable.
  * @param frac The PFD FRAC value.
- * @note It is recommended that PFD settings are kept between 12-35.
+ * @note It is recommended that PFD settings are kept between 13-35.
  */
 void CLOCK_InitPfd(clock_pll_t pll, clock_pfd_t pfd, uint8_t frac);
 
@@ -2327,8 +2299,8 @@ static inline void CLOCK_OSCPLL_SetWhiteList(clock_name_t name, uint8_t domainId
  * @note When LOCK_MODE bit is set, control mode can not be changed until next system reset.
  *
  * @param name Clock source name, see \ref clock_name_t.
- * @param domainId Domains that on the whitelist can change this clock.
- * @param level0,level1 Depend level of this clock.
+ * @param domainMap Domains that on the whitelist can change this clock.
+ * @param level Depend level of this clock.
  */
 void CLOCK_OSCPLL_ControlByCpuLowPowerMode(clock_name_t name, uint32_t domainMap, clock_level_t level);
 
@@ -2390,8 +2362,8 @@ static inline void CLOCK_LPCG_SetWhiteList(clock_lpcg_t name, uint8_t domainId)
  * @note When LOCK_MODE bit is set, control mode can not be changed until next system reset.
  *
  * @param name Clock gate name, see \ref clock_lpcg_t.
- * @param domainId Domains that on the whitelist can change this clock.
- * @param level0,level1 Depend level of this clock.
+ * @param domainMap Domains that on the whitelist can change this clock.
+ * @param level Depend level of this clock.
  */
 void CLOCK_LPCG_ControlByCpuLowPowerMode(clock_lpcg_t name, uint32_t domainMap, clock_level_t level);
 

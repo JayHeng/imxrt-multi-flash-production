@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 NXP
+ * Copyright 2021-2022 NXP
  * All rights reserved.
  *
  *
@@ -319,24 +319,6 @@ void DCDC_SetInternalRegulatorConfig(DCDC_Type *base, const dcdc_internal_regula
     tmp32 = base->REG3 & ~DCDC_REG3_REG_FBK_SEL_MASK;
     tmp32 |= DCDC_REG3_REG_FBK_SEL(config->feedbackPoint);
     base->REG3 = tmp32;
-}
-
-/*!
- * brief Boots DCDC into DCM(discontinous conduction mode).
- *
- *  pwd_zcd=0x0;
- *  DM_CTRL = 1'b1;
- *  pwd_cmp_offset=0x0;
- *  dcdc_loopctrl_en_rcscale=0x3 or 0x5;
- *  DCM_set_ctrl=1'b1;
- *
- * param base DCDC peripheral base address.
- */
-void DCDC_BootIntoDCM(DCDC_Type *base)
-{
-    base->REG1 &= ~DCDC_REG1_RLOAD_REG_EN_MASK;
-    base->REG2 = (~DCDC_REG2_LOOPCTRL_EN_RCSCALE_MASK & base->REG2) | DCDC_REG2_LOOPCTRL_EN_RCSCALE(0x5U);
-    base->REG3 |= DCDC_REG3_ENABLE_FF_MASK;
 }
 
 /*!

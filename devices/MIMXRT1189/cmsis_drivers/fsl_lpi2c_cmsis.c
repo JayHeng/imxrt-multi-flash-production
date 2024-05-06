@@ -25,7 +25,7 @@
      (defined(RTE_I2C4) && RTE_I2C4 && defined(LPI2C4)) || (defined(RTE_I2C5) && RTE_I2C5 && defined(LPI2C5)) || \
      (defined(RTE_I2C6) && RTE_I2C6 && defined(LPI2C6)))
 
-#define ARM_LPI2C_DRV_VERSION ARM_DRIVER_VERSION_MAJOR_MINOR((2), (1))
+#define ARM_LPI2C_DRV_VERSION ARM_DRIVER_VERSION_MAJOR_MINOR((2), (5))
 
 /*
  * ARMCC does not support split the data section automatically, so the driver
@@ -70,13 +70,13 @@ typedef struct _cmsis_lpi2c_interrupt_driver_state
 #if (defined(FSL_FEATURE_SOC_EDMA_COUNT) && FSL_FEATURE_SOC_EDMA_COUNT)
 typedef const struct _cmsis_lpi2c_edma_resource
 {
-    DMA_Type *txEdmaBase;   /*!< EDMA peripheral base address for Tx.  */
-    uint32_t txEdmaChannel; /*!< EDMA channel for Tx                   */
-    uint16_t txDmaRequest;  /*!< Tx EDMA request source.               */
+    void *txEdmaBase;              /*!< EDMA peripheral base address for Tx.  */
+    uint32_t txEdmaChannel;            /*!< EDMA channel for Tx                   */
+    uint16_t txDmaRequest; /*!< Tx EDMA request source.               */
 
-    DMA_Type *rxEdmaBase;   /*!< EDMA peripheral base address for Rx.  */
-    uint32_t rxEdmaChannel; /*!< EDMA channel for Rx                   */
-    uint16_t rxDmaRequest;  /*!< Rx EDMA request source.               */
+    void *rxEdmaBase;              /*!< EDMA peripheral base address for Rx.  */
+    uint32_t rxEdmaChannel;            /*!< EDMA channel for Rx                   */
+    uint16_t rxDmaRequest; /*!< Rx EDMA request source.               */
 #if (defined(FSL_FEATURE_SOC_DMAMUX_COUNT) && FSL_FEATURE_SOC_DMAMUX_COUNT)
     DMAMUX_Type *txDmamuxBase; /*!< DMAMUX peripheral base address for Tx */
     DMAMUX_Type *rxDmamuxBase; /*!< DMAMUX peripheral base address for Rx */
@@ -153,11 +153,11 @@ static int32_t LPI2C_Master_EdmaInitialize(ARM_I2C_SignalEvent_t cb_event, cmsis
 #if (defined(FSL_FEATURE_SOC_DMAMUX_COUNT) && FSL_FEATURE_SOC_DMAMUX_COUNT)
         /* TxDMAMUX init */
         DMAMUX_SetSource(lpi2c->edmaResource->txDmamuxBase, lpi2c->edmaResource->txEdmaChannel,
-                         (uint8_t)lpi2c->edmaResource->txDmaRequest);
+                         (int32_t)lpi2c->edmaResource->txDmaRequest);
         DMAMUX_EnableChannel(lpi2c->edmaResource->txDmamuxBase, lpi2c->edmaResource->txEdmaChannel);
         /* RxDMAMUX init */
         DMAMUX_SetSource(lpi2c->edmaResource->rxDmamuxBase, lpi2c->edmaResource->rxEdmaChannel,
-                         (uint8_t)lpi2c->edmaResource->rxDmaRequest);
+                         (int32_t)lpi2c->edmaResource->rxDmaRequest);
         DMAMUX_EnableChannel(lpi2c->edmaResource->rxDmamuxBase, lpi2c->edmaResource->rxEdmaChannel);
 #endif
         /* Create edmaTxHandle */
@@ -166,6 +166,12 @@ static int32_t LPI2C_Master_EdmaInitialize(ARM_I2C_SignalEvent_t cb_event, cmsis
         /* Create edmaRxHandle */
         EDMA_CreateHandle(lpi2c->edmaRxHandle, lpi2c->edmaResource->rxEdmaBase, lpi2c->edmaResource->rxEdmaChannel);
 
+#if defined(FSL_FEATURE_EDMA_HAS_CHANNEL_MUX) && FSL_FEATURE_EDMA_HAS_CHANNEL_MUX
+        EDMA_SetChannelMux(lpi2c->edmaResource->txEdmaBase, lpi2c->edmaResource->txEdmaChannel,
+                           (int32_t)lpi2c->edmaResource->txDmaRequest);
+        EDMA_SetChannelMux(lpi2c->edmaResource->rxEdmaBase, lpi2c->edmaResource->rxEdmaChannel,
+                           (int32_t)lpi2c->edmaResource->rxDmaRequest);
+#endif
         /* Create master_edma_handle */
         LPI2C_MasterCreateEDMAHandle(lpi2c->resource->base, lpi2c->master_edma_handle, lpi2c->edmaRxHandle,
                                      lpi2c->edmaTxHandle, KSDK_LPI2C_MASTER_EdmaCallback, (void *)cb_event);
@@ -919,8 +925,8 @@ static cmsis_lpi2c_resource_t LPI2C0_Resource = {LPI2C0, LPI2C0_GetFreq};
 
 #if (defined(FSL_FEATURE_SOC_EDMA_COUNT) && FSL_FEATURE_SOC_EDMA_COUNT)
 static cmsis_lpi2c_edma_resource_t LPI2C0_EdmaResource = {
-    RTE_I2C0_DMA_TX_DMA_BASE,    RTE_I2C0_DMA_TX_CH,          RTE_I2C0_DMA_TX_PERI_SEL,
-    RTE_I2C0_DMA_RX_DMA_BASE,    RTE_I2C0_DMA_RX_CH,          RTE_I2C0_DMA_RX_PERI_SEL,
+    RTE_I2C0_DMA_TX_DMA_BASE,    RTE_I2C0_DMA_TX_CH,          (uint16_t)RTE_I2C0_DMA_TX_PERI_SEL,
+    RTE_I2C0_DMA_RX_DMA_BASE,    RTE_I2C0_DMA_RX_CH,          (uint16_t)RTE_I2C0_DMA_RX_PERI_SEL,
 #if (defined(FSL_FEATURE_SOC_DMAMUX_COUNT) && FSL_FEATURE_SOC_DMAMUX_COUNT)
     RTE_I2C0_DMA_TX_DMAMUX_BASE, RTE_I2C0_DMA_RX_DMAMUX_BASE,
 #endif
@@ -1107,8 +1113,8 @@ static cmsis_lpi2c_resource_t LPI2C1_Resource = {LPI2C1, LPI2C1_GetFreq};
 
 #if (defined(FSL_FEATURE_SOC_EDMA_COUNT) && FSL_FEATURE_SOC_EDMA_COUNT)
 static cmsis_lpi2c_edma_resource_t LPI2C1_EdmaResource = {
-    RTE_I2C1_DMA_TX_DMA_BASE,    RTE_I2C1_DMA_TX_CH,          RTE_I2C1_DMA_TX_PERI_SEL,
-    RTE_I2C1_DMA_RX_DMA_BASE,    RTE_I2C1_DMA_RX_CH,          RTE_I2C1_DMA_RX_PERI_SEL,
+    RTE_I2C1_DMA_TX_DMA_BASE,    RTE_I2C1_DMA_TX_CH,          (uint16_t)RTE_I2C1_DMA_TX_PERI_SEL,
+    RTE_I2C1_DMA_RX_DMA_BASE,    RTE_I2C1_DMA_RX_CH,          (uint16_t)RTE_I2C1_DMA_RX_PERI_SEL,
 #if (defined(FSL_FEATURE_SOC_DMAMUX_COUNT) && FSL_FEATURE_SOC_DMAMUX_COUNT)
     RTE_I2C1_DMA_TX_DMAMUX_BASE, RTE_I2C1_DMA_RX_DMAMUX_BASE,
 #endif
@@ -1294,8 +1300,8 @@ static cmsis_lpi2c_resource_t LPI2C2_Resource = {LPI2C2, LPI2C2_GetFreq};
 
 #if (defined(FSL_FEATURE_SOC_EDMA_COUNT) && FSL_FEATURE_SOC_EDMA_COUNT)
 static cmsis_lpi2c_edma_resource_t LPI2C2_EdmaResource = {
-    RTE_I2C2_DMA_TX_DMA_BASE,    RTE_I2C2_DMA_TX_CH,          RTE_I2C2_DMA_TX_PERI_SEL,
-    RTE_I2C2_DMA_RX_DMA_BASE,    RTE_I2C2_DMA_RX_CH,          RTE_I2C2_DMA_RX_PERI_SEL,
+    RTE_I2C2_DMA_TX_DMA_BASE,    RTE_I2C2_DMA_TX_CH,          (uint16_t)RTE_I2C2_DMA_TX_PERI_SEL,
+    RTE_I2C2_DMA_RX_DMA_BASE,    RTE_I2C2_DMA_RX_CH,          (uint16_t)RTE_I2C2_DMA_RX_PERI_SEL,
 #if (defined(FSL_FEATURE_SOC_DMAMUX_COUNT) && FSL_FEATURE_SOC_DMAMUX_COUNT)
     RTE_I2C2_DMA_TX_DMAMUX_BASE, RTE_I2C2_DMA_RX_DMAMUX_BASE,
 #endif
@@ -1482,8 +1488,8 @@ static cmsis_lpi2c_resource_t LPI2C3_Resource = {LPI2C3, LPI2C3_GetFreq};
 
 #if (defined(FSL_FEATURE_SOC_EDMA_COUNT) && FSL_FEATURE_SOC_EDMA_COUNT)
 static cmsis_lpi2c_edma_resource_t LPI2C3_EdmaResource = {
-    RTE_I2C3_DMA_TX_DMA_BASE,    RTE_I2C3_DMA_TX_CH,          RTE_I2C3_DMA_TX_PERI_SEL,
-    RTE_I2C3_DMA_RX_DMA_BASE,    RTE_I2C3_DMA_RX_CH,          RTE_I2C3_DMA_RX_PERI_SEL,
+    RTE_I2C3_DMA_TX_DMA_BASE,    RTE_I2C3_DMA_TX_CH,          (uint16_t)RTE_I2C3_DMA_TX_PERI_SEL,
+    RTE_I2C3_DMA_RX_DMA_BASE,    RTE_I2C3_DMA_RX_CH,          (uint16_t)RTE_I2C3_DMA_RX_PERI_SEL,
 #if (defined(FSL_FEATURE_SOC_DMAMUX_COUNT) && FSL_FEATURE_SOC_DMAMUX_COUNT)
     RTE_I2C3_DMA_TX_DMAMUX_BASE, RTE_I2C3_DMA_RX_DMAMUX_BASE,
 #endif
@@ -1668,8 +1674,8 @@ static cmsis_lpi2c_resource_t LPI2C4_Resource = {LPI2C4, LPI2C4_GetFreq};
 
 #if (defined(FSL_FEATURE_SOC_EDMA_COUNT) && FSL_FEATURE_SOC_EDMA_COUNT)
 static cmsis_lpi2c_edma_resource_t LPI2C4_EdmaResource = {
-    RTE_I2C4_DMA_TX_DMA_BASE,    RTE_I2C4_DMA_TX_CH,          RTE_I2C4_DMA_TX_PERI_SEL,
-    RTE_I2C4_DMA_RX_DMA_BASE,    RTE_I2C4_DMA_RX_CH,          RTE_I2C4_DMA_RX_PERI_SEL,
+    RTE_I2C4_DMA_TX_DMA_BASE,    RTE_I2C4_DMA_TX_CH,          (uint16_t)RTE_I2C4_DMA_TX_PERI_SEL,
+    RTE_I2C4_DMA_RX_DMA_BASE,    RTE_I2C4_DMA_RX_CH,          (uint16_t)RTE_I2C4_DMA_RX_PERI_SEL,
 #if (defined(FSL_FEATURE_SOC_DMAMUX_COUNT) && FSL_FEATURE_SOC_DMAMUX_COUNT)
     RTE_I2C4_DMA_TX_DMAMUX_BASE, RTE_I2C4_DMA_RX_DMAMUX_BASE,
 #endif
@@ -1854,8 +1860,8 @@ static cmsis_lpi2c_resource_t LPI2C5_Resource = {LPI2C5, LPI2C5_GetFreq};
 
 #if (defined(FSL_FEATURE_SOC_EDMA_COUNT) && FSL_FEATURE_SOC_EDMA_COUNT)
 static cmsis_lpi2c_edma_resource_t LPI2C5_EdmaResource = {
-    RTE_I2C5_DMA_TX_DMA_BASE,    RTE_I2C5_DMA_TX_CH,          RTE_I2C5_DMA_TX_PERI_SEL,
-    RTE_I2C5_DMA_RX_DMA_BASE,    RTE_I2C5_DMA_RX_CH,          RTE_I2C5_DMA_RX_PERI_SEL,
+    RTE_I2C5_DMA_TX_DMA_BASE,    RTE_I2C5_DMA_TX_CH,          (uint16_t)RTE_I2C5_DMA_TX_PERI_SEL,
+    RTE_I2C5_DMA_RX_DMA_BASE,    RTE_I2C5_DMA_RX_CH,          (uint16_t)RTE_I2C5_DMA_RX_PERI_SEL,
 #if (defined(FSL_FEATURE_SOC_DMAMUX_COUNT) && FSL_FEATURE_SOC_DMAMUX_COUNT)
     RTE_I2C5_DMA_TX_DMAMUX_BASE, RTE_I2C5_DMA_RX_DMAMUX_BASE,
 #endif
@@ -2040,8 +2046,8 @@ static cmsis_lpi2c_resource_t LPI2C6_Resource = {LPI2C6, LPI2C6_GetFreq};
 
 #if (defined(FSL_FEATURE_SOC_EDMA_COUNT) && FSL_FEATURE_SOC_EDMA_COUNT)
 static cmsis_lpi2c_edma_resource_t LPI2C6_EdmaResource = {
-    RTE_I2C6_DMA_TX_DMA_BASE,    RTE_I2C6_DMA_TX_CH,          RTE_I2C6_DMA_TX_PERI_SEL,
-    RTE_I2C6_DMA_RX_DMA_BASE,    RTE_I2C6_DMA_RX_CH,          RTE_I2C6_DMA_RX_PERI_SEL,
+    RTE_I2C6_DMA_TX_DMA_BASE,    RTE_I2C6_DMA_TX_CH,          (uint16_t)RTE_I2C6_DMA_TX_PERI_SEL,
+    RTE_I2C6_DMA_RX_DMA_BASE,    RTE_I2C6_DMA_RX_CH,          (uint16_t)RTE_I2C6_DMA_RX_PERI_SEL,
 #if (defined(FSL_FEATURE_SOC_DMAMUX_COUNT) && FSL_FEATURE_SOC_DMAMUX_COUNT)
     RTE_I2C6_DMA_TX_DMAMUX_BASE, RTE_I2C6_DMA_RX_DMAMUX_BASE,
 #endif

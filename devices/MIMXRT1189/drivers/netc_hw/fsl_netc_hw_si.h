@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-#ifndef _FSL_NETC_SI_H_
-#define _FSL_NETC_SI_H_
+#ifndef FSL_NETC_SI_H_
+#define FSL_NETC_SI_H_
 
 #include "fsl_netc.h"
 #include "netc_hw/fsl_netc_hw.h"
@@ -131,29 +131,6 @@ static inline void NETC_SIEnablePromisc(ENETC_SI_Type *base, netc_packet_type_t 
 }
 
 /*!
- * @brief Configure SI based VLAN
- *
- * @param base
- * @param si
- * @param vlan
- * @return status_t
- */
-status_t NETC_SIConfigVlan(NETC_ENETC_Type *base, netc_hw_si_idx_t si, netc_vlan_t vlan);
-
-/*!
- * @brief Enable/Disable SI based VLAN feature
- *
- * PSIVLAN register. It is used for SI-based VLAN insertion(VLAN tag to be inserted) and SI-based VLAN removal (VLAN tag
- * to be matched for removal)
- *
- * @param base
- * @param si
- * @param enable
- * @return status_t
- */
-status_t NETC_SIEnableVlan(NETC_ENETC_Type *base, netc_hw_si_idx_t si, bool enable);
-
-/*!
  * @brief Set producer index of specified Tx BD ring
  *
  * @param base  SI base address.
@@ -220,36 +197,6 @@ status_t NETC_SIConfigTxBDR(ENETC_SI_Type *base, uint8_t ring, const netc_tx_bdr
  * @return status_t
  */
 status_t NETC_SIConfigRxBDR(ENETC_SI_Type *base, uint8_t ring, const netc_rx_bdr_config_t *bdrConfig);
-
-/*!
- * @brief Configure the Tx Buffer Descript Ring priority
- *
- * @param base
- * @param bdr
- * @param vlan
- * @return status_t
- */
-status_t NETC_SISetTxBDRPriority(ENETC_SI_Type *base, uint8_t ring, netc_vlan_t vlan);
-
-/*!
- * @brief Configure the Buffer Descriptor Ring priority for specified SI
- *
- * @param si
- * @param bdr
- * @param vlan
- * @return status_t
- */
-status_t NETC_SISetVlanForVSI(ENETC_SI_Type *base, netc_hw_si_idx_t siIdx, uint8_t vlan);
-
-/*!
- * @brief Enable/Disble Anti-Spoof for specifid virtual SI
- *
- * @param base
- * @param siIdx
- * @param enable
- * @return status_t
- */
-status_t NETC_SIEnableAntiSpoofForVSI(ENETC_SI_Type *base, netc_hw_si_idx_t siIdx, bool enable);
 
 /*!
  * @brief Enable the mapping of VLAN to IPV
@@ -510,4 +457,4 @@ void NETC_SIGetTrafficStatistic(ENETC_SI_Type *base, netc_si_traffic_statistic_t
 #if defined(__cplusplus)
 }
 #endif
-#endif /* _FSL_NETC_SI_H_ */
+#endif /* FSL_NETC_SI_H_ */

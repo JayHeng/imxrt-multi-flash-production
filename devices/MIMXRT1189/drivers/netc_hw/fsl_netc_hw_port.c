@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 NXP
+ * Copyright 2021-2023 NXP
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -26,20 +26,31 @@ void NETC_PortSetMacAddr(NETC_PORT_Type *base, const uint8_t *macAddr)
 
 status_t NETC_PortConfig(NETC_PORT_Type *base, const netc_port_common_t *config)
 {
+    status_t result;
+
     NETC_PortSetParser(base, &config->parser);
     NETC_PortSetVlanClassify(base, &config->acceptTpid);
-    NETC_PortSetQosClassify(base, &config->qosMode);
+
+    result = NETC_PortSetQosClassify(base, &config->qosMode);
+    if (result != kStatus_Success)
+    {
+        return result;
+    }
+
     (void)NETC_PortConfigTGS(base, &config->timeGate);
     NETC_PortSetIPF(base, &config->ipfCfg);
     NETC_PortSetMacAddr(base, &config->macAddr[0]);
-    base->PCR = NETC_PORT_PCR_PSPEED(config->pSpeed) | NETC_PORT_PCR_FCSEA(!config->stompFcs) |
+    base->PCR = NETC_PORT_PCR_PSPEED(config->pSpeed) |
+#if (defined(FSL_FEATURE_NETC_HAS_PORT_FCSEA) && FSL_FEATURE_NETC_HAS_PORT_FCSEA)
+                NETC_PORT_PCR_FCSEA(!config->stompFcs) |
+#endif
                 NETC_PORT_PCR_TIMER_CS(config->rxTsSelect);
     base->PSGCR = NETC_PORT_PSGCR_OGC(config->ogcMode) | NETC_PORT_PSGCR_PDELAY(config->pDelay);
 
     /* Configure Port SDU overhead */
     base->PRXSDUOR =
         NETC_PORT_PRXSDUOR_MACSEC_BCO(config->rxMacsecBco) | NETC_PORT_PRXSDUOR_PPDU_BCO(config->rxPpduBco);
-    base->PRXSDUOR =
+    base->PTXSDUOR =
         NETC_PORT_PTXSDUOR_MACSEC_BCO(config->txMacsecBco) | NETC_PORT_PTXSDUOR_PPDU_BCO(config->txPpduBco);
     return kStatus_Success;
 }
@@ -90,13 +101,27 @@ status_t NETC_PortSetMII(NETC_ETH_LINK_Type *base,
     }
     else /* kNETC_GmiiMode, force 1Gbps and full speed */
     {
-        if ((speed != kNETC_MiiSpeed1000M) || (duplex != kNETC_MiiFullDuplex))
+        if ((speed < kNETC_MiiSpeed1000M) || (duplex != kNETC_MiiFullDuplex))
         {
             return kStatus_InvalidArgument;
         }
     }
     base->PM0_IF_MODE = reg;
     base->PM1_IF_MODE = reg;
+
+    return kStatus_Success;
+}
+
+status_t NETC_PortSetMaxFrameSize(NETC_ETH_LINK_Type *base, uint16_t size)
+{
+    /* The MAC supports reception of any frame size up to 2000 bytes. */
+    if (size > NETC_PORT_MAX_FRAME_SIZE)
+    {
+        return kStatus_InvalidArgument;
+    }
+
+    base->PM0_MAXFRM = NETC_ETH_LINK_PM0_MAXFRM_MAXFRM(size);
+    base->PM1_MAXFRM = NETC_ETH_LINK_PM1_MAXFRM_MAXFRM(size);
 
     return kStatus_Success;
 }
@@ -113,10 +138,17 @@ status_t NETC_PortConfigEthMac(NETC_ETH_LINK_Type *base, const netc_port_ethmac_
     }
 
     /* Set Rx Frame Maximum/Minimum Length */
-    base->PM0_MAXFRM = NETC_ETH_LINK_PM0_MAXFRM_MAXFRM(config->rxMaxFrameSize);
-    base->PM1_MAXFRM = NETC_ETH_LINK_PM1_MAXFRM_MAXFRM(config->rxMaxFrameSize);
+    result = NETC_PortSetMaxFrameSize(base, config->rxMaxFrameSize);
+    if (result != kStatus_Success)
+    {
+        return result;
+    }
+#if defined(NETC_ETH_LINK_PM0_MINFRM_NUM_BYTES_MASK)
     base->PM0_MINFRM = NETC_ETH_LINK_PM0_MINFRM_NUM_BYTES(config->rxMinFrameSize);
+#endif
+#if defined(NETC_ETH_LINK_PM1_MINFRM_NUM_BYTES_MASK)
     base->PM1_MINFRM = NETC_ETH_LINK_PM1_MINFRM_NUM_BYTES(config->rxMinFrameSize);
+#endif
 
     /* Set MAC interface mode, speed and duplex */
     result = NETC_PortSetMII(base, config->miiMode, config->miiSpeed, config->miiDuplex);
@@ -134,6 +166,15 @@ status_t NETC_PortConfigEthMac(NETC_ETH_LINK_Type *base, const netc_port_ethmac_
     else
     {
         reg &= ~NETC_ETH_LINK_PM0_IF_MODE_REVMII_MASK;
+    }
+    /* Enable RGMII Tx clock stop status during low power idle.  */
+    if (config->rgmiiClkStop)
+    {
+        reg |= NETC_ETH_LINK_PM0_IF_MODE_CLK_STOP_MASK;
+    }
+    else
+    {
+        reg &= ~NETC_ETH_LINK_PM0_IF_MODE_CLK_STOP_MASK;
     }
     base->PM0_IF_MODE = reg;
     base->PM1_IF_MODE = reg;
@@ -153,25 +194,90 @@ status_t NETC_PortConfigEthMac(NETC_ETH_LINK_Type *base, const netc_port_ethmac_
     /* Enable Tx/Rx */
     reg = NETC_ETH_LINK_PM0_COMMAND_CONFIG_TX_EN_MASK | NETC_ETH_LINK_PM0_COMMAND_CONFIG_RX_EN_MASK |
           NETC_ETH_LINK_PM0_COMMAND_CONFIG_TS_MODE(config->txTsSelect) |
+          NETC_ETH_LINK_PM0_COMMAND_CONFIG_TS_PNT(config->isTsPointPhy) |
+          NETC_ETH_LINK_PM0_COMMAND_CONFIG_HD_FCEN(config->enableHalfDuplexFlowCtrl) |
           NETC_ETH_LINK_PM0_COMMAND_CONFIG_TXP(config->enTxPad);
     base->PM0_COMMAND_CONFIG = reg;
     base->PM1_COMMAND_CONFIG = reg;
 
+    if (config->enableHalfDuplexFlowCtrl)
+    {
+        assert((config->maxBackPressOn <= 3036U) && (config->minBackPressOff <= 20U));
+        reg = NETC_ETH_LINK_PM0_HD_FLOW_CTRL_HD_BP_ON_MAX(config->maxBackPressOn) |
+              NETC_ETH_LINK_PM0_HD_FLOW_CTRL_HD_BP_OFF_MIN(config->minBackPressOff);
+        base->PM0_HD_FLOW_CTRL = reg;
+        base->PM1_HD_FLOW_CTRL = reg;
+    }
+
     return kStatus_Success;
 }
 
-status_t NETC_PortEnableLoopback(NETC_ETH_LINK_Type *base, bool enable)
+uint32_t NETC_GetPortMacInterruptFlags(NETC_ETH_LINK_Type *base, netc_port_phy_mac_type_t macType)
 {
-    if (enable)
+    if (macType == kNETC_ExpressMAC)
     {
-        base->PM0_COMMAND_CONFIG |= NETC_ETH_LINK_PM0_COMMAND_CONFIG_LOOP_ENA_MASK | 0x800U;
-        base->PM1_COMMAND_CONFIG |= NETC_ETH_LINK_PM1_COMMAND_CONFIG_LOOP_ENA_MASK;
+        return base->PM0_IEVENT;
     }
     else
     {
-        base->PM0_COMMAND_CONFIG &= ~(NETC_ETH_LINK_PM0_COMMAND_CONFIG_LOOP_ENA_MASK | 0x800U);
-        base->PM1_COMMAND_CONFIG &= ~NETC_ETH_LINK_PM1_COMMAND_CONFIG_LOOP_ENA_MASK;
+        return base->PM1_IEVENT;
     }
+}
+
+void NETC_ClearPortMacInterruptFlags(NETC_ETH_LINK_Type *base, netc_port_phy_mac_type_t macType, uint32_t mask)
+{
+    if (macType == kNETC_ExpressMAC)
+    {
+        base->PM0_IEVENT |= mask;
+    }
+    else
+    {
+        base->PM1_IEVENT |= mask;
+    }
+}
+
+void NETC_EnablePortMacInterrupts(NETC_ETH_LINK_Type *base, netc_port_phy_mac_type_t macType, uint32_t mask, bool enable)
+{
+    if (macType == kNETC_ExpressMAC)
+    {
+        if (enable)
+        {
+            base->PM0_IMASK |= mask;
+        }
+        else
+        {
+            base->PM0_IMASK &= ~mask;
+        }
+    }
+    else
+    {
+        if (enable)
+        {
+            base->PM1_IMASK |= mask;
+        }
+        else
+        {
+            base->PM1_IMASK &= ~mask;
+        }
+    }
+}
+
+status_t NETC_PortEnableLoopback(NETC_ETH_LINK_Type *base, netc_port_loopback_mode_t loopMode, bool enable)
+{
+    uint32_t reg = base->PM0_COMMAND_CONFIG;
+
+    if (enable)
+    {
+        reg &= ~NETC_ETH_LINK_PM0_COMMAND_CONFIG_LPBK_MODE_MASK;
+        reg |= NETC_ETH_LINK_PM0_COMMAND_CONFIG_LOOP_ENA_MASK | NETC_ETH_LINK_PM0_COMMAND_CONFIG_LPBK_MODE(loopMode);
+    }
+    else
+    {
+        reg &= ~NETC_ETH_LINK_PM0_COMMAND_CONFIG_LOOP_ENA_MASK;
+    }
+
+    base->PM0_COMMAND_CONFIG = reg;
+    base->PM1_COMMAND_CONFIG = reg;
 
     return kStatus_Success;
 }
@@ -187,6 +293,7 @@ void NETC_PortGetDiscardStatistic(NETC_PORT_Type *base,
             statistic->reason0 = base->PRXDCRR0;
             statistic->reason1 = base->PRXDCRR1;
             break;
+#if !(defined(FSL_FEATURE_NETC_HAS_NO_SWITCH) && FSL_FEATURE_NETC_HAS_NO_SWITCH)
         case kNETC_TxDiscard:
             statistic->count   = base->PTXDCR;
             statistic->reason0 = base->PTXDCRR0;
@@ -197,6 +304,7 @@ void NETC_PortGetDiscardStatistic(NETC_PORT_Type *base,
             statistic->reason0 = base->BPDCRR0;
             statistic->reason1 = base->BPDCRR1;
             break;
+#endif
         default:
             assert(false);
             break;
@@ -214,6 +322,7 @@ void NETC_PortClearDiscardReason(NETC_PORT_Type *base,
             base->PRXDCRR0 = reason0;
             base->PRXDCRR1 = reason1;
             break;
+#if !(defined(FSL_FEATURE_NETC_HAS_NO_SWITCH) && FSL_FEATURE_NETC_HAS_NO_SWITCH)
         case kNETC_TxDiscard:
             base->PTXDCRR0 = reason0;
             base->PTXDCRR1 = reason1;
@@ -222,6 +331,7 @@ void NETC_PortClearDiscardReason(NETC_PORT_Type *base,
             base->BPDCRR0 = reason0;
             base->BPDCRR1 = reason1;
             break;
+#endif
         default:
             assert(false);
             break;
@@ -229,7 +339,7 @@ void NETC_PortClearDiscardReason(NETC_PORT_Type *base,
 }
 
 void NETC_PortGetPhyMacTxStatistic(NETC_ETH_LINK_Type *base,
-                                   netc_port_phy_mac_tpye_t macType,
+                                   netc_port_phy_mac_type_t macType,
                                    netc_port_phy_mac_traffic_statistic_t *statistic)
 {
 #if (defined(FSL_FEATURE_NETC_HAS_ERRATA_050679) && FSL_FEATURE_NETC_HAS_ERRATA_050679)
@@ -240,10 +350,33 @@ void NETC_PortGetPhyMacTxStatistic(NETC_ETH_LINK_Type *base,
     statistic->rxMinPacket = 0;
     if (macType == kNETC_ExpressMAC)
     {
-        statistic->totalOctet             = base->PM0_TEOCTN;
-        statistic->validOctet             = base->PM0_TOCTN;
+#if defined(FSL_FEATURE_NETC_HAS_ERRATA_051711) && FSL_FEATURE_NETC_HAS_ERRATA_051711
+        /* ERRATA051711: MAC statistic counters TEOCT and TOCT are inaccurate after Pause frames are transmitted with
+           flexible preamble enabled (PM0_TX_IPG_PREAMBLE[FLEX_PREAMBLE_EN] = 1) and flexible preamble count
+           (PM0_TX_IPG_PREAMBLE[FLEX_PREAMBLE_CNT]) set to less than 7. */
+        uint32_t flexPreambleCnt = (base->PM0_TX_IPG_PREAMBLE & NETC_ETH_LINK_PM0_TX_IPG_PREAMBLE_FLEX_PREAMBLE_CNT_MASK) >> NETC_ETH_LINK_PM0_TX_IPG_PREAMBLE_FLEX_PREAMBLE_CNT_SHIFT;
+        if ((base->PM0_TX_IPG_PREAMBLE & NETC_ETH_LINK_PM0_TX_IPG_PREAMBLE_FLEX_PREAMBLE_EN_MASK) != 0U)
+        {
+            statistic->totalOctet = base->PM0_TEOCTN - base->PM0_TXPFN * ((uint64_t)7U - flexPreambleCnt);
+            statistic->validOctet = base->PM0_TOCTN - base->PM0_TXPFN * ((uint64_t)7U - flexPreambleCnt);
+        }
+        else
+        {
+            statistic->totalOctet = base->PM0_TEOCTN;
+            statistic->validOctet = base->PM0_TOCTN;
+        }
+#else
+        statistic->totalOctet = base->PM0_TEOCTN;
+        statistic->validOctet = base->PM0_TOCTN;
+#endif
         statistic->pauseFrame             = base->PM0_TXPFN;
+#if defined(FSL_FEATURE_NETC_HAS_ERRATA_051710) && FSL_FEATURE_NETC_HAS_ERRATA_051710
+        /* ERRATA051710: After one or more late collision or excessive collision events, counters PMa_TOCTn and PMa_TFRMn will be higher than
+           expected. The accurate value cannot be recovered for PMa_TOCTn, but PMa_TRFMn can be recovered as follows formula. */
+        statistic->validFrame             = base->PM0_TFRMN - base->PM0_TLCOLN - base->PM0_TECOLN;
+#else
         statistic->validFrame             = base->PM0_TFRMN;
+#endif
         statistic->vlanFrame              = base->PM0_TVLANN;
         statistic->unicastFrame           = base->PM0_TUCAN;
         statistic->multicastFrame         = base->PM0_TMCAN;
@@ -263,7 +396,13 @@ void NETC_PortGetPhyMacTxStatistic(NETC_ETH_LINK_Type *base,
         statistic->totalOctet             = base->PM1_TEOCTN;
         statistic->validOctet             = base->PM1_TOCTN;
         statistic->pauseFrame             = base->PM1_TXPFN;
+#if defined(FSL_FEATURE_NETC_HAS_ERRATA_051710) && FSL_FEATURE_NETC_HAS_ERRATA_051710
+        /* ERRATA051710: After one or more late collision or excessive collision events, counters PMa_TOCTn and PMa_TFRMn will be higher than
+           expected. The accurate value cannot be recovered for PMa_TOCTn, but PMa_TRFMn can be recovered as follows formula. */
+        statistic->validFrame             = base->PM1_TFRMN - base->PM1_TLCOLN - base->PM1_TECOLN;
+#else
         statistic->validFrame             = base->PM1_TFRMN;
+#endif
         statistic->vlanFrame              = base->PM1_TVLANN;
         statistic->unicastFrame           = base->PM1_TUCAN;
         statistic->multicastFrame         = base->PM1_TMCAN;
@@ -289,7 +428,7 @@ void NETC_PortGetPhyMacTxStatistic(NETC_ETH_LINK_Type *base,
 }
 
 void NETC_PortGetPhyMacRxStatistic(NETC_ETH_LINK_Type *base,
-                                   netc_port_phy_mac_tpye_t macType,
+                                   netc_port_phy_mac_type_t macType,
                                    netc_port_phy_mac_traffic_statistic_t *statistic)
 {
 #if (defined(FSL_FEATURE_NETC_HAS_ERRATA_050679) && FSL_FEATURE_NETC_HAS_ERRATA_050679)
@@ -317,7 +456,9 @@ void NETC_PortGetPhyMacRxStatistic(NETC_ETH_LINK_Type *base,
         statistic->total1024To1522BPacket = base->PM0_R1522N;
         statistic->total1523ToMaxBPacket  = base->PM0_R1523XN;
         statistic->controlPacket          = base->PM0_RCNPN;
+#if defined(NETC_ETH_LINK_PM0_RMIN63N_RMIN63n_MASK)
         statistic->rxMinPacket            = base->PM0_RMIN63N;
+#endif
     }
     else if (macType == kNETC_PreemptableMAC)
     {
@@ -338,7 +479,9 @@ void NETC_PortGetPhyMacRxStatistic(NETC_ETH_LINK_Type *base,
         statistic->total1024To1522BPacket = base->PM1_R1522N;
         statistic->total1523ToMaxBPacket  = base->PM1_R1523XN;
         statistic->controlPacket          = base->PM1_RCNPN;
+#if defined(NETC_ETH_LINK_PM1_RMIN63N_RMIN63n_MASK)
         statistic->rxMinPacket            = base->PM1_RMIN63N;
+#endif
     }
     else
     {
@@ -351,7 +494,7 @@ void NETC_PortGetPhyMacRxStatistic(NETC_ETH_LINK_Type *base,
 }
 
 void NETC_PortGetPhyMacDiscardStatistic(NETC_ETH_LINK_Type *base,
-                                        netc_port_phy_mac_tpye_t macType,
+                                        netc_port_phy_mac_type_t macType,
                                         netc_port_phy_mac_discard_statistic_t *statistic)
 {
 #if (defined(FSL_FEATURE_NETC_HAS_ERRATA_050679) && FSL_FEATURE_NETC_HAS_ERRATA_050679)
@@ -398,13 +541,21 @@ void NETC_PortGetPhyMacPreemptionStatistic(NETC_ETH_LINK_Type *base,
                                            netc_port_phy_mac_preemption_statistic_t *statistic)
 {
     statistic->rxReassembledFrame = base->MAC_MERGE_MMFAOCR;
+#if defined(FSL_FEATURE_NETC_HAS_ERRATA_051707) && FSL_FEATURE_NETC_HAS_ERRATA_051707
+    /* ERRATA051707: The host that is reading MAC_MERGE_MMFAECR register should check status of PM1_RFCS. If the PM1_RFCS indicates no
+       error then MAC_MERGE_MMFAECR is valid and can be used if on other hand there is an error reported in PM1_RFCS register
+       then MAC_MERGE_MMFAECR might be incorrect and should be treated accordingly. */
+    statistic->rxReassembledError = (base->PM1_RFCSN == 0U) ? base->MAC_MERGE_MMFAECR : 0U;
+#else
     statistic->rxReassembledError = base->MAC_MERGE_MMFAECR;
+#endif
     statistic->rxMPacket          = base->MAC_MERGE_MMFCRXR;
     statistic->rxSMDError         = base->MAC_MERGE_MMFSECR;
     statistic->txPreemptionReq    = base->MAC_MERGE_MMHCR;
     statistic->txMPacket          = base->MAC_MERGE_MMFCTXR;
 }
 
+#if !(defined(FSL_FEATURE_NETC_HAS_NO_SWITCH) && FSL_FEATURE_NETC_HAS_NO_SWITCH)
 void NETC_PortGetPseudoMacTrafficStatistic(NETC_PSEUDO_LINK_Type *base,
                                            bool getTx,
                                            netc_port_pseudo_mac_traffic_statistic_t *statistic)
@@ -432,34 +583,35 @@ void NETC_PortGetPseudoMacTrafficStatistic(NETC_PSEUDO_LINK_Type *base,
     EnableGlobalIRQ(primask);
 #endif
 }
+#endif
 
 status_t NETC_PortConfigTcCBS(NETC_PORT_Type *base, netc_hw_tc_idx_t tcIdx, const netc_port_tc_cbs_config_t *config)
 {
     status_t result = kStatus_Success;
     uint8_t usedBw  = 0U;
-    uint8_t index   = (uint8_t)kNETC_TxTC7;
+    uint8_t index;
 
-    for (; index > (uint8_t)tcIdx; index--)
+    for (index = (uint8_t)kNETC_TxTC0; index <= (uint8_t)kNETC_TxTC7; index++)
     {
+        if (index == (uint8_t)tcIdx)
+        {
+            continue;
+        }
+
         if (0U != (base->TCT_NUM[index].PTCCBSR0 & NETC_PORT_PTCCBSR0_CBSE_MASK))
         {
             usedBw += (uint8_t)(base->TCT_NUM[index].PTCCBSR0 & NETC_PORT_PTCCBSR0_BW_MASK);
         }
-        else
-        {
-            break;
-        }
     }
 
-    if ((index == (uint8_t)tcIdx) && ((usedBw + config->bwWeight) <= 100U))
+    if ((usedBw + config->bwWeight) <= 100U)
     {
         base->TCT_NUM[tcIdx].PTCCBSR0 = NETC_PORT_PTCCBSR0_BW(config->bwWeight) | NETC_PORT_PTCCBSR0_CBSE_MASK;
         base->TCT_NUM[tcIdx].PTCCBSR1 = NETC_PORT_PTCCBSR1_HI_CREDIT(config->hiCredit);
     }
     else
     {
-        /* Traffic classes that support CBS need to be had numerically higher priority, and the sum of all traffic class
-         * credit-based shaper's bandwidth cannot execeed 100 */
+        /* The sum of all traffic class credit-based shaper's bandwidth cannot execeed 100 */
         result = kStatus_Fail;
     }
 
@@ -468,7 +620,7 @@ status_t NETC_PortConfigTcCBS(NETC_PORT_Type *base, netc_hw_tc_idx_t tcIdx, cons
 
 void NETC_PortEthMacGracefulStop(NETC_PORT_Type *base)
 {
-    NETC_ETH_LINK_Type *eth = (NETC_ETH_LINK_Type *)(uintptr_t)base;
+    NETC_ETH_LINK_Type *eth = (NETC_ETH_LINK_Type *)((uintptr_t)base + 0x1000U);
     bool hasPM1             = 0U != (eth->MAC_MERGE_MMCSR & NETC_ETH_LINK_MAC_MERGE_MMCSR_ME_MASK);
 
     /* In order to stop receive */
@@ -493,13 +645,11 @@ void NETC_PortEthMacGracefulStop(NETC_PORT_Type *base)
     while (0U == (eth->PM0_IEVENT & NETC_ETH_LINK_PM0_IEVENT_TX_EMPTY_MASK))
     {
     }
-    eth->PM0_COMMAND_CONFIG &= ~NETC_ETH_LINK_PM0_COMMAND_CONFIG_TX_EN_MASK;
     if (hasPM1)
     {
         while (0U == (eth->PM1_IEVENT & NETC_ETH_LINK_PM1_IEVENT_TX_EMPTY_MASK))
         {
         }
-        eth->PM1_COMMAND_CONFIG &= ~NETC_ETH_LINK_PM1_COMMAND_CONFIG_TX_EN_MASK;
     }
     /* Wait 64 byte time for Tx packet transmission to complete.  */
     SDK_DelayAtLeastUs(512, SDK_DEVICE_MAXIMUM_CPU_CLOCK_FREQUENCY);

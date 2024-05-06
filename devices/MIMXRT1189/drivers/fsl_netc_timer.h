@@ -1,13 +1,14 @@
 /*
- * Copyright 2021-2022 NXP
+ * Copyright 2021-2023 NXP
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-#ifndef _FSL_NETC_TIMER_H_
-#define _FSL_NETC_TIMER_H_
+#ifndef FSL_NETC_TIMER_H_
+#define FSL_NETC_TIMER_H_
 
 #include "fsl_netc.h"
+#include "fsl_netc_soc.h"
 #include "netc_hw/fsl_netc_hw.h"
 
 #if !(defined(__GNUC__) || defined(__ICCARM__))
@@ -115,6 +116,7 @@ typedef struct _netc_timer_config
     bool clkInputPhase; /*!< True: Inverted frequency tuned timer input clock, False: Non-inverted frequency tuned timer
                            input clock. */
     bool enableTimer;   /*!< True: Enable 1588 timer, False: Disable 1588 timer, use default counter. */
+    bool atomicMode;   /*!< True: Allow atomic updates to TMR_PERIOD and TMR_ADD, False: Disable it. */
     netc_timer_ref_clk_t clockSelect; /*!< Timer reference clock. */
     uint32_t refClkHz;                /*!< Timer reference clock frequency in Hz. */
     int32_t defaultPpb;               /*!< Default ppb. */
@@ -193,15 +195,6 @@ typedef struct _netc_timer_fiper
 } netc_timer_fiper_t;
 
 /*!
- * @brief Enumeration for NETC timer external trigger index
- */
-typedef enum _netc_timer_exttrig_index
-{
-    kNETC_TimerExtTrig1 = 0,
-    kNETC_TimerExtTrig2,
-} netc_timer_exttrig_index_t;
-
-/*!
  * @brief Structure to configure external pulse trigger timestamp
  */
 typedef struct _netc_timer_ext_pulse_trig
@@ -247,6 +240,13 @@ status_t NETC_TimerInit(netc_timer_handle_t *handle, const netc_timer_config_t *
  * @param handle NETC timer handle.
  */
 void NETC_TimerDeinit(netc_timer_handle_t *handle);
+
+/*!
+ * @brief Initialize a NETC PTP1588 timer handle
+ *
+ * @param handle NETC timer handle.
+ */
+void NETC_TimerInitHandle(netc_timer_handle_t *handle);
 
 /*!
  * @brief Enable/Disable the NETC PTP1588 timer
@@ -421,12 +421,28 @@ status_t NETC_TimerMsixGetPendingStatus(netc_timer_handle_t *handle, uint8_t pba
  */
 
 /*!
+ * @brief Get the timer's current or default time
+ *
+ * @param base NETC timer base address.
+ * @param nanosecond Time in nanosecond.
+ */
+void NETC_TimerGetTime(ENETC_PF_TMR_Type *base, uint64_t *nanosecond);
+
+/*!
  * @brief Get the timer's current time
  *
  * @param handle NETC timer handle.
  * @param nanosecond Time in nanosecond.
  */
 void NETC_TimerGetCurrentTime(netc_timer_handle_t *handle, uint64_t *nanosecond);
+
+/*!
+ * @brief Get the timer's freerunning time
+ *
+ * @param handle NETC timer handle.
+ * @param nanosecond Time in nanosecond.
+ */
+void NETC_TimerGetFreeRunningTime(netc_timer_handle_t *handle, uint64_t *nanosecond);
 
 /*!
  * @brief Correct the current timer
@@ -465,4 +481,4 @@ void NETC_TimerGetFrtSrtTime(netc_timer_handle_t *handle, uint64_t *frt, uint64_
 #if defined(__cplusplus)
 }
 #endif
-#endif /* _FSL_NETC_TIMER_H_ */
+#endif /* FSL_NETC_TIMER_H_ */

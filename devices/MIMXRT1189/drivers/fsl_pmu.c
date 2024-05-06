@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 NXP
+ * Copyright 2021-2023 NXP
  * All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
@@ -18,25 +18,27 @@
 
 #define PMU_POWER_DETECT_CTRL_REGISTER (ANADIG_PMU->PMU_POWER_DETECT_CTRL)
 
-#define PMU_BIAS_CTRL_WB_CFG_1P8_WELL_SELECT_MASK (0x1U)
-
 #define PMU_BIAS_CTRL_WB_CFG_1P8_VOLTAGE_THRESHOLD_MASK  (0x2U)
 #define PMU_BIAS_CTRL_WB_CFG_1P8_VOLTAGE_THRESHOLD_SHIFT 1U
 #define PMU_BIAS_CTRL_WB_CFG_1P8_VOLTAGE_THRESHOLD(x)                                    \
     (((uint32_t)(((uint32_t)(x)) << PMU_BIAS_CTRL_WB_CFG_1P8_VOLTAGE_THRESHOLD_SHIFT)) & \
      PMU_BIAS_CTRL_WB_CFG_1P8_VOLTAGE_THRESHOLD_MASK)
 
-#define PMU_BIAS_CTRL_WB_CFG_1P8_DRIVE_STRENGTH_MASK  (0x1CU)
-#define PMU_BIAS_CTRL_WB_CFG_1P8_DRIVE_STRENGTH_SHIFT 2U
-#define PMU_BIAS_CTRL_WB_CFG_1P8_DRIVE_STRENGTH(x)                                    \
-    (((uint32_t)(((uint32_t)(x)) << PMU_BIAS_CTRL_WB_CFG_1P8_DRIVE_STRENGTH_SHIFT)) & \
-     PMU_BIAS_CTRL_WB_CFG_1P8_DRIVE_STRENGTH_MASK)
+#define PMU_BIAS_CTRL_WB_CFG_1P8_PULL_DOWN_OPTION_MASK  (0x1000U)
+#define PMU_BIAS_CTRL_WB_CFG_1P8_PULL_DOWN_OPTION_SHIFT 12U
+#define PMU_BIAS_CTRL_WB_CFG_1P8_PULL_DOWN_OPTION(x)                                    \
+    (((uint32_t)(((uint32_t)(x)) << PMU_BIAS_CTRL_WB_CFG_1P8_PULL_DOWN_OPTION_SHIFT)) & \
+     PMU_BIAS_CTRL_WB_CFG_1P8_PULL_DOWN_OPTION_MASK)
 
-#define PMU_BIAS_CTRL_WB_CFG_1P8_OSCILLATOR_FREQ_MASK  (0x1E0U)
-#define PMU_BIAS_CTRL_WB_CFG_1P8_OSCILLATOR_FREQ_SHIFT 5U
-#define PMU_BIAS_CTRL_WB_CFG_1P8_OSCILLATOR_FREQ(x)                                    \
-    (((uint32_t)(((uint32_t)(x)) << PMU_BIAS_CTRL_WB_CFG_1P8_OSCILLATOR_FREQ_SHIFT)) & \
-     PMU_BIAS_CTRL_WB_CFG_1P8_OSCILLATOR_FREQ_MASK)
+#define PMU_BIAS_CTRL_WB_PW_LVL_1P8_MASK  (0xF000000U)
+#define PMU_BIAS_CTRL_WB_PW_LVL_1P8_SHIFT 24U
+#define PMU_BIAS_CTRL_WB_PW_LVL_1P8(x) \
+    (((uint32_t)(((uint32_t)(x)) << PMU_BIAS_CTRL_WB_PW_LVL_1P8_SHIFT)) & PMU_BIAS_CTRL_WB_PW_LVL_1P8_MASK)
+
+#define PMU_BIAS_CTRL_WB_NW_LVL_1P8_MASK  (0xF0000000U)
+#define PMU_BIAS_CTRL_WB_NW_LVL_1P8_SHIFT 28U
+#define PMU_BIAS_CTRL_WB_NW_LVL_1P8(x) \
+    (((uint32_t)(((uint32_t)(x)) << PMU_BIAS_CTRL_WB_NW_LVL_1P8_SHIFT)) & PMU_BIAS_CTRL_WB_NW_LVL_1P8_MASK)
 
 #define PMU_GET_ANADIG_PMU_MEMBER_ADDRESS(member) \
     ((uint32_t)((ANADIG_PMU_BASE) + (uint32_t)offsetof(ANADIG_PMU_Type, member)))
@@ -83,11 +85,13 @@ void PMU_StaticEnablePllLdo(ANADIG_PMU_Type *base)
     temp32 = PHY_LDO->CTRL0.RW;
 
     if (temp32 !=
-        (PHY_LDO_CTRL0_LINREG_OUTPUT_TRG(0x10) | PHY_LDO_CTRL0_LINREG_EN_MASK | PHY_LDO_CTRL0_LINREG_ILIMIT_EN_MASK))
+        (PHY_LDO_CTRL0_LINREG_OUTPUT_TRG(0x10) | PHY_LDO_CTRL0_LINREG_EN_MASK))
     {
         PHY_LDO->CTRL0.RW =
             PHY_LDO_CTRL0_LINREG_OUTPUT_TRG(0x10) | PHY_LDO_CTRL0_LINREG_EN_MASK | PHY_LDO_CTRL0_LINREG_ILIMIT_EN_MASK;
         SDK_DelayAtLeastUs(1, SDK_DEVICE_MAXIMUM_CPU_CLOCK_FREQUENCY);
+        /* Disable LDO current limit after LDO is stable to minimize ARM PLL jitter in cold temperature. */
+        PHY_LDO->CTRL0.RW &= ~PHY_LDO_CTRL0_LINREG_ILIMIT_EN_MASK;
     }
 }
 
@@ -255,6 +259,52 @@ void PMU_GetBbsmDigLdoDefaultConfig(pmu_bbsm_dig_config_t *config)
 }
 
 /*!
+ * brief When STBY assert, enable/disable the selected LDO enter it's Low power mode.
+ *
+ * param name The name of the selected ldo. Please see the enumeration pmu_ldo_name_t for details.
+ * param enable Enable GPC standby mode or not.
+ */
+void PMU_EnableLdoStandbyMode(pmu_ldo_name_t name, bool enable)
+{
+    switch (name)
+    {
+        case kPMU_PllLdo:
+            if (enable)
+            {
+                ANADIG_PMU->PMU_LDO_PLL |= ANADIG_PMU_PMU_LDO_PLL_LDO_PLL_STBY_EN_MASK;
+            }
+            else
+            {
+                ANADIG_PMU->PMU_LDO_PLL &= ~ANADIG_PMU_PMU_LDO_PLL_LDO_PLL_STBY_EN_MASK;
+            }
+            break;
+        case kPMU_AonAnaLdo:
+            if (enable)
+            {
+                ANADIG_LDO_BBSM->PMU_LDO_AON_ANA |= ANADIG_LDO_BBSM_PMU_LDO_AON_ANA_STANDBY_EN_MASK;
+            }
+            else
+            {
+                ANADIG_LDO_BBSM->PMU_LDO_AON_ANA &= ~ANADIG_LDO_BBSM_PMU_LDO_AON_ANA_STANDBY_EN_MASK;
+            }
+            break;
+        case kPMU_AonDigLdo:
+            if (enable)
+            {
+                ANADIG_LDO_BBSM->PMU_LDO_AON_DIG |= ANADIG_LDO_BBSM_PMU_LDO_AON_DIG_STANDBY_EN_MASK;
+            }
+            else
+            {
+                ANADIG_LDO_BBSM->PMU_LDO_AON_DIG &= ~ANADIG_LDO_BBSM_PMU_LDO_AON_DIG_STANDBY_EN_MASK;
+            }
+            break;
+        default:
+            assert(false);
+            break;
+    }
+}
+
+/*!
  * brief Disables Bandgap self bias for best noise performance.
  *
  * This function waits for the bandgap to be stable and disables the bandgap self bias.
@@ -333,13 +383,9 @@ void PMU_WellBiasInit(ANADIG_PMU_Type *base, const pmu_well_bias_config_t *confi
 }
 
 /*!
- * brief Enables/disables the selected body bias.
+ * brief Get the default configures of Well bias.
  *
- * param base PMU peripheral base address.
- * param name The name of the body bias to be turned on/off, please refer to pmu_body_bias_name_t.
- * param enable Used to turn on/off the specific body bias.
- *              - \b true Enable the selected body bias.
- *              - \b false Disable the selected body bias.
+ * param config Pointer to the pmu_well_bias_config_t structure.
  */
 void PMU_GetWellBiasDefaultConfig(pmu_well_bias_config_t *config)
 {
@@ -352,16 +398,54 @@ void PMU_GetWellBiasDefaultConfig(pmu_well_bias_config_t *config)
 }
 
 /*!
- * brief Gets the default config of body bias in GPC mode.
+ * brief Enables/disables FBB.
  *
- * param config Pointer to the structure pmu_gpc_body_bias_config_t.
+ * param base PMU peripheral base address.
+ * param enable Used to turn on/off FBB.
  */
-void PMU_GPCGetBodyBiasDefaultConfig(pmu_gpc_body_bias_config_t *config)
+void PMU_EnableFBB(ANADIG_PMU_Type *base, bool enable)
 {
-    assert(config != NULL);
+    uint32_t tmp32;
 
-    config->PWELLRegulatorSize = 1U;
-    config->NWELLRegulatorSize = 1U;
-    config->oscillatorSize     = 7U;
-    config->regulatorStrength  = 5U;
+    if (enable)
+    {
+        tmp32 = base->PMU_BIAS_CTRL;
+        tmp32 &= ~(PMU_BIAS_CTRL_WB_NW_LVL_1P8_MASK | PMU_BIAS_CTRL_WB_PW_LVL_1P8_MASK |
+                   ANADIG_PMU_PMU_BIAS_CTRL_WB_CFG_1P8_MASK);
+        tmp32 |= PMU_BIAS_CTRL_WB_NW_LVL_1P8(1U) | PMU_BIAS_CTRL_WB_PW_LVL_1P8(1U) |
+                 PMU_BIAS_CTRL_WB_CFG_1P8_PULL_DOWN_OPTION_MASK | PMU_BIAS_CTRL_WB_CFG_1P8_VOLTAGE_THRESHOLD_MASK;
+        base->PMU_BIAS_CTRL = tmp32;
+
+        tmp32 = base->PMU_BIAS_CTRL2;
+        tmp32 &= ~(ANADIG_PMU_PMU_BIAS_CTRL2_WB_PWR_SW_EN_1P8_MASK);
+        tmp32 |= ANADIG_PMU_PMU_BIAS_CTRL2_WB_PWR_SW_EN_1P8(1U) | ANADIG_PMU_PMU_BIAS_CTRL2_WB_EN_MASK;
+        base->PMU_BIAS_CTRL2 = tmp32;
+
+        while ((base->PMU_BIAS_CTRL2 & ANADIG_PMU_PMU_BIAS_CTRL2_WB_OK_MASK) != ANADIG_PMU_PMU_BIAS_CTRL2_WB_OK_MASK)
+        {
+        }
+    }
+    else
+    {
+        base->PMU_BIAS_CTRL2 &=
+            ~(ANADIG_PMU_PMU_BIAS_CTRL2_WB_PWR_SW_EN_1P8_MASK | ANADIG_PMU_PMU_BIAS_CTRL2_WB_EN_MASK);
+    }
+}
+
+/*!
+ * brief Controls the ON/OFF of FBB when GPC send standby request.
+ *
+ * param base PMU peripheral base address.
+ * param enable Enable GPC standby mode or not.
+ */
+void PMU_EnableFBBStandbyMode(ANADIG_PMU_Type *base, bool enable)
+{
+    if (enable)
+    {
+        base->PMU_BIAS_CTRL |= ANADIG_PMU_PMU_BIAS_CTRL_FBB_M7_STBY_EN_MASK;
+    }
+    else
+    {
+        base->PMU_BIAS_CTRL &= ~ANADIG_PMU_PMU_BIAS_CTRL_FBB_M7_STBY_EN_MASK;
+    }
 }

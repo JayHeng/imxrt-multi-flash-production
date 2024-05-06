@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-#ifndef _FSL_NETC_ENETC_H_
-#define _FSL_NETC_ENETC_H_
+#ifndef FSL_NETC_ENETC_H_
+#define FSL_NETC_ENETC_H_
 
 #include "fsl_netc.h"
 
@@ -271,4 +271,4 @@ static inline void NETC_EnetcEnableWakeOnLan(NETC_ENETC_Type *base, bool isEnabl
 #if defined(__cplusplus)
 }
 #endif
-#endif /* _FSL_NETC_ENETC_H_ */
+#endif /* FSL_NETC_ENETC_H_ */

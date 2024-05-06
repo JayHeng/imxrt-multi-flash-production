@@ -1,15 +1,16 @@
 /*
 ** ###################################################################
-**     Processor:           MIMXRT1189CVM8A_cm7
-**     Compilers:           Freescale C/C++ for Embedded ARM
-**                          GNU C Compiler
+**     Processors:          MIMXRT1189CVM8B_cm7
+**                          MIMXRT1189XVM8B_cm7
+**
+**     Compilers:           GNU C Compiler
 **                          IAR ANSI C/C++ Compiler for ARM
 **                          Keil ARM C/C++ Compiler
 **                          MCUXpresso Compiler
 **
-**     Reference manual:    IMXRT1180RM, Rev 1, 06/2022
+**     Reference manual:    IMXRT1180RM, Rev 2, 12/2022
 **     Version:             rev. 0.1, 2021-03-09
-**     Build:               b220801
+**     Build:               b231213
 **
 **     Abstract:
 **         Provides a system configuration function and a global variable that
@@ -17,9 +18,7 @@
 **         the oscillator (PLL) that is part of the microcontroller device.
 **
 **     Copyright 2016 Freescale Semiconductor, Inc.
-**     Copyright 2016-2022 NXP
-**     All rights reserved.
-**
+**     Copyright 2016-2023 NXP
 **     SPDX-License-Identifier: BSD-3-Clause
 **
 **     http:                 www.nxp.com
@@ -35,7 +34,7 @@
 /*!
  * @file MIMXRT1189_cm7
  * @version 1.0
- * @date 2022-08-01
+ * @date 2023-12-13
  * @brief Device specific configuration file for MIMXRT1189_cm7 (header file)
  *
  * Provides a system configuration function and a global variable that contains
@@ -64,7 +63,7 @@ extern "C" {
 #define CPU_CLK1_HZ                    0UL                 /* Value of the CLK1 (select the CLK1_N/CLK1_P as source) frequency in Hz */
                                                            /* If CLOCK1_P,CLOCK1_N is choose as the pll bypass clock source, please implement the CLKPN_FREQ define, otherwise 0 will be returned. */
 
-#define DEFAULT_SYSTEM_CLOCK           528000000UL         /* Default System clock value */
+#define DEFAULT_SYSTEM_CLOCK           792000000UL         /* Default System clock value */
 
 
 /**
@@ -107,6 +106,20 @@ void SystemCoreClockUpdate(void);
  * initialization of these variables happens after this function.
  */
 void SystemInitHook(void);
+
+/**
+ * @brief Override NVIC_SystemReset
+ *
+ * This macro function is used to override CMSIS default NVIC_SystemReset
+ * The CM33 reset mask bit in SRC register should be cleared to make cold reset
+ * work
+ */
+#undef NVIC_SystemReset
+#define NVIC_SystemReset()                                                   \
+    {                                                                        \
+        SRC_GENERAL_REG->SRMASK &= ~SRC_GENERAL_SRMASK_CM7_RESET_MASK_MASK;  \
+        __NVIC_SystemReset();                                                \
+    }
 
 #ifdef __cplusplus
 }

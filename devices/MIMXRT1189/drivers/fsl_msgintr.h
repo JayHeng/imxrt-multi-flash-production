@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-#ifndef _FSL_MSGINTR_H_
-#define _FSL_MSGINTR_H_
+#ifndef FSL_MSGINTR_H_
+#define FSL_MSGINTR_H_
 
 #include "fsl_common.h"
 
@@ -16,7 +16,7 @@
 /*! @name Driver version */
 /*@{*/
 /*! @brief MSGINTR driver version. */
-#define FSL_MSGINTR_DRIVER_VERSION (MAKE_VERSION(2, 0, 0))
+#define FSL_MSGINTR_DRIVER_VERSION (MAKE_VERSION(2, 0, 2))
 /*@}*/
 
 #define FSL_MSGINTR_CHANNEL_NUM (3U)
@@ -69,4 +69,4 @@ static inline uint32_t MSGINTR_GetIntrSelectAddr(MSGINTR_Type *base, uint8_t cha
 }
 #endif
 
-#endif /* _FSL_MSGINTR_H_ */
+#endif /* FSL_MSGINTR_H_ */

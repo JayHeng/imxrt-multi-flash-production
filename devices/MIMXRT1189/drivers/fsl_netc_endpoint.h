@@ -1,13 +1,14 @@
 /*
- * Copyright 2021-2022 NXP
+ * Copyright 2021-2023 NXP
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-#ifndef _FSL_NETC_ENDPOINT_H_
-#define _FSL_NETC_ENDPOINT_H_
+#ifndef FSL_NETC_ENDPOINT_H_
+#define FSL_NETC_ENDPOINT_H_
 
 #include "fsl_netc.h"
+#include "fsl_netc_soc.h"
 #include "netc_hw/fsl_netc_hw.h"
 #include "netc_hw/fsl_netc_hw_enetc.h"
 #include "netc_hw/fsl_netc_hw_port.h"
@@ -230,9 +231,10 @@ typedef struct _netc_ep_psfp_config
  * @{
  */
 
+/*! @brief Endpoint handle. */
 typedef struct _ep_handle ep_handle_t;
 
-/*! @brief Callback for reclaimed tx frames */
+/*! @brief Callback for reclaimed tx frames. */
 typedef status_t (*ep_reclaim_cb_t)(ep_handle_t *handle, uint8_t ring, netc_tx_frame_info_t *frameInfo, void *userData);
 
 /*! @brief Defines the EP Rx memory buffer alloc function pointer. */
@@ -397,15 +399,6 @@ status_t EP_Down(ep_handle_t *handle);
 status_t EP_SetPrimaryMacAddr(ep_handle_t *handle, uint8_t *macAddr);
 
 /*!
- * @brief Configure SI based Vlan Insert/Removal
- *
- * @param handle
- * @param config
- * @return status_t
- */
-status_t EP_ConfigVlanOffload(ep_handle_t *handle, netc_si_vlan_offload_config_t *config);
-
-/*!
  * @brief Set EP port speed
  *
  * @param handle
@@ -504,46 +497,6 @@ static inline status_t EP_RxVlanCConfigPort(ep_handle_t *handle, netc_port_vlan_
     return kStatus_Success;
 }
 
-/*!
- * @brief Configure the Native outer Vlan
- *
- * @param handle
- * @param useInZeroVlan
- * @param useInNoVlan
- * @param vlan
- * @return status_t
- */
-status_t EP_RxVlanClsConfigNativeOuterVlan(ep_handle_t *handle, bool useInZeroVlan, bool useInNoVlan, netc_vlan_t vlan);
-
-/*!
- * @brief Enable VLAN to IPV map with provided data or Disable Vlan to IPV map
- *
- * @param handle
- * @param enable
- * @param map See SICVLANR0/1
- * @return status_t
- */
-status_t EP_RxVlanClsMapVlanToIPV(ep_handle_t *handle, bool enable, uint64_t map);
-
-/*!
- * @brief Configure the Native inner Vlan
- *
- * @param handle
- * @param useInZeroVlan
- * @param useInNoVlan
- * @param vlan
- * @return status_t
- */
-status_t EP_RxVlanCConfigNativeInnerVlan(ep_handle_t *handle, bool useInZeroVlan, bool useInNoVlan, netc_vlan_t vlan);
-
-/*!
- * @brief Enable/Disable Outter as Inner Vlan if only one Vlan tag is found
- *
- * @param handle
- * @param enable
- * @return status_t
- */
-status_t EP_RxVlanCEnableVlanOuterAsInner(ep_handle_t *handle, bool enable);
 #if !(defined(__GNUC__) || defined(__ICCARM__))
 #pragma endregion Vlan classification
 #endif
@@ -764,7 +717,7 @@ status_t EP_RxPSFPUpdateISFTableEntry(ep_handle_t *handle, uint32_t entryID, net
 status_t EP_RxPSFPDelISFTableEntry(ep_handle_t *handle, uint32_t entryID);
 
 /*!
- * @brief Get remaining available entry number of Rate Policying table
+ * @brief Get remaining available entry number of Rate Policer table
  * @note This is a dynamic bounded index table, the remaining entry can't be zero before add entry into it
  *
  * @param handle
@@ -777,7 +730,7 @@ static inline uint32_t EP_RxPSFPGetRPTableRemainEntryNum(ep_handle_t *handle)
 }
 
 /*!
- * @brief Add entry to Rate Policying table
+ * @brief Add entry to Rate Policer table
  *
  * @param handle
  * @param config
@@ -787,7 +740,7 @@ static inline uint32_t EP_RxPSFPGetRPTableRemainEntryNum(ep_handle_t *handle)
 status_t EP_RxPSFPAddRPTableEntry(ep_handle_t *handle, netc_tb_rp_config_t *config);
 
 /*!
- * @brief Update entry in Rate Policying table
+ * @brief Update entry in Rate Policer table
  *
  * @param handle
  * @param config
@@ -797,7 +750,17 @@ status_t EP_RxPSFPAddRPTableEntry(ep_handle_t *handle, netc_tb_rp_config_t *conf
 status_t EP_RxPSFPUpdateRPTableEntry(ep_handle_t *handle, netc_tb_rp_config_t *config);
 
 /*!
- * @brief Delete entry in the Rate policying table
+ * @brief Add or update entry in Rate Policer table
+ *
+ * @param handle
+ * @param config
+ * @return status_t
+ * @return See @ref netc_cmd_error_t
+ */
+status_t EP_RxPSFPAddOrUpdateRPTableEntry(ep_handle_t *handle, netc_tb_rp_config_t *config);
+
+/*!
+ * @brief Delete entry in the Rate Policer table
  *
  * @param handle
  * @param entryID
@@ -1091,22 +1054,6 @@ status_t EP_RxL2VFDelEMTableEntry(ep_handle_t *handle, uint32_t idx);
 #pragma endregion L2 Filtering
 #endif
 
-#if !(defined(__GNUC__) || defined(__ICCARM__))
-#pragma region ICM
-#endif
-/*!
- * @brief Configure the Ingress Congestion Management for specified port
- *
- * @param handle
- * @param config
- * @return status_t
- */
-status_t EP_RxICMConfig(ep_handle_t *handle, netc_enetc_port_icm_config_t *config);
-
-#if !(defined(__GNUC__) || defined(__ICCARM__))
-#pragma endregion ICM
-#endif
-
 /*!
  * @brief Set the received Frame vlan to IPV mapping
  *
@@ -1235,16 +1182,6 @@ status_t EP_TxtTGSGetOperGcl(ep_handle_t *handle, netc_tb_tgs_gcl_t *gcl, uint32
  */
 status_t EP_TxTrafficClassConfig(ep_handle_t *handle, netc_hw_tc_idx_t tcIdx, const netc_port_tx_tc_config_t *config);
 
-/*!
- * @brief Get status of the Traffic class
- *
- * @param handle
- * @param curState
- * @param aheadState
- * @return status_t
- */
-status_t EP_TxTrafficClassGetState(ep_handle_t *handle, bool *curState, bool *aheadState);
-
 /*! @} */ // end of netc_ep_tx
 #if !(defined(__GNUC__) || defined(__ICCARM__))
 #pragma endregion netc_ep_tx
@@ -1313,23 +1250,6 @@ static inline uint32_t EP_GetPortTGSListStatus(ep_handle_t *handle)
 /*! @addtogroup netc_ep_interrupt
  * @{
  */
-/*!
- * @brief Enable interrupts
- *
- * @param handle
- * @param mask see @ref _ep_interrupt_flag
- * @return status_t
- */
-status_t EP_EnableInterrupt(ep_handle_t *handle, uint32_t mask);
-
-/*!
- * @brief Disable interrupts
- *
- * @param handle
- * @param mask
- * @return status_t
- */
-status_t EP_DisableInterrupt(ep_handle_t *handle, uint32_t mask);
 
 /*!
  * @brief Clean the SI transmit interrupt flags
@@ -1731,4 +1651,4 @@ status_t EP_VsiReceiveMsg(ep_handle_t *handle, uint16_t *msg);
 #if defined(__cplusplus)
 }
 #endif
-#endif /* _FSL_NETC_ENDPOINT_H_ */
+#endif /* FSL_NETC_ENDPOINT_H_ */

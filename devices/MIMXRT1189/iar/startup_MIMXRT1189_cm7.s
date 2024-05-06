@@ -4,13 +4,11 @@
 ;            MIMXRT1189_cm7
 ;  @version: 0.1
 ;  @date:    2021-3-9
-;  @build:   b220801
+;  @build:   b231213
 ; -------------------------------------------------------------------------
 ;
 ; Copyright 1997-2016 Freescale Semiconductor, Inc.
-; Copyright 2016-2022 NXP
-; All rights reserved.
-;
+; Copyright 2016-2023 NXP
 ; SPDX-License-Identifier: BSD-3-Clause
 ;
 ; The modules in this file are included in the libraries, and may be replaced
@@ -32,6 +30,7 @@
 
         ;; Forward declaration of sections.
         SECTION CSTACK:DATA:NOROOT(3)
+        SECTION HEAP:DATA:NOROOT(3)
 
         SECTION .intvec:CODE:NOROOT(2)
 
@@ -105,11 +104,11 @@ __vector_table_0x1c
         DCD     EDGELOCK_REALTIME_CORE_MUA_TX_EMPTY_IRQHandler    ;Edgelock Realtime Core MUA TX empty interrupt
         DCD     EDGELOCK_SECURE_IRQHandler                    ;Edgelock secure interrupt
         DCD     EDGELOCK_NONSECURE_IRQHandler                 ;Edgelock non-secure interrupt
-        DCD     TPM1_XBAR1_CH0_CH1_IRQHandler                 ;TPM1 interrupt, XBAR channel 0/1 interrupt
-        DCD     TPM2_XBAR1_CH2_CH3_IRQHandler                 ;TPM2 interrupt, XBAR channel 2/3 interrupt
+        DCD     TPM1_IRQHandler                               ;TPM1 interrupt
+        DCD     TPM2_IRQHandler                               ;TPM2 interrupt
         DCD     RTWDOG1_IRQHandler                            ;RTWDOG1 interrupt
         DCD     RTWDOG2_IRQHandler                            ;RTWDOG2 interrupt
-        DCD     Reserved56_IRQHandler                         ;Reserved interrupt
+        DCD     TRDC_MGR_AON_IRQHandler                       ;AONMIX TRDC transfer error interrupt
         DCD     PDM_HWVAD_EVENT_IRQHandler                    ;HWVAD event interrupt
         DCD     PDM_HWVAD_ERROR_IRQHandler                    ;HWVAD error interrupt
         DCD     PDM_EVENT_IRQHandler                          ;PDM event interrupt
@@ -141,24 +140,24 @@ __vector_table_0x1c
         DCD     LPUART4_IRQHandler                            ;LPUART4 interrupt
         DCD     LPUART5_IRQHandler                            ;LPUART5 interrupt
         DCD     LPUART6_IRQHandler                            ;LPUART6 interrupt
-        DCD     ASRC_IRQHandler                               ;ASRC interrupt
+        DCD     Reserved88_IRQHandler                         ;Reserved interrupt 88
         DCD     BBNSM_IRQHandler                              ;BBNSM iterrupt
         DCD     SYS_CTR1_IRQHandler                           ;System Counter compare interrupt 0 and 1
-        DCD     TPM3_EWM_IRQHandler                           ;TPM3 interrupt, EWM reset out interrupt
-        DCD     TPM4_SEMC_IRQHandler                          ;TPM4 interrupt, SEMC interrupt
-        DCD     TPM5_LPIT3_IRQHandler                         ;TPM5 interrupt, LPIT interrupt
-        DCD     TPM6_LPTMR3_IRQHandler                        ;TPM6 interrupt, LPTMR interrupt
+        DCD     TPM3_IRQHandler                               ;TPM3 interrupt
+        DCD     TPM4_IRQHandler                               ;TPM4 interrupt
+        DCD     TPM5_IRQHandler                               ;TPM5 interrupt
+        DCD     TPM6_IRQHandler                               ;TPM6 interrupt
         DCD     RTWDOG3_IRQHandler                            ;RTWDOG3 interrupt
         DCD     RTWDOG4_IRQHandler                            ;RTWDOG4 interrupt
         DCD     RTWDOG5_IRQHandler                            ;RTWDOG5 interrupt
-        DCD     Reserved98_IRQHandler                         ;Reserved interrupt
+        DCD     TRDC_MGR_WKUP_IRQHandler                      ;WAKEUPMIX TRDC transfer error interrupt
         DCD     TMPSNS_INT_IRQHandler                         ;Temperature alarm interrupt
-        DCD     Reserved100_IRQHandler                        ;Reserved interrupt
+        DCD     BBSM_IRQHandler                               ;BBSM wakeup alarm interrupt
         DCD     LDO_AON_ANA_IRQHandler                        ;Brown out interrupt
         DCD     USDHC1_IRQHandler                             ;USDHC1
         DCD     USDHC2_IRQHandler                             ;USDHC2
-        DCD     Reserved104_IRQHandler                        ;Reserved interrupt
-        DCD     SFA_TMR2_IRQHandler                           ;Signal Frequency Analyzer interrupt, TMR2 interrupt
+        DCD     TRDC_MGR_MEGA_IRQHandler                      ;MEGAMIX TRDC transfer error interrupt
+        DCD     SFA_IRQHandler                                ;Signal Frequency Analyzer interrupt
         DCD     LDO_AON_DIG_IRQHandler                        ;Brown out interrupt
         DCD     MECC1_IRQHandler                              ;MECC1 interrupt
         DCD     MECC2_IRQHandler                              ;MECC2 interrupt
@@ -192,49 +191,49 @@ __vector_table_0x1c
         DCD     DMA3_CH25_IRQHandler                          ;AON Domain eDMA channel 25 interrupt
         DCD     DMA3_CH26_IRQHandler                          ;AON Domain eDMA channel 26 interrupt
         DCD     DMA3_CH27_IRQHandler                          ;AON Domain eDMA channel 27 interrupt
-        DCD     DMA3_CH28_SINC3_CH0_IRQHandler                ;AON Domain eDMA channel 28 interrupt
-        DCD     DMA3_CH29_SINC3_CH1_IRQHandler                ;AON Domain eDMA channel 29 interrupt
-        DCD     DMA3_CH30_SINC3_CH2_IRQHandler                ;AON Domain eDMA channel 30 interrupt
-        DCD     DMA3_CH31_SINC3_CH3_IRQHandler                ;AON Domain eDMA channel 31 interrupt
+        DCD     DMA3_CH28_IRQHandler                          ;AON Domain eDMA channel 28 interrupt
+        DCD     DMA3_CH29_IRQHandler                          ;AON Domain eDMA channel 29 interrupt
+        DCD     DMA3_CH30_IRQHandler                          ;AON Domain eDMA channel 30 interrupt
+        DCD     DMA3_CH31_IRQHandler                          ;AON Domain eDMA channel 31 interrupt
         DCD     DMA4_ERROR_IRQHandler                         ;WAKEUP Domain eDMA error interrupt
-        DCD     DMA4_CH0_CH1_IRQHandler                       ;WAKEUP Domain eDMA channel 0/1 interrupt
-        DCD     DMA4_CH2_CH3_IRQHandler                       ;WAKEUP Domain eDMA channel 2/3 interrupt
-        DCD     DMA4_CH4_CH5_IRQHandler                       ;WAKEUP Domain eDMA channel 4/5 interrupt
-        DCD     DMA4_CH6_CH7_IRQHandler                       ;WAKEUP Domain eDMA channel 6/7 interrupt
-        DCD     DMA4_CH8_CH9_IRQHandler                       ;WAKEUP Domain eDMA channel 8/9 interrupt
-        DCD     DMA4_CH10_CH11_IRQHandler                     ;WAKEUP Domain eDMA channel 10/11 interrupt
-        DCD     DMA4_CH12_CH13_IRQHandler                     ;WAKEUP Domain eDMA channel 12/13 interrupt
-        DCD     DMA4_CH14_CH15_IRQHandler                     ;WAKEUP Domain eDMA channel 14/15 interrupt
-        DCD     DMA4_CH16_CH17_IRQHandler                     ;WAKEUP Domain eDMA channel 16/17 interrupt
-        DCD     DMA4_CH18_CH19_IRQHandler                     ;WAKEUP Domain eDMA channel 18/19 interrupt
-        DCD     DMA4_CH20_CH21_IRQHandler                     ;WAKEUP Domain eDMA channel 20/21 interrupt
-        DCD     DMA4_CH22_CH23_IRQHandler                     ;WAKEUP Domain eDMA channel 22/23 interrupt
-        DCD     DMA4_CH24_CH25_IRQHandler                     ;WAKEUP Domain eDMA channel 24/25 interrupt
-        DCD     DMA4_CH26_CH27_IRQHandler                     ;WAKEUP Domain eDMA channel 26/27 interrupt
-        DCD     DMA4_CH28_CH29_IRQHandler                     ;WAKEUP Domain eDMA channel 28/29 interrupt
-        DCD     DMA4_CH30_CH31_IRQHandler                     ;WAKEUP Domain eDMA channel 30/31 interrupt
-        DCD     DMA4_CH32_CH33_IRQHandler                     ;WAKEUP Domain eDMA channel 32/33 interrupt
-        DCD     DMA4_CH34_CH35_IRQHandler                     ;WAKEUP Domain eDMA channel 34/35 interrupt
-        DCD     DMA4_CH36_CH37_IRQHandler                     ;WAKEUP Domain eDMA channel 36/37 interrupt
-        DCD     DMA4_CH38_CH39_IRQHandler                     ;WAKEUP Domain eDMA channel 38/39 interrupt
-        DCD     DMA4_CH40_CH41_IRQHandler                     ;WAKEUP Domain eDMA channel 40/41 interrupt
-        DCD     DMA4_CH42_CH43_IRQHandler                     ;WAKEUP Domain eDMA channel 42/43 interrupt
-        DCD     DMA4_CH44_CH45_IRQHandler                     ;WAKEUP Domain eDMA channel 44/45 interrupt
-        DCD     DMA4_CH46_CH47_IRQHandler                     ;WAKEUP Domain eDMA channel 46/47 interrupt
-        DCD     DMA4_CH48_CH49_LPI2C5_IRQHandler              ;WAKEUP Domain eDMA channel 48/49 interrupt, LPI2C5 interrupt
-        DCD     DMA4_CH50_CH51_LPI2C6_IRQHandler              ;WAKEUP Domain eDMA channel 50/51 interrupt, LPI2C6 interrupt
-        DCD     DMA4_CH52_CH53_SAI4_IRQHandler                ;WAKEUP Domain eDMA channel 46/47 interrupt, SAI4 interrupt
-        DCD     DMA4_CH54_CH55_SPDIF_IRQHandler               ;WAKEUP Domain eDMA channel 46/47 interrupt, SPDIF interrupt
-        DCD     DMA4_CH56_CH57_LPUART9_IRQHandler             ;WAKEUP Domain eDMA channel 46/47 interrupt, LPUART9 interrupt
-        DCD     DMA4_CH58_CH59_LPUART10_IRQHandler            ;WAKEUP Domain eDMA channel 46/47 interrupt, LPUART10 interrupt
-        DCD     DMA4_CH60_CH61_LPUART11_IRQHandler            ;WAKEUP Domain eDMA channel 46/47 interrupt, LPUART11 interrupt
-        DCD     DMA4_CH62_CH63_LPUART12_IRQHandler            ;WAKEUP Domain eDMA channel 46/47 interrupt, LPUART12 interrupt
+        DCD     DMA4_CH0_CH1_CH32_CH33_IRQHandler             ;WAKEUP Domain eDMA channel 0/1/32/33 interrupt
+        DCD     DMA4_CH2_CH3_CH34_CH35_IRQHandler             ;WAKEUP Domain eDMA channel 2/3/34/35 interrupt
+        DCD     DMA4_CH4_CH5_CH36_CH37_IRQHandler             ;WAKEUP Domain eDMA channel 4/5/36/37 interrupt
+        DCD     DMA4_CH6_CH7_CH38_CH39_IRQHandler             ;WAKEUP Domain eDMA channel 6/7/38/39 interrupt
+        DCD     DMA4_CH8_CH9_CH40_CH41_IRQHandler             ;WAKEUP Domain eDMA channel 8/9/40/41 interrupt
+        DCD     DMA4_CH10_CH11_CH42_CH43_IRQHandler           ;WAKEUP Domain eDMA channel 10/11/42/43 interrupt
+        DCD     DMA4_CH12_CH13_CH44_CH45_IRQHandler           ;WAKEUP Domain eDMA channel 12/13/44/45 interrupt
+        DCD     DMA4_CH14_CH15_CH46_CH47_IRQHandler           ;WAKEUP Domain eDMA channel 14/15/46/47 interrupt
+        DCD     DMA4_CH16_CH17_CH48_CH49_IRQHandler           ;WAKEUP Domain eDMA channel 16/17/48/49 interrupt
+        DCD     DMA4_CH18_CH19_CH50_CH51_IRQHandler           ;WAKEUP Domain eDMA channel 18/19/50/51 interrupt
+        DCD     DMA4_CH20_CH21_CH52_CH53_IRQHandler           ;WAKEUP Domain eDMA channel 20/21/52/53 interrupt
+        DCD     DMA4_CH22_CH23_CH54_CH55_IRQHandler           ;WAKEUP Domain eDMA channel 22/23/54/55 interrupt
+        DCD     DMA4_CH24_CH25_CH56_CH57_IRQHandler           ;WAKEUP Domain eDMA channel 24/25/56/57 interrupt
+        DCD     DMA4_CH26_CH27_CH58_CH59_IRQHandler           ;WAKEUP Domain eDMA channel 26/27/58/59 interrupt
+        DCD     DMA4_CH28_CH29_CH60_CH61_IRQHandler           ;WAKEUP Domain eDMA channel 28/29/60/61 interrupt
+        DCD     DMA4_CH30_CH31_CH62_CH63_IRQHandler           ;WAKEUP Domain eDMA channel 30/31/62/63 interrupt
+        DCD     XBAR1_CH0_CH1_IRQHandler                      ;XBAR1 channel 0/1 interrupt
+        DCD     XBAR1_CH2_CH3_IRQHandler                      ;XBAR1 channel 2/3 interrupt
+        DCD     SINC3_CH0_CH1_CH2_CH3_IRQHandler              ;SINC Filter Glue 3 channel 0/1/2/3
+        DCD     EWM_IRQHandler                                ;EWM reset out interrupt
+        DCD     SEMC_IRQHandler                               ;SEMC interrupt
+        DCD     LPIT3_IRQHandler                              ;LPIT3 interrupt
+        DCD     LPTMR3_IRQHandler                             ;LPTMR3 interrupt
+        DCD     TMR4_IRQHandler                               ;TMR4 interrupt
+        DCD     LPI2C5_IRQHandler                             ;LPI2C5 interrupt
+        DCD     LPI2C6_IRQHandler                             ;LPI2C6 interrupt
+        DCD     SAI4_IRQHandler                               ;SAI4 interrupt
+        DCD     SPDIF_IRQHandler                              ;SPDIF interrupt
+        DCD     LPUART9_IRQHandler                            ;LPUART9 interrupt
+        DCD     LPUART10_IRQHandler                           ;LPUART10 interrupt
+        DCD     LPUART11_IRQHandler                           ;LPUART11 interrupt
+        DCD     LPUART12_IRQHandler                           ;LPUART12 interrupt
         DCD     INTG_BOOTROM_DEBUG_CTRL_IRQHandler            ;CM33, CM7, DAP access IRQ
-        DCD     EDGELOCK_REQ1_IRQHandler                      ;
-        DCD     EDGELOCK_REQ2_IRQHandler                      ;
-        DCD     EDGELOCK_REQ3_IRQHandler                      ;
-        DCD     DBG_TRACE_TMR3_IRQHandler                     ;TMR3 interrupt
-        DCD     JTAGC_TMR4_IRQHandler                         ;TMR4 interrupt
+        DCD     EDGELOCK_REQ1_IRQHandler                      ;Edgelock reuqest 1 interrupt
+        DCD     EDGELOCK_REQ2_IRQHandler                      ;Edgelock reuqest 2 interrupt
+        DCD     EDGELOCK_REQ3_IRQHandler                      ;Edgelock reuqest 3 interrupt
+        DCD     TMR3_IRQHandler                               ;TMR3 interrupt
+        DCD     JTAGC_IRQHandler                              ;JTAGC SRC reset source
         DCD     M33_SYSRESET_REQ_IRQHandler                   ;CM33 SYSREQRST SRC reset source
         DCD     M33_LOCKUP_IRQHandler                         ;CM33 LOCKUP SRC reset source
         DCD     M7_SYSRESET_REQ_IRQHandler                    ;CM33 SYSREQRST SRC reset source
@@ -301,12 +300,12 @@ __vector_table_0x1c
         DCD     SINC2_CH1_IRQHandler                          ;SINC Filter Glue 2 channel 1
         DCD     SINC2_CH2_IRQHandler                          ;SINC Filter Glue 2 channel 2
         DCD     SINC2_CH3_IRQHandler                          ;SINC Filter Glue 2 channel 3
-        DCD     GPIO4_0_IRQHandler                            ;GPIO4 interrupt 0
-        DCD     GPIO4_1_IRQHandler                            ;GPIO4 interrupt 1
-        DCD     GPIO5_0_IRQHandler                            ;GPIO5 interrupt 0
-        DCD     GPIO5_1_IRQHandler                            ;GPIO5 interrupt 1
-        DCD     GPIO6_0_IRQHandler                            ;GPIO6 interrupt 0
-        DCD     GPIO6_1_IRQHandler                            ;GPIO6 interrupt 1
+        DCD     GPIO4_IRQHandler                              ;GPIO4 interrupt
+        DCD     TMR2_IRQHandler                               ;TMR2 interrupt
+        DCD     GPIO5_IRQHandler                              ;GPIO5 interrupt
+        DCD     ASRC_IRQHandler                               ;ASRC interrupt
+        DCD     GPIO6_IRQHandler                              ;GPIO6 interrupt
+        DCD     DBG_TRACE_IRQHandler                          ;JTAGSW DAP MDM-AP SRC reset source
         DCD     ECAT_RST_OUT_IRQHandler                       ;ECAT reset out interrupt
         DCD     0xFFFFFFFF                                    ; Reserved for user TRIM value
 __Vectors_End
@@ -332,6 +331,27 @@ Reset_Handler
         MSR     MSP, R2
         LDR     R0, =SystemInit
         BLX     R0
+
+; Start STACK/HEAP initializaiton
+        MOV    R0, #0
+
+        LDR    R1, =SFB(HEAP)
+        LDR    R2, =SFE(HEAP)
+.LC1:
+        CMP    R1, R2
+        ITT    LT
+        STRLT  R0, [R1], #4
+        BLT    .LC1
+
+        LDR     R1, =SFB(CSTACK)
+        LDR     R2, =SFE(CSTACK)
+.LC2:
+        CMP     R1, R2
+        ITT     LT
+        STRLT   R0, [R1], #4
+        BLT     .LC2
+; End STACK/HEAP initialization
+
         CPSIE   I               ; Unmask interrupts
         LDR     R0, =__iar_program_start
         BX      R0
@@ -471,11 +491,11 @@ LPUART2_IRQHandler
         PUBWEAK EDGELOCK_REALTIME_CORE_MUA_TX_EMPTY_IRQHandler
         PUBWEAK EDGELOCK_SECURE_IRQHandler
         PUBWEAK EDGELOCK_NONSECURE_IRQHandler
-        PUBWEAK TPM1_XBAR1_CH0_CH1_IRQHandler
-        PUBWEAK TPM2_XBAR1_CH2_CH3_IRQHandler
+        PUBWEAK TPM1_IRQHandler
+        PUBWEAK TPM2_IRQHandler
         PUBWEAK RTWDOG1_IRQHandler
         PUBWEAK RTWDOG2_IRQHandler
-        PUBWEAK Reserved56_IRQHandler
+        PUBWEAK TRDC_MGR_AON_IRQHandler
         PUBWEAK PDM_HWVAD_EVENT_IRQHandler
         PUBWEAK PDM_HWVAD_EVENT_DriverIRQHandler
         SECTION .text:CODE:REORDER:NOROOT(2)
@@ -627,25 +647,19 @@ LPUART6_IRQHandler
         LDR     R0, =LPUART6_DriverIRQHandler
         BX      R0
 
-        PUBWEAK ASRC_IRQHandler
-        PUBWEAK ASRC_DriverIRQHandler
-        SECTION .text:CODE:REORDER:NOROOT(2)
-ASRC_IRQHandler
-        LDR     R0, =ASRC_DriverIRQHandler
-        BX      R0
-
+        PUBWEAK Reserved88_IRQHandler
         PUBWEAK BBNSM_IRQHandler
         PUBWEAK SYS_CTR1_IRQHandler
-        PUBWEAK TPM3_EWM_IRQHandler
-        PUBWEAK TPM4_SEMC_IRQHandler
-        PUBWEAK TPM5_LPIT3_IRQHandler
-        PUBWEAK TPM6_LPTMR3_IRQHandler
+        PUBWEAK TPM3_IRQHandler
+        PUBWEAK TPM4_IRQHandler
+        PUBWEAK TPM5_IRQHandler
+        PUBWEAK TPM6_IRQHandler
         PUBWEAK RTWDOG3_IRQHandler
         PUBWEAK RTWDOG4_IRQHandler
         PUBWEAK RTWDOG5_IRQHandler
-        PUBWEAK Reserved98_IRQHandler
+        PUBWEAK TRDC_MGR_WKUP_IRQHandler
         PUBWEAK TMPSNS_INT_IRQHandler
-        PUBWEAK Reserved100_IRQHandler
+        PUBWEAK BBSM_IRQHandler
         PUBWEAK LDO_AON_ANA_IRQHandler
         PUBWEAK USDHC1_IRQHandler
         PUBWEAK USDHC1_DriverIRQHandler
@@ -661,8 +675,8 @@ USDHC2_IRQHandler
         LDR     R0, =USDHC2_DriverIRQHandler
         BX      R0
 
-        PUBWEAK Reserved104_IRQHandler
-        PUBWEAK SFA_TMR2_IRQHandler
+        PUBWEAK TRDC_MGR_MEGA_IRQHandler
+        PUBWEAK SFA_IRQHandler
         PUBWEAK LDO_AON_DIG_IRQHandler
         PUBWEAK MECC1_IRQHandler
         PUBWEAK MECC2_IRQHandler
@@ -870,32 +884,32 @@ DMA3_CH27_IRQHandler
         LDR     R0, =DMA3_CH27_DriverIRQHandler
         BX      R0
 
-        PUBWEAK DMA3_CH28_SINC3_CH0_IRQHandler
-        PUBWEAK DMA3_CH28_SINC3_CH0_DriverIRQHandler
+        PUBWEAK DMA3_CH28_IRQHandler
+        PUBWEAK DMA3_CH28_DriverIRQHandler
         SECTION .text:CODE:REORDER:NOROOT(2)
-DMA3_CH28_SINC3_CH0_IRQHandler
-        LDR     R0, =DMA3_CH28_SINC3_CH0_DriverIRQHandler
+DMA3_CH28_IRQHandler
+        LDR     R0, =DMA3_CH28_DriverIRQHandler
         BX      R0
 
-        PUBWEAK DMA3_CH29_SINC3_CH1_IRQHandler
-        PUBWEAK DMA3_CH29_SINC3_CH1_DriverIRQHandler
+        PUBWEAK DMA3_CH29_IRQHandler
+        PUBWEAK DMA3_CH29_DriverIRQHandler
         SECTION .text:CODE:REORDER:NOROOT(2)
-DMA3_CH29_SINC3_CH1_IRQHandler
-        LDR     R0, =DMA3_CH29_SINC3_CH1_DriverIRQHandler
+DMA3_CH29_IRQHandler
+        LDR     R0, =DMA3_CH29_DriverIRQHandler
         BX      R0
 
-        PUBWEAK DMA3_CH30_SINC3_CH2_IRQHandler
-        PUBWEAK DMA3_CH30_SINC3_CH2_DriverIRQHandler
+        PUBWEAK DMA3_CH30_IRQHandler
+        PUBWEAK DMA3_CH30_DriverIRQHandler
         SECTION .text:CODE:REORDER:NOROOT(2)
-DMA3_CH30_SINC3_CH2_IRQHandler
-        LDR     R0, =DMA3_CH30_SINC3_CH2_DriverIRQHandler
+DMA3_CH30_IRQHandler
+        LDR     R0, =DMA3_CH30_DriverIRQHandler
         BX      R0
 
-        PUBWEAK DMA3_CH31_SINC3_CH3_IRQHandler
-        PUBWEAK DMA3_CH31_SINC3_CH3_DriverIRQHandler
+        PUBWEAK DMA3_CH31_IRQHandler
+        PUBWEAK DMA3_CH31_DriverIRQHandler
         SECTION .text:CODE:REORDER:NOROOT(2)
-DMA3_CH31_SINC3_CH3_IRQHandler
-        LDR     R0, =DMA3_CH31_SINC3_CH3_DriverIRQHandler
+DMA3_CH31_IRQHandler
+        LDR     R0, =DMA3_CH31_DriverIRQHandler
         BX      R0
 
         PUBWEAK DMA4_ERROR_IRQHandler
@@ -905,236 +919,188 @@ DMA4_ERROR_IRQHandler
         LDR     R0, =DMA4_ERROR_DriverIRQHandler
         BX      R0
 
-        PUBWEAK DMA4_CH0_CH1_IRQHandler
-        PUBWEAK DMA4_CH0_CH1_DriverIRQHandler
+        PUBWEAK DMA4_CH0_CH1_CH32_CH33_IRQHandler
+        PUBWEAK DMA4_CH0_CH1_CH32_CH33_DriverIRQHandler
         SECTION .text:CODE:REORDER:NOROOT(2)
-DMA4_CH0_CH1_IRQHandler
-        LDR     R0, =DMA4_CH0_CH1_DriverIRQHandler
+DMA4_CH0_CH1_CH32_CH33_IRQHandler
+        LDR     R0, =DMA4_CH0_CH1_CH32_CH33_DriverIRQHandler
         BX      R0
 
-        PUBWEAK DMA4_CH2_CH3_IRQHandler
-        PUBWEAK DMA4_CH2_CH3_DriverIRQHandler
+        PUBWEAK DMA4_CH2_CH3_CH34_CH35_IRQHandler
+        PUBWEAK DMA4_CH2_CH3_CH34_CH35_DriverIRQHandler
         SECTION .text:CODE:REORDER:NOROOT(2)
-DMA4_CH2_CH3_IRQHandler
-        LDR     R0, =DMA4_CH2_CH3_DriverIRQHandler
+DMA4_CH2_CH3_CH34_CH35_IRQHandler
+        LDR     R0, =DMA4_CH2_CH3_CH34_CH35_DriverIRQHandler
         BX      R0
 
-        PUBWEAK DMA4_CH4_CH5_IRQHandler
-        PUBWEAK DMA4_CH4_CH5_DriverIRQHandler
+        PUBWEAK DMA4_CH4_CH5_CH36_CH37_IRQHandler
+        PUBWEAK DMA4_CH4_CH5_CH36_CH37_DriverIRQHandler
         SECTION .text:CODE:REORDER:NOROOT(2)
-DMA4_CH4_CH5_IRQHandler
-        LDR     R0, =DMA4_CH4_CH5_DriverIRQHandler
+DMA4_CH4_CH5_CH36_CH37_IRQHandler
+        LDR     R0, =DMA4_CH4_CH5_CH36_CH37_DriverIRQHandler
         BX      R0
 
-        PUBWEAK DMA4_CH6_CH7_IRQHandler
-        PUBWEAK DMA4_CH6_CH7_DriverIRQHandler
+        PUBWEAK DMA4_CH6_CH7_CH38_CH39_IRQHandler
+        PUBWEAK DMA4_CH6_CH7_CH38_CH39_DriverIRQHandler
         SECTION .text:CODE:REORDER:NOROOT(2)
-DMA4_CH6_CH7_IRQHandler
-        LDR     R0, =DMA4_CH6_CH7_DriverIRQHandler
+DMA4_CH6_CH7_CH38_CH39_IRQHandler
+        LDR     R0, =DMA4_CH6_CH7_CH38_CH39_DriverIRQHandler
         BX      R0
 
-        PUBWEAK DMA4_CH8_CH9_IRQHandler
-        PUBWEAK DMA4_CH8_CH9_DriverIRQHandler
+        PUBWEAK DMA4_CH8_CH9_CH40_CH41_IRQHandler
+        PUBWEAK DMA4_CH8_CH9_CH40_CH41_DriverIRQHandler
         SECTION .text:CODE:REORDER:NOROOT(2)
-DMA4_CH8_CH9_IRQHandler
-        LDR     R0, =DMA4_CH8_CH9_DriverIRQHandler
+DMA4_CH8_CH9_CH40_CH41_IRQHandler
+        LDR     R0, =DMA4_CH8_CH9_CH40_CH41_DriverIRQHandler
         BX      R0
 
-        PUBWEAK DMA4_CH10_CH11_IRQHandler
-        PUBWEAK DMA4_CH10_CH11_DriverIRQHandler
+        PUBWEAK DMA4_CH10_CH11_CH42_CH43_IRQHandler
+        PUBWEAK DMA4_CH10_CH11_CH42_CH43_DriverIRQHandler
         SECTION .text:CODE:REORDER:NOROOT(2)
-DMA4_CH10_CH11_IRQHandler
-        LDR     R0, =DMA4_CH10_CH11_DriverIRQHandler
+DMA4_CH10_CH11_CH42_CH43_IRQHandler
+        LDR     R0, =DMA4_CH10_CH11_CH42_CH43_DriverIRQHandler
         BX      R0
 
-        PUBWEAK DMA4_CH12_CH13_IRQHandler
-        PUBWEAK DMA4_CH12_CH13_DriverIRQHandler
+        PUBWEAK DMA4_CH12_CH13_CH44_CH45_IRQHandler
+        PUBWEAK DMA4_CH12_CH13_CH44_CH45_DriverIRQHandler
         SECTION .text:CODE:REORDER:NOROOT(2)
-DMA4_CH12_CH13_IRQHandler
-        LDR     R0, =DMA4_CH12_CH13_DriverIRQHandler
+DMA4_CH12_CH13_CH44_CH45_IRQHandler
+        LDR     R0, =DMA4_CH12_CH13_CH44_CH45_DriverIRQHandler
         BX      R0
 
-        PUBWEAK DMA4_CH14_CH15_IRQHandler
-        PUBWEAK DMA4_CH14_CH15_DriverIRQHandler
+        PUBWEAK DMA4_CH14_CH15_CH46_CH47_IRQHandler
+        PUBWEAK DMA4_CH14_CH15_CH46_CH47_DriverIRQHandler
         SECTION .text:CODE:REORDER:NOROOT(2)
-DMA4_CH14_CH15_IRQHandler
-        LDR     R0, =DMA4_CH14_CH15_DriverIRQHandler
+DMA4_CH14_CH15_CH46_CH47_IRQHandler
+        LDR     R0, =DMA4_CH14_CH15_CH46_CH47_DriverIRQHandler
         BX      R0
 
-        PUBWEAK DMA4_CH16_CH17_IRQHandler
-        PUBWEAK DMA4_CH16_CH17_DriverIRQHandler
+        PUBWEAK DMA4_CH16_CH17_CH48_CH49_IRQHandler
+        PUBWEAK DMA4_CH16_CH17_CH48_CH49_DriverIRQHandler
         SECTION .text:CODE:REORDER:NOROOT(2)
-DMA4_CH16_CH17_IRQHandler
-        LDR     R0, =DMA4_CH16_CH17_DriverIRQHandler
+DMA4_CH16_CH17_CH48_CH49_IRQHandler
+        LDR     R0, =DMA4_CH16_CH17_CH48_CH49_DriverIRQHandler
         BX      R0
 
-        PUBWEAK DMA4_CH18_CH19_IRQHandler
-        PUBWEAK DMA4_CH18_CH19_DriverIRQHandler
+        PUBWEAK DMA4_CH18_CH19_CH50_CH51_IRQHandler
+        PUBWEAK DMA4_CH18_CH19_CH50_CH51_DriverIRQHandler
         SECTION .text:CODE:REORDER:NOROOT(2)
-DMA4_CH18_CH19_IRQHandler
-        LDR     R0, =DMA4_CH18_CH19_DriverIRQHandler
+DMA4_CH18_CH19_CH50_CH51_IRQHandler
+        LDR     R0, =DMA4_CH18_CH19_CH50_CH51_DriverIRQHandler
         BX      R0
 
-        PUBWEAK DMA4_CH20_CH21_IRQHandler
-        PUBWEAK DMA4_CH20_CH21_DriverIRQHandler
+        PUBWEAK DMA4_CH20_CH21_CH52_CH53_IRQHandler
+        PUBWEAK DMA4_CH20_CH21_CH52_CH53_DriverIRQHandler
         SECTION .text:CODE:REORDER:NOROOT(2)
-DMA4_CH20_CH21_IRQHandler
-        LDR     R0, =DMA4_CH20_CH21_DriverIRQHandler
+DMA4_CH20_CH21_CH52_CH53_IRQHandler
+        LDR     R0, =DMA4_CH20_CH21_CH52_CH53_DriverIRQHandler
         BX      R0
 
-        PUBWEAK DMA4_CH22_CH23_IRQHandler
-        PUBWEAK DMA4_CH22_CH23_DriverIRQHandler
+        PUBWEAK DMA4_CH22_CH23_CH54_CH55_IRQHandler
+        PUBWEAK DMA4_CH22_CH23_CH54_CH55_DriverIRQHandler
         SECTION .text:CODE:REORDER:NOROOT(2)
-DMA4_CH22_CH23_IRQHandler
-        LDR     R0, =DMA4_CH22_CH23_DriverIRQHandler
+DMA4_CH22_CH23_CH54_CH55_IRQHandler
+        LDR     R0, =DMA4_CH22_CH23_CH54_CH55_DriverIRQHandler
         BX      R0
 
-        PUBWEAK DMA4_CH24_CH25_IRQHandler
-        PUBWEAK DMA4_CH24_CH25_DriverIRQHandler
+        PUBWEAK DMA4_CH24_CH25_CH56_CH57_IRQHandler
+        PUBWEAK DMA4_CH24_CH25_CH56_CH57_DriverIRQHandler
         SECTION .text:CODE:REORDER:NOROOT(2)
-DMA4_CH24_CH25_IRQHandler
-        LDR     R0, =DMA4_CH24_CH25_DriverIRQHandler
+DMA4_CH24_CH25_CH56_CH57_IRQHandler
+        LDR     R0, =DMA4_CH24_CH25_CH56_CH57_DriverIRQHandler
         BX      R0
 
-        PUBWEAK DMA4_CH26_CH27_IRQHandler
-        PUBWEAK DMA4_CH26_CH27_DriverIRQHandler
+        PUBWEAK DMA4_CH26_CH27_CH58_CH59_IRQHandler
+        PUBWEAK DMA4_CH26_CH27_CH58_CH59_DriverIRQHandler
         SECTION .text:CODE:REORDER:NOROOT(2)
-DMA4_CH26_CH27_IRQHandler
-        LDR     R0, =DMA4_CH26_CH27_DriverIRQHandler
+DMA4_CH26_CH27_CH58_CH59_IRQHandler
+        LDR     R0, =DMA4_CH26_CH27_CH58_CH59_DriverIRQHandler
         BX      R0
 
-        PUBWEAK DMA4_CH28_CH29_IRQHandler
-        PUBWEAK DMA4_CH28_CH29_DriverIRQHandler
+        PUBWEAK DMA4_CH28_CH29_CH60_CH61_IRQHandler
+        PUBWEAK DMA4_CH28_CH29_CH60_CH61_DriverIRQHandler
         SECTION .text:CODE:REORDER:NOROOT(2)
-DMA4_CH28_CH29_IRQHandler
-        LDR     R0, =DMA4_CH28_CH29_DriverIRQHandler
+DMA4_CH28_CH29_CH60_CH61_IRQHandler
+        LDR     R0, =DMA4_CH28_CH29_CH60_CH61_DriverIRQHandler
         BX      R0
 
-        PUBWEAK DMA4_CH30_CH31_IRQHandler
-        PUBWEAK DMA4_CH30_CH31_DriverIRQHandler
+        PUBWEAK DMA4_CH30_CH31_CH62_CH63_IRQHandler
+        PUBWEAK DMA4_CH30_CH31_CH62_CH63_DriverIRQHandler
         SECTION .text:CODE:REORDER:NOROOT(2)
-DMA4_CH30_CH31_IRQHandler
-        LDR     R0, =DMA4_CH30_CH31_DriverIRQHandler
+DMA4_CH30_CH31_CH62_CH63_IRQHandler
+        LDR     R0, =DMA4_CH30_CH31_CH62_CH63_DriverIRQHandler
         BX      R0
 
-        PUBWEAK DMA4_CH32_CH33_IRQHandler
-        PUBWEAK DMA4_CH32_CH33_DriverIRQHandler
+        PUBWEAK XBAR1_CH0_CH1_IRQHandler
+        PUBWEAK XBAR1_CH2_CH3_IRQHandler
+        PUBWEAK SINC3_CH0_CH1_CH2_CH3_IRQHandler
+        PUBWEAK EWM_IRQHandler
+        PUBWEAK SEMC_IRQHandler
+        PUBWEAK LPIT3_IRQHandler
+        PUBWEAK LPTMR3_IRQHandler
+        PUBWEAK TMR4_IRQHandler
+        PUBWEAK LPI2C5_IRQHandler
+        PUBWEAK LPI2C5_DriverIRQHandler
         SECTION .text:CODE:REORDER:NOROOT(2)
-DMA4_CH32_CH33_IRQHandler
-        LDR     R0, =DMA4_CH32_CH33_DriverIRQHandler
+LPI2C5_IRQHandler
+        LDR     R0, =LPI2C5_DriverIRQHandler
         BX      R0
 
-        PUBWEAK DMA4_CH34_CH35_IRQHandler
-        PUBWEAK DMA4_CH34_CH35_DriverIRQHandler
+        PUBWEAK LPI2C6_IRQHandler
+        PUBWEAK LPI2C6_DriverIRQHandler
         SECTION .text:CODE:REORDER:NOROOT(2)
-DMA4_CH34_CH35_IRQHandler
-        LDR     R0, =DMA4_CH34_CH35_DriverIRQHandler
+LPI2C6_IRQHandler
+        LDR     R0, =LPI2C6_DriverIRQHandler
         BX      R0
 
-        PUBWEAK DMA4_CH36_CH37_IRQHandler
-        PUBWEAK DMA4_CH36_CH37_DriverIRQHandler
+        PUBWEAK SAI4_IRQHandler
+        PUBWEAK SAI4_DriverIRQHandler
         SECTION .text:CODE:REORDER:NOROOT(2)
-DMA4_CH36_CH37_IRQHandler
-        LDR     R0, =DMA4_CH36_CH37_DriverIRQHandler
+SAI4_IRQHandler
+        LDR     R0, =SAI4_DriverIRQHandler
         BX      R0
 
-        PUBWEAK DMA4_CH38_CH39_IRQHandler
-        PUBWEAK DMA4_CH38_CH39_DriverIRQHandler
+        PUBWEAK SPDIF_IRQHandler
+        PUBWEAK SPDIF_DriverIRQHandler
         SECTION .text:CODE:REORDER:NOROOT(2)
-DMA4_CH38_CH39_IRQHandler
-        LDR     R0, =DMA4_CH38_CH39_DriverIRQHandler
+SPDIF_IRQHandler
+        LDR     R0, =SPDIF_DriverIRQHandler
         BX      R0
 
-        PUBWEAK DMA4_CH40_CH41_IRQHandler
-        PUBWEAK DMA4_CH40_CH41_DriverIRQHandler
+        PUBWEAK LPUART9_IRQHandler
+        PUBWEAK LPUART9_DriverIRQHandler
         SECTION .text:CODE:REORDER:NOROOT(2)
-DMA4_CH40_CH41_IRQHandler
-        LDR     R0, =DMA4_CH40_CH41_DriverIRQHandler
+LPUART9_IRQHandler
+        LDR     R0, =LPUART9_DriverIRQHandler
         BX      R0
 
-        PUBWEAK DMA4_CH42_CH43_IRQHandler
-        PUBWEAK DMA4_CH42_CH43_DriverIRQHandler
+        PUBWEAK LPUART10_IRQHandler
+        PUBWEAK LPUART10_DriverIRQHandler
         SECTION .text:CODE:REORDER:NOROOT(2)
-DMA4_CH42_CH43_IRQHandler
-        LDR     R0, =DMA4_CH42_CH43_DriverIRQHandler
+LPUART10_IRQHandler
+        LDR     R0, =LPUART10_DriverIRQHandler
         BX      R0
 
-        PUBWEAK DMA4_CH44_CH45_IRQHandler
-        PUBWEAK DMA4_CH44_CH45_DriverIRQHandler
+        PUBWEAK LPUART11_IRQHandler
+        PUBWEAK LPUART11_DriverIRQHandler
         SECTION .text:CODE:REORDER:NOROOT(2)
-DMA4_CH44_CH45_IRQHandler
-        LDR     R0, =DMA4_CH44_CH45_DriverIRQHandler
+LPUART11_IRQHandler
+        LDR     R0, =LPUART11_DriverIRQHandler
         BX      R0
 
-        PUBWEAK DMA4_CH46_CH47_IRQHandler
-        PUBWEAK DMA4_CH46_CH47_DriverIRQHandler
+        PUBWEAK LPUART12_IRQHandler
+        PUBWEAK LPUART12_DriverIRQHandler
         SECTION .text:CODE:REORDER:NOROOT(2)
-DMA4_CH46_CH47_IRQHandler
-        LDR     R0, =DMA4_CH46_CH47_DriverIRQHandler
-        BX      R0
-
-        PUBWEAK DMA4_CH48_CH49_LPI2C5_IRQHandler
-        PUBWEAK DMA4_CH48_CH49_LPI2C5_DriverIRQHandler
-        SECTION .text:CODE:REORDER:NOROOT(2)
-DMA4_CH48_CH49_LPI2C5_IRQHandler
-        LDR     R0, =DMA4_CH48_CH49_LPI2C5_DriverIRQHandler
-        BX      R0
-
-        PUBWEAK DMA4_CH50_CH51_LPI2C6_IRQHandler
-        PUBWEAK DMA4_CH50_CH51_LPI2C6_DriverIRQHandler
-        SECTION .text:CODE:REORDER:NOROOT(2)
-DMA4_CH50_CH51_LPI2C6_IRQHandler
-        LDR     R0, =DMA4_CH50_CH51_LPI2C6_DriverIRQHandler
-        BX      R0
-
-        PUBWEAK DMA4_CH52_CH53_SAI4_IRQHandler
-        PUBWEAK DMA4_CH52_CH53_SAI4_DriverIRQHandler
-        SECTION .text:CODE:REORDER:NOROOT(2)
-DMA4_CH52_CH53_SAI4_IRQHandler
-        LDR     R0, =DMA4_CH52_CH53_SAI4_DriverIRQHandler
-        BX      R0
-
-        PUBWEAK DMA4_CH54_CH55_SPDIF_IRQHandler
-        PUBWEAK DMA4_CH54_CH55_SPDIF_DriverIRQHandler
-        SECTION .text:CODE:REORDER:NOROOT(2)
-DMA4_CH54_CH55_SPDIF_IRQHandler
-        LDR     R0, =DMA4_CH54_CH55_SPDIF_DriverIRQHandler
-        BX      R0
-
-        PUBWEAK DMA4_CH56_CH57_LPUART9_IRQHandler
-        PUBWEAK DMA4_CH56_CH57_LPUART9_DriverIRQHandler
-        SECTION .text:CODE:REORDER:NOROOT(2)
-DMA4_CH56_CH57_LPUART9_IRQHandler
-        LDR     R0, =DMA4_CH56_CH57_LPUART9_DriverIRQHandler
-        BX      R0
-
-        PUBWEAK DMA4_CH58_CH59_LPUART10_IRQHandler
-        PUBWEAK DMA4_CH58_CH59_LPUART10_DriverIRQHandler
-        SECTION .text:CODE:REORDER:NOROOT(2)
-DMA4_CH58_CH59_LPUART10_IRQHandler
-        LDR     R0, =DMA4_CH58_CH59_LPUART10_DriverIRQHandler
-        BX      R0
-
-        PUBWEAK DMA4_CH60_CH61_LPUART11_IRQHandler
-        PUBWEAK DMA4_CH60_CH61_LPUART11_DriverIRQHandler
-        SECTION .text:CODE:REORDER:NOROOT(2)
-DMA4_CH60_CH61_LPUART11_IRQHandler
-        LDR     R0, =DMA4_CH60_CH61_LPUART11_DriverIRQHandler
-        BX      R0
-
-        PUBWEAK DMA4_CH62_CH63_LPUART12_IRQHandler
-        PUBWEAK DMA4_CH62_CH63_LPUART12_DriverIRQHandler
-        SECTION .text:CODE:REORDER:NOROOT(2)
-DMA4_CH62_CH63_LPUART12_IRQHandler
-        LDR     R0, =DMA4_CH62_CH63_LPUART12_DriverIRQHandler
+LPUART12_IRQHandler
+        LDR     R0, =LPUART12_DriverIRQHandler
         BX      R0
 
         PUBWEAK INTG_BOOTROM_DEBUG_CTRL_IRQHandler
         PUBWEAK EDGELOCK_REQ1_IRQHandler
         PUBWEAK EDGELOCK_REQ2_IRQHandler
         PUBWEAK EDGELOCK_REQ3_IRQHandler
-        PUBWEAK DBG_TRACE_TMR3_IRQHandler
-        PUBWEAK JTAGC_TMR4_IRQHandler
+        PUBWEAK TMR3_IRQHandler
+        PUBWEAK JTAGC_IRQHandler
         PUBWEAK M33_SYSRESET_REQ_IRQHandler
         PUBWEAK M33_LOCKUP_IRQHandler
         PUBWEAK M7_SYSRESET_REQ_IRQHandler
@@ -1255,12 +1221,18 @@ FLEXSPI_SLV_IRQHandler
         PUBWEAK SINC2_CH1_IRQHandler
         PUBWEAK SINC2_CH2_IRQHandler
         PUBWEAK SINC2_CH3_IRQHandler
-        PUBWEAK GPIO4_0_IRQHandler
-        PUBWEAK GPIO4_1_IRQHandler
-        PUBWEAK GPIO5_0_IRQHandler
-        PUBWEAK GPIO5_1_IRQHandler
-        PUBWEAK GPIO6_0_IRQHandler
-        PUBWEAK GPIO6_1_IRQHandler
+        PUBWEAK GPIO4_IRQHandler
+        PUBWEAK TMR2_IRQHandler
+        PUBWEAK GPIO5_IRQHandler
+        PUBWEAK ASRC_IRQHandler
+        PUBWEAK ASRC_DriverIRQHandler
+        SECTION .text:CODE:REORDER:NOROOT(2)
+ASRC_IRQHandler
+        LDR     R0, =ASRC_DriverIRQHandler
+        BX      R0
+
+        PUBWEAK GPIO6_IRQHandler
+        PUBWEAK DBG_TRACE_IRQHandler
         PUBWEAK ECAT_RST_OUT_IRQHandler
         PUBWEAK DefaultISR
         SECTION .text:CODE:REORDER:NOROOT(1)
@@ -1300,11 +1272,11 @@ EDGELOCK_REALTIME_CORE_MUA_RX_FULL_IRQHandler
 EDGELOCK_REALTIME_CORE_MUA_TX_EMPTY_IRQHandler
 EDGELOCK_SECURE_IRQHandler
 EDGELOCK_NONSECURE_IRQHandler
-TPM1_XBAR1_CH0_CH1_IRQHandler
-TPM2_XBAR1_CH2_CH3_IRQHandler
+TPM1_IRQHandler
+TPM2_IRQHandler
 RTWDOG1_IRQHandler
 RTWDOG2_IRQHandler
-Reserved56_IRQHandler
+TRDC_MGR_AON_IRQHandler
 PDM_HWVAD_EVENT_DriverIRQHandler
 PDM_HWVAD_ERROR_DriverIRQHandler
 PDM_EVENT_DriverIRQHandler
@@ -1336,24 +1308,24 @@ LPUART3_DriverIRQHandler
 LPUART4_DriverIRQHandler
 LPUART5_DriverIRQHandler
 LPUART6_DriverIRQHandler
-ASRC_DriverIRQHandler
+Reserved88_IRQHandler
 BBNSM_IRQHandler
 SYS_CTR1_IRQHandler
-TPM3_EWM_IRQHandler
-TPM4_SEMC_IRQHandler
-TPM5_LPIT3_IRQHandler
-TPM6_LPTMR3_IRQHandler
+TPM3_IRQHandler
+TPM4_IRQHandler
+TPM5_IRQHandler
+TPM6_IRQHandler
 RTWDOG3_IRQHandler
 RTWDOG4_IRQHandler
 RTWDOG5_IRQHandler
-Reserved98_IRQHandler
+TRDC_MGR_WKUP_IRQHandler
 TMPSNS_INT_IRQHandler
-Reserved100_IRQHandler
+BBSM_IRQHandler
 LDO_AON_ANA_IRQHandler
 USDHC1_DriverIRQHandler
 USDHC2_DriverIRQHandler
-Reserved104_IRQHandler
-SFA_TMR2_IRQHandler
+TRDC_MGR_MEGA_IRQHandler
+SFA_IRQHandler
 LDO_AON_DIG_IRQHandler
 MECC1_IRQHandler
 MECC2_IRQHandler
@@ -1387,49 +1359,49 @@ DMA3_CH24_DriverIRQHandler
 DMA3_CH25_DriverIRQHandler
 DMA3_CH26_DriverIRQHandler
 DMA3_CH27_DriverIRQHandler
-DMA3_CH28_SINC3_CH0_DriverIRQHandler
-DMA3_CH29_SINC3_CH1_DriverIRQHandler
-DMA3_CH30_SINC3_CH2_DriverIRQHandler
-DMA3_CH31_SINC3_CH3_DriverIRQHandler
+DMA3_CH28_DriverIRQHandler
+DMA3_CH29_DriverIRQHandler
+DMA3_CH30_DriverIRQHandler
+DMA3_CH31_DriverIRQHandler
 DMA4_ERROR_DriverIRQHandler
-DMA4_CH0_CH1_DriverIRQHandler
-DMA4_CH2_CH3_DriverIRQHandler
-DMA4_CH4_CH5_DriverIRQHandler
-DMA4_CH6_CH7_DriverIRQHandler
-DMA4_CH8_CH9_DriverIRQHandler
-DMA4_CH10_CH11_DriverIRQHandler
-DMA4_CH12_CH13_DriverIRQHandler
-DMA4_CH14_CH15_DriverIRQHandler
-DMA4_CH16_CH17_DriverIRQHandler
-DMA4_CH18_CH19_DriverIRQHandler
-DMA4_CH20_CH21_DriverIRQHandler
-DMA4_CH22_CH23_DriverIRQHandler
-DMA4_CH24_CH25_DriverIRQHandler
-DMA4_CH26_CH27_DriverIRQHandler
-DMA4_CH28_CH29_DriverIRQHandler
-DMA4_CH30_CH31_DriverIRQHandler
-DMA4_CH32_CH33_DriverIRQHandler
-DMA4_CH34_CH35_DriverIRQHandler
-DMA4_CH36_CH37_DriverIRQHandler
-DMA4_CH38_CH39_DriverIRQHandler
-DMA4_CH40_CH41_DriverIRQHandler
-DMA4_CH42_CH43_DriverIRQHandler
-DMA4_CH44_CH45_DriverIRQHandler
-DMA4_CH46_CH47_DriverIRQHandler
-DMA4_CH48_CH49_LPI2C5_DriverIRQHandler
-DMA4_CH50_CH51_LPI2C6_DriverIRQHandler
-DMA4_CH52_CH53_SAI4_DriverIRQHandler
-DMA4_CH54_CH55_SPDIF_DriverIRQHandler
-DMA4_CH56_CH57_LPUART9_DriverIRQHandler
-DMA4_CH58_CH59_LPUART10_DriverIRQHandler
-DMA4_CH60_CH61_LPUART11_DriverIRQHandler
-DMA4_CH62_CH63_LPUART12_DriverIRQHandler
+DMA4_CH0_CH1_CH32_CH33_DriverIRQHandler
+DMA4_CH2_CH3_CH34_CH35_DriverIRQHandler
+DMA4_CH4_CH5_CH36_CH37_DriverIRQHandler
+DMA4_CH6_CH7_CH38_CH39_DriverIRQHandler
+DMA4_CH8_CH9_CH40_CH41_DriverIRQHandler
+DMA4_CH10_CH11_CH42_CH43_DriverIRQHandler
+DMA4_CH12_CH13_CH44_CH45_DriverIRQHandler
+DMA4_CH14_CH15_CH46_CH47_DriverIRQHandler
+DMA4_CH16_CH17_CH48_CH49_DriverIRQHandler
+DMA4_CH18_CH19_CH50_CH51_DriverIRQHandler
+DMA4_CH20_CH21_CH52_CH53_DriverIRQHandler
+DMA4_CH22_CH23_CH54_CH55_DriverIRQHandler
+DMA4_CH24_CH25_CH56_CH57_DriverIRQHandler
+DMA4_CH26_CH27_CH58_CH59_DriverIRQHandler
+DMA4_CH28_CH29_CH60_CH61_DriverIRQHandler
+DMA4_CH30_CH31_CH62_CH63_DriverIRQHandler
+XBAR1_CH0_CH1_IRQHandler
+XBAR1_CH2_CH3_IRQHandler
+SINC3_CH0_CH1_CH2_CH3_IRQHandler
+EWM_IRQHandler
+SEMC_IRQHandler
+LPIT3_IRQHandler
+LPTMR3_IRQHandler
+TMR4_IRQHandler
+LPI2C5_DriverIRQHandler
+LPI2C6_DriverIRQHandler
+SAI4_DriverIRQHandler
+SPDIF_DriverIRQHandler
+LPUART9_DriverIRQHandler
+LPUART10_DriverIRQHandler
+LPUART11_DriverIRQHandler
+LPUART12_DriverIRQHandler
 INTG_BOOTROM_DEBUG_CTRL_IRQHandler
 EDGELOCK_REQ1_IRQHandler
 EDGELOCK_REQ2_IRQHandler
 EDGELOCK_REQ3_IRQHandler
-DBG_TRACE_TMR3_IRQHandler
-JTAGC_TMR4_IRQHandler
+TMR3_IRQHandler
+JTAGC_IRQHandler
 M33_SYSRESET_REQ_IRQHandler
 M33_LOCKUP_IRQHandler
 M7_SYSRESET_REQ_IRQHandler
@@ -1496,12 +1468,12 @@ SINC2_CH0_IRQHandler
 SINC2_CH1_IRQHandler
 SINC2_CH2_IRQHandler
 SINC2_CH3_IRQHandler
-GPIO4_0_IRQHandler
-GPIO4_1_IRQHandler
-GPIO5_0_IRQHandler
-GPIO5_1_IRQHandler
-GPIO6_0_IRQHandler
-GPIO6_1_IRQHandler
+GPIO4_IRQHandler
+TMR2_IRQHandler
+GPIO5_IRQHandler
+ASRC_DriverIRQHandler
+GPIO6_IRQHandler
+DBG_TRACE_IRQHandler
 ECAT_RST_OUT_IRQHandler
 DefaultISR
         B DefaultISR

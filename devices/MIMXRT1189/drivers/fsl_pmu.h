@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 NXP
+ * Copyright 2021-2023 NXP
  * All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
@@ -24,7 +24,7 @@
  */
 
 /*! @brief PMU driver version */
-#define FSL_PMU_DRIVER_VERSION (MAKE_VERSION(2, 0, 0)) /*!< Version 2.0.0. */
+#define FSL_PMU_DRIVER_VERSION (MAKE_VERSION(2, 1, 2)) /*!< Version 2.1.2. */
 
 /*!
  * @}
@@ -356,12 +356,12 @@ typedef union _pmu_well_bias_option
         uint16_t clkSource : 1U;     /*!< Config the adaptive clock source, please @ref pmu_adaptive_clock_source_t. */
         uint16_t freqReduction : 2U; /*!< Config the percent of frequency reduction due to cap increment,
                                          please refer to @ref pmu_freq_reduction_t.  */
-        uint16_t enablePowerDownOption : 1U; /*!< Enable/Disable pull down option.
+        uint16_t enablePullDownOption : 1U; /*!< Enable/Disable pull down option.
                                                  - \b false Pull down option is disabled.
                                                  - \b true  Pull down option is enabled. */
-        uint16_t reserved2 : 1U;             /*!< Reserved. */
-        uint16_t powerSource : 1U; /*!< Set power source, please refer to @ref pmu_well_bias_power_source_t. */
-        uint16_t reserved3 : 1U;   /*!< Reserved. */
+        uint16_t reserved2 : 1U;            /*!< Reserved. */
+        uint16_t powerSource : 1U;          /*!< Set power source, please refer to @ref pmu_well_bias_power_source_t. */
+        uint16_t reserved3 : 1U;            /*!< Reserved. */
     } wellBiasStruct;
 } pmu_well_bias_option_t;
 
@@ -376,17 +376,6 @@ typedef struct _pmu_well_bias_config
                                                     refer to @ref pmu_well_bias_1P8_adjustment_t. */
 } pmu_well_bias_config_t;
 
-/*!
- * @brief The stucture of body bias config in GPC mode.
- */
-typedef struct _pmu_gpc_body_bias_config
-{
-    uint8_t PWELLRegulatorSize; /*!< The size of the PWELL Regulator. */
-    uint8_t NWELLRegulatorSize; /*!< The size of the NWELL Regulator. */
-    uint8_t oscillatorSize;     /*!< The size of the oscillator bits. */
-    uint8_t regulatorStrength;  /*!< The strength of the selected regulator. */
-} pmu_gpc_body_bias_config_t;
-
 /*******************************************************************************
  * API
  ******************************************************************************/
@@ -398,6 +387,14 @@ extern "C" {
  * @name LDOs Control APIs
  * @{
  */
+
+/*!
+ * brief Selects the control mode of the PLL LDO.
+ *
+ * param base PMU peripheral base address.
+ * param mode The control mode of the PLL LDO. Please refer to pmu_control_mode_t.
+ */
+void PMU_SetPllLdoControlMode(ANADIG_PMU_Type *base, pmu_control_mode_t mode);
 
 /*!
  * @brief Enables PLL LDO via AI interface in Static/Software mode.
@@ -494,6 +491,14 @@ void PMU_StaticAonDigLdoDeinit(ANADIG_LDO_BBSM_Type *base);
 void PMU_GetBbsmDigLdoDefaultConfig(pmu_bbsm_dig_config_t *config);
 
 /*!
+ * brief When STBY assert, enable/disable the selected LDO enter it's Low power mode.
+ *
+ * param name The name of the selected ldo. Please see the enumeration pmu_ldo_name_t for details.
+ * param enable Enable GPC standby mode or not.
+ */
+void PMU_EnableLdoStandbyMode(pmu_ldo_name_t name, bool enable);
+
+/*!
  * @}
  */
 
@@ -551,11 +556,20 @@ void PMU_WellBiasInit(ANADIG_PMU_Type *base, const pmu_well_bias_config_t *confi
 void PMU_GetWellBiasDefaultConfig(pmu_well_bias_config_t *config);
 
 /*!
- * @brief Gets the default config of body bias in GPC mode.
+ * brief Enables/disables FBB.
  *
- * @param config Pointer to structure @ref pmu_gpc_body_bias_config_t.
+ * param base PMU peripheral base address.
+ * param enable Used to turn on/off FBB.
  */
-void PMU_GPCGetBodyBiasDefaultConfig(pmu_gpc_body_bias_config_t *config);
+void PMU_EnableFBB(ANADIG_PMU_Type *base, bool enable);
+
+/*!
+ * brief Controls the ON/OFF of FBB when GPC send standby request.
+ *
+ * param base PMU peripheral base address.
+ * param enable Enable GPC standby mode or not.
+ */
+void PMU_EnableFBBStandbyMode(ANADIG_PMU_Type *base, bool enable);
 
 /*!
  * @}

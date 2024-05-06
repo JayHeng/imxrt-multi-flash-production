@@ -5,8 +5,8 @@
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
-#ifndef _FSL_RTWDOG_H_
-#define _FSL_RTWDOG_H_
+#ifndef FSL_RTWDOG_H_
+#define FSL_RTWDOG_H_
 
 #include "fsl_common.h"
 
@@ -422,4 +422,4 @@ static inline uint16_t RTWDOG_GetCounterValue(RTWDOG_Type *base)
 
 /*! @}*/
 
-#endif /* _FSL_RTWDOG_H_ */
+#endif /* FSL_RTWDOG_H_ */

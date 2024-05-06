@@ -1,15 +1,16 @@
 /*
 ** ###################################################################
-**     Processor:           MIMXRT1189CVM8A_cm7
-**     Compilers:           Freescale C/C++ for Embedded ARM
-**                          GNU C Compiler
+**     Processors:          MIMXRT1189CVM8B_cm7
+**                          MIMXRT1189XVM8B_cm7
+**
+**     Compilers:           GNU C Compiler
 **                          IAR ANSI C/C++ Compiler for ARM
 **                          Keil ARM C/C++ Compiler
 **                          MCUXpresso Compiler
 **
-**     Reference manual:    IMXRT1180RM, Rev 1, 06/2022
+**     Reference manual:    IMXRT1180RM, Rev 2, 12/2022
 **     Version:             rev. 0.1, 2021-03-09
-**     Build:               b220801
+**     Build:               b231213
 **
 **     Abstract:
 **         Provides a system configuration function and a global variable that
@@ -17,9 +18,7 @@
 **         the oscillator (PLL) that is part of the microcontroller device.
 **
 **     Copyright 2016 Freescale Semiconductor, Inc.
-**     Copyright 2016-2022 NXP
-**     All rights reserved.
-**
+**     Copyright 2016-2023 NXP
 **     SPDX-License-Identifier: BSD-3-Clause
 **
 **     http:                 www.nxp.com
@@ -35,7 +34,7 @@
 /*!
  * @file MIMXRT1189_cm7
  * @version 1.0
- * @date 2022-08-01
+ * @date 2023-12-13
  * @brief Device specific configuration file for MIMXRT1189_cm7 (implementation
  *        file)
  *
@@ -47,8 +46,6 @@
 #include <stdint.h>
 #include "fsl_device_registers.h"
 
-
-
 /* ----------------------------------------------------------------------------
    -- Core clock
    ---------------------------------------------------------------------------- */
@@ -59,7 +56,8 @@ uint32_t SystemCoreClock = DEFAULT_SYSTEM_CLOCK;
    -- SystemInit()
    ---------------------------------------------------------------------------- */
 
-void SystemInit (void) {
+void SystemInit(void)
+{
 #if ((__FPU_PRESENT == 1) && (__FPU_USED == 1))
     SCB->CPACR |= ((3UL << 10 * 2) | (3UL << 11 * 2)); /* set CP10, CP11 Full Access */
 #endif                                                 /* ((__FPU_PRESENT == 1) && (__FPU_USED == 1)) */
@@ -140,8 +138,9 @@ void SystemInit (void) {
         SysTick->CTRL &= ~SysTick_CTRL_ENABLE_Msk;
     }
 
-/* Enable instruction cache */
-    if (SCB_CCR_IC_Msk != (SCB_CCR_IC_Msk & SCB->CCR)) {
+    /* Enable instruction cache */
+    if (SCB_CCR_IC_Msk != (SCB_CCR_IC_Msk & SCB->CCR))
+    {
         SCB_EnableICache();
     }
 
@@ -150,6 +149,18 @@ void SystemInit (void) {
     __DSB();
     __ISB();
 
+    /*
+     * Workaround for mcux cm7 standalone project debug.
+     * To debug cm7 standalone project in mcux, it use cm33 script to kick-off
+     * cm7 core, Some early MCUX version, say 11.8.0, the eDMA4 error flag is set
+     * after the kick-off script executed, so as a workaround, clear the
+     * eDMA4 error flag at the beginning.
+     * note: it is supposed no side effect for latest mcux version.
+     */
+#if (defined(__MCUXPRESSO) && !(defined(__MULTICORE_M7SLAVE) || defined(MULTICORE_APP)))
+    DMA4->TCD[0].CH_ES = DMA_CH_ES_ERR_MASK;
+#endif
+
     SystemInitHook();
 }
 
@@ -157,16 +168,17 @@ void SystemInit (void) {
    -- SystemCoreClockUpdate()
    ---------------------------------------------------------------------------- */
 
-void SystemCoreClockUpdate (void) {
-
-/* TBD */
-
+void SystemCoreClockUpdate(void)
+{
+    /* TBD */
 }
 
 /* ----------------------------------------------------------------------------
    -- SystemInitHook()
    ---------------------------------------------------------------------------- */
 
-__attribute__ ((weak)) void SystemInitHook (void) {
+__attribute__((weak)) void SystemInitHook(void)
+{
     /* Void implementation of the weak function. */
 }
+

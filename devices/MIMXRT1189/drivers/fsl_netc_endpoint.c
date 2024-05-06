@@ -1,17 +1,14 @@
 /*
- * Copyright 2021-2022 NXP
+ * Copyright 2021-2023 NXP
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #include "fsl_netc_endpoint.h"
-
-/*! @name NETC register map. */
-/*@{*/
-#define NETC_ENETC_PCIE_FUNC_OFFSET       (3U)       /*!< The ENETC PCIE function index. */
-#define NETC_ENETC_PORT_GROUP_BASE_OFFSET (0x4000U)  /*!< The ENETC port group register base address offset. */
-#define NETC_ENETC_GLOBAL_BASE_OFFSET     (0x10000U) /*!< The ENETC global register base address offset. */
-/*@}*/
+#include "fsl_netc_timer.h"
+#if defined(FSL_FEATURE_NETC_HAS_ERRATA_051587) && FSL_FEATURE_NETC_HAS_ERRATA_051587
+#include <math.h>
+#endif
 
 /*! @name Defines some Ethernet parameters. */
 /*@{*/
@@ -28,12 +25,6 @@
 #define NETC_DcacheCleanByRange(address, sizeByte)      DCACHE_CleanByRange(address, sizeByte)
 #endif
 
-/*! @brief Pointers to netc bases for each instance. */
-static ENETC_PCI_TYPE0_Type *const s_netcBases[] = ENETC_PCI_TYPE0_BASE_PTRS;
-
-/*! @brief Pointers to enetc bases for each instance. */
-static NETC_ENETC_Type *const s_netcEnetcBases[] = NETC_ENETC_BASE_PTRS;
-
 /*! @brief Command BD common buffer. */
 AT_NONCACHEABLE_SECTION_ALIGN(static netc_tb_data_buffer_t s_cmdData, 16);
 
@@ -45,28 +36,7 @@ AT_NONCACHEABLE_SECTION_ALIGN(static netc_tb_data_buffer_t s_cmdData, 16);
  */
 static void EP_GetBaseResource(ep_handle_t *handle, netc_hw_si_idx_t si)
 {
-    uint8_t instance = getSiInstance(si);
-    uint8_t siNum    = getSiNum(si);
-    uint8_t siIdx    = getSiIdx(si);
-
-    handle->hw.base           = s_netcEnetcBases[instance];
-    handle->hw.common         = (NETC_SW_ENETC_Type *)((uintptr_t)handle->hw.base);
-    handle->hw.portGroup.port = (NETC_PORT_Type *)((uintptr_t)handle->hw.base + NETC_ENETC_PORT_GROUP_BASE_OFFSET);
-    handle->hw.portGroup.eth  = (NETC_ETH_LINK_Type *)((uintptr_t)handle->hw.base + NETC_ENETC_PORT_GROUP_BASE_OFFSET);
-    handle->hw.global         = (ENETC_GLOBAL_Type *)((uintptr_t)handle->hw.base + NETC_ENETC_GLOBAL_BASE_OFFSET);
-    if (siNum == 0U)
-    {
-        handle->hw.func.pf = s_netcBases[NETC_ENETC_PCIE_FUNC_OFFSET + instance];
-        handle->hw.si      = (ENETC_SI_Type *)((uintptr_t)handle->hw.base - 0x10000U);
-        handle->hw.msixTable =
-            (netc_msix_entry_t *)(FSL_FEATURE_NETC_MSIX_TABLE_BASE + NETC_MSIX_TABLE_OFFSET * (3U + (uint32_t)siIdx));
-    }
-    else
-    {
-        handle->hw.func.vf   = NETC_VF1_PCI_HDR_TYPE0;
-        handle->hw.si        = (ENETC_SI_Type *)((uintptr_t)handle->hw.base + 0xC0000U);
-        handle->hw.msixTable = (netc_msix_entry_t *)(0x60C20000U);
-    }
+    NETC_SocGetBaseResource(&handle->hw, si);
 }
 
 /*!
@@ -443,14 +413,21 @@ status_t EP_GetDefaultConfig(ep_config_t *config)
 
     (void)memset(config, 0, sizeof(ep_config_t));
 
-    config->port.common.acceptTpid.innerMask   = (uint8_t)kNETC_OuterStanCvlan | (uint8_t)kNETC_OuterStanSvlan;
-    config->port.common.acceptTpid.outerMask   = (uint8_t)kNETC_InnerStanCvlan | (uint8_t)kNETC_InnerStanSvlan;
-    config->port.common.pSpeed                 = 0x63U;
-    config->port.common.rxTsSelect             = kNETC_SyncTime;
-    config->port.common.stompFcs               = true;
+    config->port.common.acceptTpid.innerMask = (uint8_t)kNETC_OuterStanCvlan | (uint8_t)kNETC_OuterStanSvlan;
+    config->port.common.acceptTpid.outerMask = (uint8_t)kNETC_InnerStanCvlan | (uint8_t)kNETC_InnerStanSvlan;
+    config->port.common.pSpeed               = 0x63U;
+    config->port.common.rxTsSelect           = kNETC_SyncTime;
+#if (defined(FSL_FEATURE_NETC_HAS_PORT_FCSEA) && FSL_FEATURE_NETC_HAS_PORT_FCSEA)
+    config->port.common.stompFcs = true;
+#endif
     config->port.common.rxPpduBco              = 20U;
     config->port.common.txPpduBco              = 20U;
     config->port.common.timeGate.holdSkew      = 64;
+    config->port.common.parser.l2PloadCount    = 24;
+    config->port.common.parser.l3PayloadCount  = 24;
+    config->port.common.parser.enableL3Parser  = true;
+    config->port.common.parser.l4PayloadCount  = 24;
+    config->port.common.parser.enableL4Parser  = true;
     config->port.ethMac.enableRevMii           = false;
     config->port.ethMac.preemptMode            = kNETC_PreemptDisable;
     config->port.ethMac.enMergeVerify          = false;
@@ -459,11 +436,14 @@ status_t EP_GetDefaultConfig(ep_config_t *config)
     config->port.ethMac.enTxPad                = true;
     config->port.ethMac.rxMinFrameSize         = 64U;
     config->port.ethMac.rxMaxFrameSize         = 0x600U;
+    config->port.ethMac.maxBackPressOn         = 3036U;
+    config->port.ethMac.minBackPressOff        = 20U;
     config->port.enPseudoMacTxPad              = true;
     config->psfpCfg.isiPortConfig.defaultISEID = 0xFFFFU;
     config->siConfig.ringPerBdrGroup           = 0x1U;
     for (uint8_t i = 0U; i < 8U; i++)
     {
+        config->txTcCfg[i].enTcGate           = true;
         config->txTcCfg[i].sduCfg.maxSduSized = 0x600U;
         config->txTcCfg[i].sduCfg.sduType     = kNETC_MPDU;
         config->txPrioToTC[i]                 = i;
@@ -518,18 +498,19 @@ status_t EP_Init(ep_handle_t *handle, uint8_t *macAddr, const ep_config_t *confi
     {
 #if (defined(FSL_FEATURE_NETC_HAS_ERRATA_051260) && FSL_FEATURE_NETC_HAS_ERRATA_051260)
         /* Errata 051260: All NETC functions need to be enabled for ENETC NTMP operation */
-        NETC_F2_PCI_HDR_TYPE0->PCI_CFH_CMD |=
+        SWITCH_PCI_HDR_TYPE0->PCI_CFH_CMD |=
             ENETC_PCI_TYPE0_PCI_CFH_CMD_MEM_ACCESS_MASK | ENETC_PCI_TYPE0_PCI_CFH_CMD_BUS_MASTER_EN_MASK;
-        NETC_F3_PCI_HDR_TYPE0->PCI_CFH_CMD |=
+        ENETC0_PCI_HDR_TYPE0->PCI_CFH_CMD |=
             ENETC_PCI_TYPE0_PCI_CFH_CMD_MEM_ACCESS_MASK | ENETC_PCI_TYPE0_PCI_CFH_CMD_BUS_MASTER_EN_MASK;
-        NETC_F4_PCI_HDR_TYPE0->PCI_CFH_CMD |=
+        ENETC1_PCI_HDR_TYPE0->PCI_CFH_CMD |=
             ENETC_PCI_TYPE0_PCI_CFH_CMD_MEM_ACCESS_MASK | ENETC_PCI_TYPE0_PCI_CFH_CMD_BUS_MASTER_EN_MASK;
 #endif
+        /* Enable master bus and memory access for PCIe and MSI-X */
+        handle->hw.func.pf->PCI_CFH_CMD |=
+            (ENETC_PCI_TYPE0_PCI_CFH_CMD_MEM_ACCESS_MASK | ENETC_PCI_TYPE0_PCI_CFH_CMD_BUS_MASTER_EN_MASK);
+
         if (!NETC_PortIsPseudo(handle->hw.portGroup.port))
         {
-            /* Enable master bus and memory access for PCIe and MSI-X first to do ETH MAC reset */
-            handle->hw.func.pf->PCI_CFH_CMD |=
-                (ENETC_PCI_TYPE0_PCI_CFH_CMD_MEM_ACCESS_MASK | ENETC_PCI_TYPE0_PCI_CFH_CMD_BUS_MASTER_EN_MASK);
             handle->hw.portGroup.port->POR |= (NETC_PORT_POR_TXDIS_MASK | NETC_PORT_POR_RXDIS_MASK);
             /* Do software reset first */
             NETC_PortSoftwareResetEthMac(handle->hw.portGroup.eth);
@@ -537,7 +518,7 @@ status_t EP_Init(ep_handle_t *handle, uint8_t *macAddr, const ep_config_t *confi
 #if (defined(FSL_FEATURE_NETC_HAS_ERRATA_051246) && FSL_FEATURE_NETC_HAS_ERRATA_051246)
         else
         {
-            if (0U != (NETC_F2_PCI_HDR_TYPE0->PCI_CFH_CMD & ENETC_PCI_TYPE0_PCI_CFH_CMD_BUS_MASTER_EN_MASK))
+            if (0U != (SWITCH_PCI_HDR_TYPE0->PCI_CFH_CMD & ENETC_PCI_TYPE0_PCI_CFH_CMD_BUS_MASTER_EN_MASK))
             {
                 porTemp = swPseudoPort->POR;
                 /* Disable the internal switch port's Tx/Rx to prevent frames from flowing into the internal ENETC
@@ -578,16 +559,18 @@ status_t EP_Init(ep_handle_t *handle, uint8_t *macAddr, const ep_config_t *confi
                 return result;
             }
         }
+#if !(defined(FSL_FEATURE_NETC_HAS_NO_SWITCH) && FSL_FEATURE_NETC_HAS_NO_SWITCH)
         else
         {
             handle->hw.portGroup.pseudo->PPMCR = NETC_PSEUDO_LINK_PPMCR_TXPAD(config->port.enPseudoMacTxPad);
         }
+#endif
         /* Configure Port VLAN classification control, only do PSI */
         handle->hw.base->PVCLCTR = NETC_ENETC_PVCLCTR_OAI(config->enOuterAsInner);
         /* Configure ENETC pasue on/off threshold, only do PSI */
         handle->hw.base->PPAUONTR  = NETC_ENETC_PPAUONTR_THRESH(config->pauseOnThr);
         handle->hw.base->PPAUOFFTR = NETC_ENETC_PPAUOFFTR_THRESH(config->pauseOffThr);
-        /* Transmit priority to traffic class mapping, only do PSI*/
+        /* Transmit priority to traffic class mapping, only do PSI */
         handle->hw.base->PRIO2TCMR0 = NETC_ENETC_PRIO2TCMR0_PRIO7TC(config->txPrioToTC[7]) |
                                       NETC_ENETC_PRIO2TCMR0_PRIO6TC(config->txPrioToTC[6]) |
                                       NETC_ENETC_PRIO2TCMR0_PRIO5TC(config->txPrioToTC[5]) |
@@ -601,9 +584,23 @@ status_t EP_Init(ep_handle_t *handle, uint8_t *macAddr, const ep_config_t *confi
         /* Configure ENETC PORT native VLAN, only do on PSI */
         NETC_EnetcPortSetNativeVLAN(handle->hw.base, &config->rxOuterVLANCfg, true);
         NETC_EnetcPortSetNativeVLAN(handle->hw.base, &config->rxInnerVLANCfg, false);
-        /* Configure ENETC PSFP, only do PSI*/
+
+#if defined(FSL_FEATURE_NETC_HAS_ERRATA_051524) && FSL_FEATURE_NETC_HAS_ERRATA_051524
+        /* ERRATA051524: The Ingress Stream Identification key construction check of payload may evaluate incorrectly
+           (indicating an invalid key construction) when the frame is received from a pseudo port (internal port) bound
+           to ENETC or the switch, and maximum frame size is 1024 bytes or larger. */
+        if ((config->port.ethMac.rxMaxFrameSize >= 1024U) && NETC_PortIsPseudo(handle->hw.portGroup.port))
+        {
+            /* Check the first payload is enough. */
+            if (config->psfpCfg.kcRule[0].payload[0].pfp == 1U)
+            {
+                return kStatus_InvalidArgument;
+            }
+        }
+#endif
+        /* Configure ENETC PSFP, only do PSI */
         (void)EP_RxPSFPInit(handle, &config->psfpCfg);
-        /* Configure ENETC traffic class, only do PSI*/
+        /* Configure ENETC traffic class, only do PSI */
         for (uint32_t i = 8U; i > 0U; i--)
         {
             result = EP_TxTrafficClassConfig(handle, (netc_hw_tc_idx_t)(uint32_t)(i - 1U), &config->txTcCfg[(i - 1U)]);
@@ -618,7 +615,7 @@ status_t EP_Init(ep_handle_t *handle, uint8_t *macAddr, const ep_config_t *confi
 #else
         if (NETC_PortIsPseudo(handle->hw.portGroup.port))
         {
-            if (0U != (NETC_F2_PCI_HDR_TYPE0->PCI_CFH_CMD & ENETC_PCI_TYPE0_PCI_CFH_CMD_BUS_MASTER_EN_MASK))
+            if (0U != (SWITCH_PCI_HDR_TYPE0->PCI_CFH_CMD & ENETC_PCI_TYPE0_PCI_CFH_CMD_BUS_MASTER_EN_MASK))
             {
                 swPseudoPort->POR = porTemp;
             }
@@ -657,7 +654,11 @@ status_t EP_Init(ep_handle_t *handle, uint8_t *macAddr, const ep_config_t *confi
     if (siNum == 0U)
     {
         /* Config TGS on PSI side */
+#if (defined(FSL_FEATURE_NETC_HAS_ERRATA_051130) && FSL_FEATURE_NETC_HAS_ERRATA_051130)
         result = EP_TxPortTGSEnable(handle, config->port.enableTg, 0xFFU);
+#else
+        result = EP_TxPortTGSEnable(handle, config->port.enableTg);
+#endif
     }
     return result;
 }
@@ -791,7 +792,7 @@ status_t EP_SendFrameCommon(ep_handle_t *handle,
             if (txCacheMaintain)
             {
                 /* Swith API share same cache */
-                NETC_DcacheCleanByRange((uint32_t)txBuff->buffer, txBuff->length);
+                NETC_DcacheCleanByRange((uintptr_t)(uint8_t *)txBuff->buffer, txBuff->length);
             }
             /* Get latest Tx BD address and clean it content. */
             txDesTemp = &txBdRing->bdBase[txBdRing->producerIndex];
@@ -948,6 +949,12 @@ netc_tx_frame_info_t *EP_ReclaimTxDescCommon(ep_handle_t *handle,
             /* Valid Tx frame information is in the first BD of one BD chain. */
             if (txDesc->writeback.written != 0U)
             {
+                /* When reclaim callback is enabled, never process more than one full frame */
+                if (NULL != frameInfo)
+                {
+                    break;
+                }
+
                 frameInfo = &txBdRing->dirtyBase[txBdRing->cleanIndex];
                 if (frameInfo->isTsAvail)
                 {
@@ -961,6 +968,12 @@ netc_tx_frame_info_t *EP_ReclaimTxDescCommon(ep_handle_t *handle,
             }
             else if (txDesc->standard.frameLen != 0U)
             {
+                /* When reclaim callback is enabled, never process more than one full frame */
+                if (NULL != frameInfo)
+                {
+                    break;
+                }
+
                 frameInfo         = &txBdRing->dirtyBase[txBdRing->cleanIndex];
                 frameInfo->status = kNETC_EPTxSuccess;
             }
@@ -1002,12 +1015,18 @@ void EP_ReclaimTxDescriptor(ep_handle_t *handle, uint8_t ring)
          * 1 */
         hwRing = ring + 1U;
     }
-    frameInfo = EP_ReclaimTxDescCommon(handle, &handle->txBdRing[ring], hwRing, (handle->cfg.reclaimCallback != NULL));
-    if (frameInfo != NULL)
+
+    do
     {
-        (void)handle->cfg.reclaimCallback(handle, ring, frameInfo, handle->cfg.userData);
-        (void)memset(frameInfo, 0, sizeof(netc_tx_frame_info_t));
-    }
+        frameInfo =
+            EP_ReclaimTxDescCommon(handle, &handle->txBdRing[ring], hwRing, (handle->cfg.reclaimCallback != NULL));
+        /* If reclaim callback is enabled, it must be called for each full frame. */
+        if (frameInfo != NULL)
+        {
+            (void)handle->cfg.reclaimCallback(handle, ring, frameInfo, handle->cfg.userData);
+            (void)memset(frameInfo, 0, sizeof(netc_tx_frame_info_t));
+        }
+    } while (frameInfo != NULL);
 }
 
 status_t EP_GetRxFrameSizeCommon(ep_handle_t *handle, netc_rx_bdr_t *rxBdRing, uint32_t *length)
@@ -1665,7 +1684,7 @@ status_t EP_RxPSFPAddRPTableEntry(ep_handle_t *handle, netc_tb_rp_config_t *conf
     cdbrHandle.base   = (netc_cbdr_hw_t *)(uintptr_t)&handle->hw.si->SICBDRMR;
     cdbrHandle.cmdr   = &handle->cmdBdRing;
     cdbrHandle.buffer = &s_cmdData;
-    return NETC_AddOrUpdateRPTableEntry(&cdbrHandle, config, true);
+    return NETC_AddOrUpdateRPTableEntry(&cdbrHandle, config, kNETC_AddEntry);
 }
 
 status_t EP_RxPSFPUpdateRPTableEntry(ep_handle_t *handle, netc_tb_rp_config_t *config)
@@ -1676,7 +1695,18 @@ status_t EP_RxPSFPUpdateRPTableEntry(ep_handle_t *handle, netc_tb_rp_config_t *c
     cdbrHandle.base   = (netc_cbdr_hw_t *)(uintptr_t)&handle->hw.si->SICBDRMR;
     cdbrHandle.cmdr   = &handle->cmdBdRing;
     cdbrHandle.buffer = &s_cmdData;
-    return NETC_AddOrUpdateRPTableEntry(&cdbrHandle, config, false);
+    return NETC_AddOrUpdateRPTableEntry(&cdbrHandle, config, kNETC_UpdateEntry);
+}
+
+status_t EP_RxPSFPAddOrUpdateRPTableEntry(ep_handle_t *handle, netc_tb_rp_config_t *config)
+{
+    assert((handle != NULL) && (config != NULL));
+    netc_cbdr_handle_t cdbrHandle;
+
+    cdbrHandle.base   = (netc_cbdr_hw_t *)(uintptr_t)&handle->hw.si->SICBDRMR;
+    cdbrHandle.cmdr   = &handle->cmdBdRing;
+    cdbrHandle.buffer = &s_cmdData;
+    return NETC_AddOrUpdateRPTableEntry(&cdbrHandle, config, kNETC_AddOrUpdateEntry);
 }
 
 status_t EP_RxPSFPDelRPTableEntry(ep_handle_t *handle, uint32_t entryID)
@@ -2049,26 +2079,14 @@ status_t EP_TxPortTGSEnable(ep_handle_t *handle, bool enable)
         netc_tgs_gate_entry_t gate[2] = {{.interval = 50000U, .tcGateState = gateState},
                                          {.interval = 50000U, .tcGateState = gateState}};
         netc_tb_tgs_gcl_t wTgsList    = {.cycleTime = 1000000U, .numEntries = 2U, .gcList = &gate[0]};
-        uint32_t timeLow, timeHigh;
+        uint64_t time;
         /* Enable master bus and memory access for default ns timer*/
-        NETC_F0_PCI_HDR_TYPE0->PCI_CFH_CMD |=
+        TMR_PCI_HDR_TYPE0->PCI_CFH_CMD |=
             (ENETC_PCI_TYPE0_PCI_CFH_CMD_MEM_ACCESS_MASK | ENETC_PCI_TYPE0_PCI_CFH_CMD_BUS_MASTER_EN_MASK);
-        /* Read low bytes first to make high bytes store in shadow register */
-        if ((TMR0_BASE->TMR_CTRL & ENETC_PF_TMR_TMR_CTRL_TE_MASK) != 0)
-        {
-            /* 1588 timer enabled, a read to TMR_FRT_L captures all 64b of SRT_H/L */
-            TMR0_BASE->TMR_FRT_L;
-            timeLow  = TMR0_BASE->TMR_SRT_L;
-            timeHigh = TMR0_BASE->TMR_SRT_H;
-        }
-        else
-        {
-            /* Default counter, Read low bytes first to make high bytes store in shadow register */
-            TMR0_BASE->TMR_DEF_CNT_L;
-            timeLow  = TMR0_BASE->TMR_DEF_CNT_L;
-            timeHigh = TMR0_BASE->TMR_DEF_CNT_H;
-        }
-        wTgsList.baseTime = ((uint64_t)timeHigh << 32U) + timeLow;
+
+        NETC_TimerGetTime(TMR0_BASE, &time);
+
+        wTgsList.baseTime = time;
         result            = EP_TxTGSConfigAdminGcl(handle, &wTgsList);
 #endif
     }
@@ -2084,10 +2102,66 @@ status_t EP_TxTGSConfigAdminGcl(ep_handle_t *handle, netc_tb_tgs_gcl_t *config)
 {
     assert((handle != NULL) && (config != NULL));
     netc_cbdr_handle_t cdbrHandle;
+    status_t status = kStatus_Success;
 
     cdbrHandle.base   = (netc_cbdr_hw_t *)(uintptr_t)&handle->hw.si->SICBDRMR;
     cdbrHandle.cmdr   = &handle->cmdBdRing;
     cdbrHandle.buffer = &s_cmdData;
+
+    if (0U != (handle->hw.portGroup.port->PTGAGLSR & NETC_PORT_PTGAGLSR_CFG_PEND_MASK))
+    {
+        /* Removed the previous pending administrative gate control list */
+        netc_tb_tgs_gcl_t emptyList = {.entryID = config->entryID, .numEntries = 0U};
+        status                      = NETC_ConfigTGSAdminList(&cdbrHandle, &emptyList);
+
+        if (kStatus_Success != status)
+        {
+            return status;
+        }
+    }
+#if defined(FSL_FEATURE_NETC_HAS_ERRATA_051587) && FSL_FEATURE_NETC_HAS_ERRATA_051587
+    if (0U != (handle->hw.portGroup.port->PTGAGLSR & NETC_PORT_PTGAGLSR_TG_MASK))
+    {
+        netc_cmd_bd_t cmdBd = {0};
+        uint32_t cycleTime;
+        uint64_t time, minBaseTime;
+
+        /* Read the previous active Operationa gate control list cycle time*/
+        (void)memset(cdbrHandle.buffer, 0, sizeof(netc_tb_tgs_data_t));
+        cdbrHandle.buffer->tgs.request.entryID                    = config->entryID;
+        cdbrHandle.buffer->tgs.request.commonHeader.updateActions = 0U;
+        cdbrHandle.buffer->tgs.request.commonHeader.queryActions  = 0U;
+        cmdBd.req.addr                                            = (uintptr_t)cdbrHandle.buffer;
+        cmdBd.req.reqLength                                       = 8U;
+        /* Set Response Data Buffer length to MAX */
+        cmdBd.req.resLength  = sizeof(netc_tb_tgs_data_t);
+        cmdBd.req.tableId    = kNETC_TGSTable;
+        cmdBd.req.cmd        = kNETC_QueryEntry;
+        cmdBd.req.accessType = kNETC_EntryIDMatch;
+        status               = NETC_CmdBDSendCommand(cdbrHandle.base, cdbrHandle.cmdr, &cmdBd, kNETC_NtmpV2_0);
+        if (kStatus_Success == status)
+        {
+            cycleTime = ((netc_tb_tgs_olse_t *)(uintptr_t)(&((uint8_t *)cdbrHandle.buffer)[36U]))->operCycleTime;
+        }
+        else
+        {
+            return status;
+        }
+        /* Get Current Time */
+        NETC_TimerGetTime(TMR0_BASE, &time);
+
+        /* The minimum base time = current time + advance time (0.1us) + command processing time (~90us) + (2 *
+         * operational cycle times) */
+        minBaseTime = time + 100100U + (2U * cycleTime);
+        /* Check, if there is operating GCL and if admin base time is in range described in ERR051587*/
+        if ((config->numEntries > 0U) && (config->baseTime < minBaseTime))
+        {
+            config->baseTime +=
+                (((uint64_t)ceil(((double)minBaseTime - (double)config->baseTime) / (double)config->cycleTime))) *
+                config->cycleTime;
+        }
+    }
+#endif
     return NETC_ConfigTGSAdminList(&cdbrHandle, config);
 }
 
@@ -2106,12 +2180,15 @@ status_t EP_TxTrafficClassConfig(ep_handle_t *handle, netc_hw_tc_idx_t tcIdx, co
 {
     assert((handle != NULL) && (config != NULL));
     status_t reseult;
+    uint32_t temp;
 
     if (!NETC_PortIsPseudo(handle->hw.portGroup.port))
     {
-        uint32_t temp                    = handle->hw.portGroup.port->PFPCR & (~((uint32_t)1U << (uint32_t)tcIdx));
+        temp                             = handle->hw.portGroup.port->PFPCR & (~((uint32_t)1U << (uint32_t)tcIdx));
         handle->hw.portGroup.port->PFPCR = temp | ((uint32_t)config->enPreemption << (uint32_t)tcIdx);
     }
+    temp                             = handle->hw.portGroup.port->PDGSR & (~((uint32_t)1U << (uint32_t)tcIdx));
+    handle->hw.portGroup.port->PDGSR = temp | ((uint32_t)config->enTcGate << (uint32_t)tcIdx);
 
     (void)NETC_EnetcPortEnableTSD(handle->hw.base, tcIdx, config->enableTsd);
 

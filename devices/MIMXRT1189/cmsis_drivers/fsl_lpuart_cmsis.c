@@ -202,9 +202,16 @@
      (defined(RTE_USART3) && RTE_USART3 && defined(LPUART3)) || \
      (defined(RTE_USART4) && RTE_USART4 && defined(LPUART4)) || \
      (defined(RTE_USART5) && RTE_USART5 && defined(LPUART5)) || \
-     (defined(RTE_USART6) && RTE_USART6 && defined(LPUART6)))
+     (defined(RTE_USART6) && RTE_USART6 && defined(LPUART6)) || \
+     (defined(RTE_USART7) && RTE_USART7 && defined(LPUART7)) || \
+     (defined(RTE_USART8) && RTE_USART8 && defined(LPUART8)) || \
+     (defined(RTE_USART9) && RTE_USART9 && defined(LPUART9)) || \
+     (defined(RTE_USART10) && RTE_USART10 && defined(LPUART10))|| \
+     (defined(RTE_USART11) && RTE_USART11 && defined(LPUART11))|| \
+     (defined(RTE_USART12) && RTE_USART12 && defined(LPUART12)))
 
-#define ARM_LPUART_DRV_VERSION ARM_DRIVER_VERSION_MAJOR_MINOR((2), (2))
+
+#define ARM_LPUART_DRV_VERSION ARM_DRIVER_VERSION_MAJOR_MINOR((2), (6))
 
 /*
  * ARMCC does not support split the data section automatically, so the driver
@@ -265,13 +272,13 @@ typedef struct _cmsis_lpuart_dma_driver_state
 #if (defined(FSL_FEATURE_SOC_EDMA_COUNT) && FSL_FEATURE_SOC_EDMA_COUNT)
 typedef struct _cmsis_lpuart_edma_resource
 {
-    DMA_Type *txEdmaBase;   /*!< EDMA peripheral base address for TX.    */
+    void *txEdmaBase;   /*!< EDMA peripheral base address for TX.    */
     uint32_t txEdmaChannel; /*!< EDMA channel for LPUART TX.             */
-    uint32_t txDmaRequest;   /*!< TX EDMA request source.                 */
+    uint32_t txDmaRequest;  /*!< TX EDMA request source.                 */
 
-    DMA_Type *rxEdmaBase;   /*!< EDMA peripheral base address for RX.    */
+    void *rxEdmaBase;   /*!< EDMA peripheral base address for RX.    */
     uint32_t rxEdmaChannel; /*!< EDMA channel for LPUART RX.             */
-    uint32_t rxDmaRequest;   /*!< RX EDMA request source.                 */
+    uint32_t rxDmaRequest;  /*!< RX EDMA request source.                 */
 
 #if (defined(FSL_FEATURE_SOC_DMAMUX_COUNT) && FSL_FEATURE_SOC_DMAMUX_COUNT)
     DMAMUX_Type *txDmamuxBase; /*!< DMAMUX peripheral base address for TX. */
@@ -595,16 +602,16 @@ static int32_t LPUART_DmaPowerControl(ARM_POWER_STATE state, cmsis_lpuart_dma_dr
             DMA_CreateHandle(lpuart->txHandle, dmaResource->txDmaBase, dmaResource->txDmaChannel);
 #if (defined(FSL_FEATURE_SOC_DMAMUX_COUNT) && FSL_FEATURE_SOC_DMAMUX_COUNT)
 #if FSL_FEATURE_DMA_MODULE_CHANNEL != FSL_FEATURE_DMAMUX_MODULE_CHANNEL
-            DMAMUX_SetSource(dmaResource->rxDmamuxBase, dmaResource->rxDmamuxChannel, dmaResource->rxDmaRequest);
+            DMAMUX_SetSource(dmaResource->rxDmamuxBase, dmaResource->rxDmamuxChannel, (int32_t)dmaResource->rxDmaRequest);
             DMAMUX_EnableChannel(dmaResource->rxDmamuxBase, dmaResource->rxDmamuxChannel);
 
-            DMAMUX_SetSource(dmaResource->txDmamuxBase, dmaResource->txDmamuxChannel, dmaResource->txDmaRequest);
+            DMAMUX_SetSource(dmaResource->txDmamuxBase, dmaResource->txDmamuxChannel, (int32_t)dmaResource->txDmaRequest);
             DMAMUX_EnableChannel(dmaResource->txDmamuxBase, dmaResource->txDmamuxChannel);
 #else
-            DMAMUX_SetSource(dmaResource->rxDmamuxBase, dmaResource->rxDmaChannel, dmaResource->rxDmaRequest);
+            DMAMUX_SetSource(dmaResource->rxDmamuxBase, dmaResource->rxDmaChannel, (int32_t)dmaResource->rxDmaRequest);
             DMAMUX_EnableChannel(dmaResource->rxDmamuxBase, dmaResource->rxDmaChannel);
 
-            DMAMUX_SetSource(dmaResource->txDmamuxBase, dmaResource->txDmaChannel, dmaResource->txDmaRequest);
+            DMAMUX_SetSource(dmaResource->txDmamuxBase, dmaResource->txDmaChannel, (int32_t)dmaResource->txDmaRequest);
             DMAMUX_EnableChannel(dmaResource->txDmamuxBase, dmaResource->txDmaChannel);
 #endif
 #endif
@@ -868,16 +875,11 @@ static int32_t LPUART_EdmaPowerControl(ARM_POWER_STATE state, cmsis_lpuart_edma_
             EDMA_CreateHandle(lpuart->txHandle, dmaResource->txEdmaBase, dmaResource->txEdmaChannel);
 
 #if (defined(FSL_FEATURE_SOC_DMAMUX_COUNT) && FSL_FEATURE_SOC_DMAMUX_COUNT)
-            DMAMUX_SetSource(dmaResource->rxDmamuxBase, dmaResource->rxEdmaChannel, dmaResource->rxDmaRequest);
+            DMAMUX_SetSource(dmaResource->rxDmamuxBase, dmaResource->rxEdmaChannel, (int32_t)dmaResource->rxDmaRequest);
             DMAMUX_EnableChannel(dmaResource->rxDmamuxBase, dmaResource->rxEdmaChannel);
 
-            DMAMUX_SetSource(dmaResource->txDmamuxBase, dmaResource->txEdmaChannel, dmaResource->txDmaRequest);
+            DMAMUX_SetSource(dmaResource->txDmamuxBase, dmaResource->txEdmaChannel, (int32_t)dmaResource->txDmaRequest);
             DMAMUX_EnableChannel(dmaResource->txDmamuxBase, dmaResource->txEdmaChannel);
-#endif
-
-#if defined(FSL_FEATURE_EDMA_HAS_CHANNEL_MUX) && FSL_FEATURE_EDMA_HAS_CHANNEL_MUX
-            EDMA_SetChannelMux(dmaResource->rxEdmaBase, dmaResource->rxEdmaChannel, (dma_request_source_t)dmaResource->rxDmaRequest);
-            EDMA_SetChannelMux(dmaResource->txEdmaBase, dmaResource->txEdmaChannel, (dma_request_source_t)dmaResource->txDmaRequest);
 #endif
 
             /* Setup the LPUART. */

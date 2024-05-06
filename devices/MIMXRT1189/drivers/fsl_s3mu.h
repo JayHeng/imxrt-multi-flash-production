@@ -20,13 +20,16 @@
  *******************************************************************************/
 /*! @name Driver version */
 /*@{*/
-/*! @brief Defines S3MU driver version 2.0.0.
+/*! @brief Defines S3MU driver version 2.0.1.
  *
  * Change log:
+ * - Version 2.0.1
+ *   - Update kStatusGroup_SNT to kStatusGroup_ELEMU
+ *
  * - Version 2.0.0
  *   - initial version
  */
-#define FSL_S3MU_DRIVER_VERSION (MAKE_VERSION(2, 0, 0))
+#define FSL_S3MU_DRIVER_VERSION (MAKE_VERSION(2, 0, 1))
 /*@}*/
 
 #define MU_MSG_HEADER_SIZE (1U)
@@ -36,10 +39,10 @@
 
 enum
 {
-    kStatus_S3MU_AgumentOutOfRange = MAKE_STATUS(kStatusGroup_SNT, 0x1u), /*!< S3MU status for out of range access. */
-    kStatus_S3MU_InvalidArgument = MAKE_STATUS(kStatusGroup_SNT, 0x2u), /*!< S3MU status for invalid argument check. */
-    kStatus_S3MU_RequestTimeout  = MAKE_STATUS(kStatusGroup_SNT, 0x3u), /*!< S3MU status for timeout. */
-    kStatus_S3MU_Busy = MAKE_STATUS(kStatusGroup_SNT, 0x4u), /*!< S3MU status for reservation by other core. */
+    kStatus_S3MU_AgumentOutOfRange = MAKE_STATUS(kStatusGroup_ELEMU, 0x1u), /*!< S3MU status for out of range access. */
+    kStatus_S3MU_InvalidArgument = MAKE_STATUS(kStatusGroup_ELEMU, 0x2u), /*!< S3MU status for invalid argument check. */
+    kStatus_S3MU_RequestTimeout  = MAKE_STATUS(kStatusGroup_ELEMU, 0x3u), /*!< S3MU status for timeout. */
+    kStatus_S3MU_Busy = MAKE_STATUS(kStatusGroup_ELEMU, 0x4u), /*!< S3MU status for reservation by other core. */
 };
 
 typedef struct
@@ -76,7 +79,7 @@ extern "C" {
  * @return Status kStatus_Success if success, kStatus_Fail if fail
  * Possible errors: kStatus_S3MU_InvalidArgument, kStatus_S3MU_AgumentOutOfRange
  */
-status_t S3MU_SendMessage(S3MU_Type *mu, uint32_t *buf, size_t wordCount);
+status_t S3MU_SendMessage(S3MU_Type *mu, void *buf, size_t wordCount);
 
 /*!
  * @brief Get response from MU
@@ -92,7 +95,7 @@ status_t S3MU_SendMessage(S3MU_Type *mu, uint32_t *buf, size_t wordCount);
  * @return Status kStatus_Success if success, kStatus_Fail if fail
  * Possible errors: kStatus_S3MU_InvalidArgument, kStatus_S3MU_AgumentOutOfRange
  */
-status_t S3MU_GetResponse(S3MU_Type *mu, uint32_t *buf);
+status_t S3MU_GetResponse(S3MU_Type *mu, void *buf);
 
 /*!
  * @brief Wait and Read data from MU
@@ -123,7 +126,7 @@ status_t S3MU_WaitForData(S3MU_Type *mu, uint32_t *buf, size_t wordCount, uint32
  * @return Status kStatus_Success if success, kStatus_Fail if fail
  * Possible errors: kStatus_S3MU_InvalidArgument, kStatus_S3MU_AgumentOutOfRange
  */
-status_t S3MU_ReadMessage(S3MU_Type *mu, uint32_t *buf, uint8_t *size, uint8_t read_header);
+status_t S3MU_ReadMessage(S3MU_Type *mu, uint32_t *buf, size_t *size, uint8_t read_header);
 
 /*!
  * @brief Init MU

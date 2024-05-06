@@ -1,11 +1,11 @@
 /*
- * Copyright 2021-2022 NXP
+ * Copyright 2021-2023 NXP
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-#ifndef _FSL_NETC_PORT_H_
-#define _FSL_NETC_PORT_H_
+#ifndef FSL_NETC_PORT_H_
+#define FSL_NETC_PORT_H_
 
 #include "fsl_netc.h"
 
@@ -21,7 +21,29 @@
 
 /*! @brief The port supported minimum/maximum frame size. */
 #define NETC_PORT_MIN_FRAME_SIZE (18U)
-#define NETC_PORT_MAX_FRAME_SIZE (9600U)
+#define NETC_PORT_MAX_FRAME_SIZE (2000U)
+
+typedef enum _netc_port_intr_flags
+{
+    kNETC_TxEmptyFlag             = NETC_ETH_LINK_PM0_IEVENT_TX_EMPTY_MASK, /*!< Tx FIFO empty flag. */
+    kNETC_RxEmptyFlag             = NETC_ETH_LINK_PM0_IEVENT_RX_EMPTY_MASK, /*!< Rx FIFO empty flag. */
+    kNETC_TxOverflowFlag          = NETC_ETH_LINK_PM0_IEVENT_TX_OVFL_MASK, /*!< Tx overflow flag. */
+    kNETC_TxUnderflowFlag         = NETC_ETH_LINK_PM0_IEVENT_TX_UNFL_MASK, /*!< Tx underflow flag. */
+    kNETC_RxOverflowFlag          = NETC_ETH_LINK_PM0_IEVENT_RX_OVFL_MASK, /*!< Rx overflow flag. */
+    kNETC_MagicPacketFlag         = NETC_ETH_LINK_PM0_IEVENT_MGI_MASK, /*!< Magic packet detection indication flag. */
+    kNETC_TxClkStopFlag           = NETC_ETH_LINK_PM0_IEVENT_TX_CSD_MASK, /*!< Tx clock stop detection flag. */
+    kNETC_RxClkStopFlag           = NETC_ETH_LINK_PM0_IEVENT_RX_CSD_MASK, /*!< Rx clock stop detection flag. */
+    kNETC_SpeedDuplexChangeFlag   = NETC_ETH_LINK_PM0_IEVENT_SPD_DUP_MASK, /*!< Speed/Duplex Change flag */
+    kNETC_MacMergeSMDErrFlag      = NETC_ETH_LINK_PM0_IEVENT_MRG_SERR_MASK, /*!< MAC merge frame SMD error received event flag */
+    kNETC_MacMergeAssemblyErrFlag = NETC_ETH_LINK_PM0_IEVENT_MRG_AERR_MASK, /*!< MAC merge frame assembly error event flag */
+} netc_port_intr_flags_t;
+
+/*! @brief Defines the port MAC frame loopback mode. */
+typedef enum _netc_port_loopback_mode_t
+{
+    kNETC_PortLpbWithExtTxClk, /*!< Port MAC frame loopback with external Tx clock. */
+    kNETC_PortLpbWithIntTxClk = 2U, /*!< Port MAC frame loopback with internal Tx clock. */
+} netc_port_loopback_mode_t;
 
 /*! @} */ // end of netc_hw_port
 #if !(defined(__GNUC__) || defined(__ICCARM__))
@@ -141,7 +163,7 @@ void NETC_PortEthMacGracefulStop(NETC_PORT_Type *base);
 static inline void NETC_PortSetSpeed(NETC_PORT_Type *base, uint16_t pSpeed)
 {
     assert(pSpeed <= 15999U);
-    base->PCR = NETC_PORT_PCR_PSPEED(pSpeed);
+    base->PCR = (base->PCR & ~NETC_PORT_PCR_PSPEED_MASK) | NETC_PORT_PCR_PSPEED(pSpeed);
 }
 
 /*! @} */ // end of netc_hw_port
@@ -204,12 +226,31 @@ static inline status_t NETC_PortConfigTcMaxSDU(NETC_PORT_Type *base,
     }
     else
     {
-        base->TCT_NUM[tcIdx].PTCTMSDUR = NETC_PORT_PTCTMSDUR_SF_MAXSDU_DIS(config->enTxMaxSduCheck) |
+        base->TCT_NUM[tcIdx].PTCTMSDUR = NETC_PORT_PTCTMSDUR_SF_MAXSDU_DIS(!config->enTxMaxSduCheck) |
                                          NETC_PORT_PTCTMSDUR_SDU_TYPE(config->sduType) |
                                          NETC_PORT_PTCTMSDUR_MAXSDU(config->maxSduSized);
     }
 
     return result;
+}
+
+/*!
+ * @brief Read the max Transmit max SDU for specified Port Traffic Class
+ *
+ * @param base
+ * @param tcIdx
+ * @param config
+ * @return status_t
+ */
+static inline status_t NETC_PortGetTcMaxSDU(NETC_PORT_Type *base,
+                                            netc_hw_tc_idx_t tcIdx,
+                                            netc_port_tc_sdu_config_t *config)
+{
+    config->maxSduSized = (uint16_t)(base->TCT_NUM[tcIdx].PTCTMSDUR & NETC_PORT_PTCTMSDUR_MAXSDU_MASK) >> NETC_PORT_PTCTMSDUR_MAXSDU_SHIFT; 
+    config->enTxMaxSduCheck = (bool)((base->TCT_NUM[tcIdx].PTCTMSDUR & NETC_PORT_PTCTMSDUR_SF_MAXSDU_DIS_MASK) >> NETC_PORT_PTCTMSDUR_SF_MAXSDU_DIS_SHIFT);
+    config->sduType = (netc_tc_sdu_type_t)(uint32_t)((base->TCT_NUM[tcIdx].PTCTMSDUR & NETC_PORT_PTCTMSDUR_SDU_TYPE_MASK) >> NETC_PORT_PTCTMSDUR_SDU_TYPE_SHIFT);
+
+    return kStatus_Success;
 }
 
 /*! @} */ // end of netc_hw_port_tx
@@ -253,12 +294,25 @@ static inline void NETC_PortSetVlanClassify(NETC_PORT_Type *base, const netc_por
  *
  * @param base  PORT peripheral base address.
  * @param config  The port QoS classification configuration.
+ * @return status_t
  */
-static inline void NETC_PortSetQosClassify(NETC_PORT_Type *base, const netc_port_qos_classify_config_t *config)
+static inline status_t NETC_PortSetQosClassify(NETC_PORT_Type *base, const netc_port_qos_classify_config_t *config)
 {
+#if defined(FSL_FEATURE_NETC_HAS_ERRATA_051649) && FSL_FEATURE_NETC_HAS_ERRATA_051649
+    /* ERRATA051649: Only mapping profile instance 0 can be used. Mapping profile instance 1 cannot be used due the decoding of the selected
+       profile is not correct. Therefore, if any switch port is configured to use the second mapping profile (1), all switch ports will not
+       assign the default QoS correctly. */
+    if (config->vlanQosMap != 0U)
+    {
+        return kStatus_InvalidArgument;
+    }
+#endif
+
     base->PQOSMR = NETC_PORT_PQOSMR_VQMP(config->vlanQosMap) | NETC_PORT_PQOSMR_DIPV(config->defaultIpv) |
                    NETC_PORT_PQOSMR_DDR(config->defaultDr) | NETC_PORT_PQOSMR_VE(config->enVlanInfo) |
                    NETC_PORT_PQOSMR_VS(config->vlanTagSelect);
+
+    return kStatus_Success;
 }
 
 /*!
@@ -299,13 +353,43 @@ static inline void NETC_PortSetISI(NETC_PORT_Type *base, const netc_port_psfp_is
  */
 
 /*!
+ * @brief Get port MAC interrupt flags
+ *
+ * @param base  NETC ETH link base register.
+ * @param mac  MAC type.
+ */
+uint32_t NETC_GetPortMacInterruptFlags(NETC_ETH_LINK_Type *base, netc_port_phy_mac_type_t macType);
+
+/*!
+ * @brief Clear port MAC interrupt flags
+ *
+ * @param base  NETC ETH link base register.
+ * @param mac  MAC type.
+ * @param mask  Bit mask of interrupts to enable. See #netc_port_intr_flags_t for the set
+ *              of constants that should be OR'd together to form the bit mask.
+ */
+void NETC_ClearPortMacInterruptFlags(NETC_ETH_LINK_Type *base, netc_port_phy_mac_type_t macType, uint32_t mask);
+
+/*!
+ * @brief Enable/Disable port MAC interrupts
+ *
+ * @param base  NETC ETH link base register.
+ * @param mac  MAC type.
+ * @param mask  Bit mask of interrupts to enable. See #netc_port_intr_flags_t for the set
+ *              of constants that should be OR'd together to form the bit mask.
+ * @param enable  Enable/Disable interrupts.
+ */
+void NETC_EnablePortMacInterrupts(NETC_ETH_LINK_Type *base, netc_port_phy_mac_type_t macType, uint32_t mask, bool enable);
+
+/*!
  * @brief Enable/Disable Loopback for specified MAC
  *
  * @param base
+ * @param loopMode
  * @param enable
  * @return status_t
  */
-status_t NETC_PortEnableLoopback(NETC_ETH_LINK_Type *base, bool enable);
+status_t NETC_PortEnableLoopback(NETC_ETH_LINK_Type *base, netc_port_loopback_mode_t loopMode, bool enable);
 
 /*!
  * @brief Get ethernet MAC port MII mode.
@@ -331,6 +415,15 @@ status_t NETC_PortSetMII(NETC_ETH_LINK_Type *base,
                          netc_hw_mii_mode_t miiMode,
                          netc_hw_mii_speed_t speed,
                          netc_hw_mii_duplex_t duplex);
+
+/*!
+ * @brief Set the maximum supported received frame size.
+ *
+ * @param base Ethernet MAC port peripheral base address.
+ * @param size Maximum frame size to set.
+ * @return status_t
+ */
+status_t NETC_PortSetMaxFrameSize(NETC_ETH_LINK_Type *base, uint16_t size);
 
 /*!
  * @brief Configure ethernet MAC for specified PORT.
@@ -383,7 +476,7 @@ static inline void NETC_PortGetPhyMacPreemptionStatus(NETC_ETH_LINK_Type *base,
  * @param status Point to the buffer which store statistics.
  */
 void NETC_PortGetPhyMacTxStatistic(NETC_ETH_LINK_Type *base,
-                                   netc_port_phy_mac_tpye_t macType,
+                                   netc_port_phy_mac_type_t macType,
                                    netc_port_phy_mac_traffic_statistic_t *statistic);
 
 /*!
@@ -394,7 +487,7 @@ void NETC_PortGetPhyMacTxStatistic(NETC_ETH_LINK_Type *base,
  * @param status Point to the buffer which store statistics.
  */
 void NETC_PortGetPhyMacRxStatistic(NETC_ETH_LINK_Type *base,
-                                   netc_port_phy_mac_tpye_t macType,
+                                   netc_port_phy_mac_type_t macType,
                                    netc_port_phy_mac_traffic_statistic_t *statistic);
 
 /*!
@@ -405,7 +498,7 @@ void NETC_PortGetPhyMacRxStatistic(NETC_ETH_LINK_Type *base,
  * @param status Point to the buffer which store statistics.
  */
 void NETC_PortGetPhyMacDiscardStatistic(NETC_ETH_LINK_Type *base,
-                                        netc_port_phy_mac_tpye_t macType,
+                                        netc_port_phy_mac_type_t macType,
                                         netc_port_phy_mac_discard_statistic_t *statistic);
 
 /*!
@@ -417,6 +510,7 @@ void NETC_PortGetPhyMacDiscardStatistic(NETC_ETH_LINK_Type *base,
 void NETC_PortGetPhyMacPreemptionStatistic(NETC_ETH_LINK_Type *base,
                                            netc_port_phy_mac_preemption_statistic_t *statistic);
 
+#if !(defined(FSL_FEATURE_NETC_HAS_NO_SWITCH) && FSL_FEATURE_NETC_HAS_NO_SWITCH)
 /*!
  * @brief Get Pseudo MAC Tx/Rx Traffic Statistics .
  *
@@ -427,6 +521,7 @@ void NETC_PortGetPhyMacPreemptionStatistic(NETC_ETH_LINK_Type *base,
 void NETC_PortGetPseudoMacTrafficStatistic(NETC_PSEUDO_LINK_Type *base,
                                            bool getTx,
                                            netc_port_pseudo_mac_traffic_statistic_t *statistic);
+#endif
 
 /*! @} */ // end of netc_hw_port_mac
 #if !(defined(__GNUC__) || defined(__ICCARM__))
@@ -436,4 +531,4 @@ void NETC_PortGetPseudoMacTrafficStatistic(NETC_PSEUDO_LINK_Type *base,
 #if defined(__cplusplus)
 }
 #endif
-#endif /* _FSL_NETC_PORT_H_ */
+#endif /* FSL_NETC_PORT_H_ */

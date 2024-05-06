@@ -1,11 +1,11 @@
 /*
- * Copyright 2021-2022 NXP
+ * Copyright 2021-2023 NXP
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-#ifndef _FSL_NETC_SWITCH_H_
-#define _FSL_NETC_SWITCH_H_
+#ifndef FSL_NETC_SWITCH_H_
+#define FSL_NETC_SWITCH_H_
 
 #include "fsl_netc.h"
 #include "fsl_netc_endpoint.h"
@@ -155,8 +155,10 @@ typedef struct _swt_config
         uint8_t lanID;                    /*!< The HSR's LANID this port belong to */
         bool inCutThrough;     /*!< Enable/Disable Ingress Cut Through on this port, vaild only on port 0 ~ 3 */
         bool outCutThrough;    /*!< Enable/Disable Egress Cut Through on this port, vaild only on port 0 ~ 3 */
+#if defined(NETC_PORT_PCTFCR_BSQS_MASK)
         uint8_t outBufferSize; /*!< Specifies the minimal frame data buffered in words (24B) before the frame can be Cut
                                   Through out an egress port, range in 1 ~ 3, vaild only on port 0 ~ 3 */
+#endif
         bool enableTg;         /*!< Enable port time gate scheduling. */
         bool enTxRx; /*!< Enable port transmit/receive path, if disabled, the tx/rx of the mac corresponding to the port
                         will also be closed. */
@@ -384,6 +386,25 @@ static inline void SWT_SetPortSpeed(swt_handle_t *handle, netc_hw_port_idx_t por
     NETC_PortSetSpeed(handle->hw.ports[portIdx].port, pSpeed);
 }
 
+/*!
+ * @brief Stop Switch Port receive/transmit (disable both ETH and port)
+ *
+ * @param handle
+ * @param portIdx
+ * @return status_t
+ */
+status_t SWT_PortStop(swt_handle_t *handle, netc_hw_port_idx_t portIdx);
+
+/*!
+ * @brief Set switch port maximum supported received frame size
+ *
+ * @param handle
+ * @param portIdx
+ * @param size
+ * @return status_t
+ */
+status_t SWT_SetPortMaxFrameSize(swt_handle_t *handle, netc_hw_port_idx_t portIdx, uint16_t size);
+
 /*! @} */ // end of netc_swt_init
 #if !(defined(__GNUC__) || defined(__ICCARM__))
 #pragma endregion netc_swt_init
@@ -529,7 +550,6 @@ static inline status_t SWT_RxVlanCConfigPort(swt_handle_t *handle,
     return kStatus_Success;
 }
 
-// Qos Classification
 /*!
  * @brief Init the ingress QoS classification for Switch
  *
@@ -556,13 +576,11 @@ static inline status_t SWT_RxQosCConfigPort(swt_handle_t *handle,
                                             netc_hw_port_idx_t portIdx,
                                             netc_port_qos_classify_config_t *config)
 {
-    NETC_PortSetQosClassify(handle->hw.ports[portIdx].port, config);
-    return kStatus_Success;
+    return NETC_PortSetQosClassify(handle->hw.ports[portIdx].port, config);
 }
 
-// Ingress Port Filter
 /*!
- * @brief Enable / Disable Ingress Port Filtering
+ * @brief Enable/Disable Ingress Port Filtering
  *
  * Applied for both Switch and ENETC
  *
@@ -627,6 +645,17 @@ status_t SWT_RxIPFAddTableEntry(swt_handle_t *handle, netc_tb_ipf_config_t *conf
  * @return See @ref netc_cmd_error_t
  */
 status_t SWT_RxIPFUpdateTableEntry(swt_handle_t *handle, uint32_t entryID, netc_tb_ipf_cfge_t *cfg);
+
+/*!
+ * @brief Query an entry for the ingress Port Filter Table.
+ *
+ * @param handle
+ * @param entryID
+ * @param config
+ * @return status_t
+ * @return See @ref netc_cmd_error_t
+ */
+status_t SWT_RxIPFQueryTableEntry(swt_handle_t *handle, uint32_t entryID, netc_tb_ipf_config_t *config);
 
 /*!
  * @brief Delete an entry for the ingress Port Filter Table.
@@ -720,6 +749,26 @@ static inline uint32_t SWT_RxPSFPGetISITableRemainEntryNum(swt_handle_t *handle)
 status_t SWT_RxPSFPAddISITableEntry(swt_handle_t *handle, netc_tb_isi_config_t *config, uint32_t *entryID);
 
 /*!
+ * @brief Query an entry in ingress stream identification table
+ *
+ * @param handle
+ * @param entryID
+ * @param config
+ * @return status_t
+ */
+status_t SWT_RxPSFPQueryISITableEntry(swt_handle_t *handle, uint32_t entryID, netc_tb_isi_config_t *config);
+
+/*!
+ * @brief Query an entry in ingress stream identification table using key match
+ *
+ * @param handle
+ * @param keye
+ * @param rsp
+ * @return status_t
+ */
+status_t SWT_RxPSFPQueryISITableEntryWithKey(swt_handle_t *handle, netc_tb_isi_keye_t *keye, netc_tb_isi_rsp_data_t *rsp);
+
+/*!
  * @brief Delete an entry in the stream identification table
  *
  * @param handle
@@ -763,6 +812,17 @@ status_t SWT_RxPSFPAddISTableEntry(swt_handle_t *handle, netc_tb_is_config_t *co
 status_t SWT_RxPSFPUpdateISTableEntry(swt_handle_t *handle, netc_tb_is_config_t *config);
 
 /*!
+ * @brief Query an entry in ingress stream table
+ *
+ * @param handle
+ * @param entryID
+ * @param config
+ * @return status_t
+ * @return See @ref netc_cmd_error_t
+ */
+status_t SWT_RxPSFPQueryISTableEntry(swt_handle_t *handle, uint32_t entryID, netc_tb_is_config_t *config);
+
+/*!
  * @brief Delete an entry in the stream identification table
  *
  * @param handle
@@ -784,6 +844,19 @@ static inline uint32_t SWT_RxPSFPGetISFTableRemainEntryNum(swt_handle_t *handle)
 {
     return (handle->hw.common->HTMCAPR & NETC_SW_ENETC_HTMCAPR_NUM_WORDS_MASK) -
            (handle->hw.common->HTMOR & NETC_SW_ENETC_HTMOR_AMOUNT_MASK);
+}
+
+/*!
+ * @brief Get maximum available entry number (entry size is 24 bytes) of ingress stream filter table
+ * @note This is a Exact Match hash table, and it shares the remaining available entries with Ingress Stream
+ *       Identification, VLAN Filter, FDB, L2 IPV4 Multicast Filter table.
+ *
+ * @param handle
+ * @return uint32_t
+ */
+static inline uint32_t SWT_RxPSFPGetISFTableMaxEntryNum(swt_handle_t *handle)
+{
+    return (handle->hw.common->HTMCAPR & NETC_SW_ENETC_HTMCAPR_NUM_WORDS_MASK);
 }
 
 /*!
@@ -819,7 +892,7 @@ status_t SWT_RxPSFPUpdateISFTableEntry(swt_handle_t *handle, uint32_t entryID, n
 status_t SWT_RxPSFPDelISFTableEntry(swt_handle_t *handle, uint32_t entryID);
 
 /*!
- * @brief Get remaining available entry number of Rate Policying table
+ * @brief Get remaining available entry number of Rate Policer table
  * @note This is a dynamic bounded index table, the remaining entry can't be zero before add entry into it
  *
  * @param handle
@@ -832,7 +905,20 @@ static inline uint32_t SWT_RxPSFPGetRPTableRemainEntryNum(swt_handle_t *handle)
 }
 
 /*!
- * @brief Add entry to Rate Policying table
+ * @brief Get maximum available entry number (entry size is 24 bytes) of Rate Policer table
+ * @note This is a Exact Match hash table, and it shares the remaining available entries with Ingress Stream
+ *       Identification, VLAN Filter, FDB, L2 IPV4 Multicast Filter table.
+ *
+ * @param handle
+ * @return uint32_t
+ */
+static inline uint32_t SWT_RxPSFPGetRPTableMaxEntryNum(swt_handle_t *handle)
+{
+    return (handle->hw.common->RPITCAPR & NETC_SW_ENETC_RPITCAPR_NUM_ENTRIES_MASK);
+}
+
+/*!
+ * @brief Add entry to Rate Policer table
  *
  * @param handle
  * @param config
@@ -842,7 +928,7 @@ static inline uint32_t SWT_RxPSFPGetRPTableRemainEntryNum(swt_handle_t *handle)
 status_t SWT_RxPSFPAddRPTableEntry(swt_handle_t *handle, netc_tb_rp_config_t *config);
 
 /*!
- * @brief Update entry in Rate Policying table
+ * @brief Update entry in Rate Policer table
  *
  * @param handle
  * @param config
@@ -852,7 +938,17 @@ status_t SWT_RxPSFPAddRPTableEntry(swt_handle_t *handle, netc_tb_rp_config_t *co
 status_t SWT_RxPSFPUpdateRPTableEntry(swt_handle_t *handle, netc_tb_rp_config_t *config);
 
 /*!
- * @brief Delete entry in the Rate policying table
+ * @brief Add or update entry in Rate Policer table
+ *
+ * @param handle
+ * @param config
+ * @return status_t
+ * @return See @ref netc_cmd_error_t
+ */
+status_t SWT_RxPSFPAddOrUpdateRPTableEntry(swt_handle_t *handle, netc_tb_rp_config_t *config);
+
+/*!
+ * @brief Delete entry in the Rate Policer table
  *
  * @param handle
  * @param entryID
@@ -860,6 +956,16 @@ status_t SWT_RxPSFPUpdateRPTableEntry(swt_handle_t *handle, netc_tb_rp_config_t 
  * @return See @ref netc_cmd_error_t
  */
 status_t SWT_RxPSFPDelRPTableEntry(swt_handle_t *handle, uint32_t entryID);
+
+/*!
+ * @brief Query entry in the stream Rate Policer table
+ *
+ * @param handle
+ * @param entryID
+ * @param rsp
+ * @return See @ref netc_cmd_error_t
+ */
+status_t SWT_RxPSFPQueryRPTableEntry(swt_handle_t *handle, uint32_t entryID, netc_tb_rp_rsp_data_t *rsp);
 
 /*!
  * @brief Get statistic of specified Rate Policer entry
@@ -884,6 +990,16 @@ static inline uint32_t SWT_RxPSFPGetISCTableRemainEntryNum(swt_handle_t *handle)
     return (handle->hw.common->ISCITCAPR & NETC_SW_ENETC_ISCITCAPR_NUM_ENTRIES_MASK) -
            (handle->hw.common->ISCITOR & NETC_SW_ENETC_ISCITOR_NUM_ENTRIES_MASK);
 }
+
+/*!
+ * @brief Query entry from the Ingress Stream Filter table
+ *
+ * @param handle
+ * @param keye
+ * @param rsp
+ * @return status_t
+ */
+status_t SWT_RxPSFPQueryISFTableEntry(swt_handle_t *handle, netc_tb_isf_keye_t *keye, netc_tb_isf_rsp_data_t *rsp);
 
 /*!
  * @brief Add entry in ingress stream count table
@@ -930,6 +1046,17 @@ static inline uint32_t SWT_RxPSFPGetSGITableRemainEntryNum(swt_handle_t *handle)
 }
 
 /*!
+ * @brief Get maximum entry number of stream gate instance table
+ *
+ * @param handle
+ * @return uint32_t
+ */
+static inline uint32_t SWT_RxPSFPGetSGITableMaxEntryNum(swt_handle_t *handle)
+{
+    return (handle->hw.common->SGIITCAPR & NETC_SW_ENETC_SGIITCAPR_NUM_ENTRIES_MASK);
+}
+
+/*!
  * @brief Add entry in stream gate instance table
  *
  * @param handle
@@ -971,6 +1098,16 @@ status_t SWT_RxPSFPDelSGITableEntry(swt_handle_t *handle, uint32_t entryID);
 status_t SWT_RxPSFPGetSGIState(swt_handle_t *handle, uint32_t entryID, netc_tb_sgi_sgise_t *state);
 
 /*!
+ * @brief Query entry in the stream gate instance table
+ *
+ * @param handle
+ * @param entryID
+ * @param rsp
+ * @return See @ref netc_cmd_error_t
+ */
+status_t SWT_RxPSFPQuerySGITableEntry(swt_handle_t *handle, uint32_t entryID, netc_tb_sgi_rsp_data_t *rsp);
+
+/*!
  * @brief Get remaining available words number of Stream Gate Control List table
  * @note This is a dynamic bounded index table, and number of words required for a stream gate
  *       control list is 1+N/2 where N is number of gate time slots in the stream gate control list.
@@ -983,6 +1120,17 @@ static inline uint32_t SWT_RxPSFPGetSGCLTableRemainWordNum(swt_handle_t *handle)
 {
     return (handle->hw.common->SGCLITCAPR & NETC_SW_ENETC_SGCLITCAPR_NUM_WORDS_MASK) -
            (handle->hw.common->SGCLTMOR & NETC_SW_ENETC_SGCLTMOR_NUM_WORDS_MASK);
+}
+
+/*!
+ * @brief Get maximum words number of Stream Gate Control List table
+ *
+ * @param handle
+ * @return uint32_t
+ */
+static inline uint32_t SWT_RxPSFPGetSGCLTableMaxWordNum(swt_handle_t *handle)
+{
+    return (handle->hw.common->SGCLITCAPR & NETC_SW_ENETC_SGCLITCAPR_NUM_WORDS_MASK);
 }
 
 /*!
@@ -1075,6 +1223,17 @@ status_t SWT_BridgeConfigPort(swt_handle_t *handle,
                               const netc_swt_port_bridge_config_t *config);
 
 /*!
+ * @brief Config bridge port default VID
+ *
+ * @param handle
+ * @param portIdx
+ * @param vid
+ * @return status_t
+ */
+status_t SWT_BridgeConfigPortDefaultVid(swt_handle_t *handle,
+                              netc_hw_port_idx_t portIdx, uint16_t vid);
+
+/*!
  * @brief Get remaining available entry number (entry size is 24 bytes) of bridge vlan filter table
  * @note This is a Exact Match hash table, and it shares the remaining available entries with Ingress Stream
  *       Identification, Ingress Stream Filter, FDB, L2 IPV4 Multicast Filter table.
@@ -1111,6 +1270,17 @@ status_t SWT_BridgeAddVFTableEntry(swt_handle_t *handle, netc_tb_vf_config_t *co
 status_t SWT_BridgeUpdateVFTableEntry(swt_handle_t *handle, uint32_t entryID, netc_tb_vf_cfge_t *cfg);
 
 /*!
+ * @brief Query an entry in bridge VF Table
+ *
+ * @param handle
+ * @param keye
+ * @param rsp
+ * @return status_t
+ * @return See @ref netc_cmd_error_t
+ */
+status_t SWT_BridgeQueryVFTableEntry(swt_handle_t *handle, netc_tb_vf_keye_t *keye, netc_tb_vf_rsp_data_t *rsp);
+
+/*!
  * @brief Delete entry in bridge vlan filter table
  *
  * @param handle
@@ -1119,6 +1289,19 @@ status_t SWT_BridgeUpdateVFTableEntry(swt_handle_t *handle, uint32_t entryID, ne
  * @return See @ref netc_cmd_error_t
  */
 status_t SWT_BridgeDelVFTableEntry(swt_handle_t *handle, uint32_t entryID);
+
+/*!
+ * @brief Search entry in bridge vlan filter table
+ *
+ * @note Only support search and return one entry at a time.
+ *
+ * @param handle
+ * @param sCriteria
+ * @param rsp
+ * @return status_t
+ * @return See @ref netc_cmd_error_t
+ */
+status_t SWT_BridgeSearchVFTableEntry(swt_handle_t *handle, netc_tb_vf_search_criteria_t *sCriteria, netc_tb_vf_rsp_data_t *rsp);
 
 /*!
  * @brief Get remaining available entry number (entry size is 24 bytes) of bridge FDB table
@@ -1155,6 +1338,17 @@ status_t SWT_BridgeAddFDBTableEntry(swt_handle_t *handle, netc_tb_fdb_config_t *
  * @return See @ref netc_cmd_error_t
  */
 status_t SWT_BridgeUpdateFDBTableEntry(swt_handle_t *handle, uint32_t entryID, netc_tb_fdb_cfge_t *cfg);
+
+/*!
+ * @brief Query an entry in bridge FDB Table
+ *
+ * @param handle
+ * @param keye
+ * @param rsp
+ * @return status_t
+ * @return See @ref netc_cmd_error_t
+ */
+status_t SWT_BridgeQueryFDBTableEntry(swt_handle_t *handle, netc_tb_fdb_keye_t *keye, netc_tb_fdb_rsp_data_t *rsp);
 
 /*!
  * @brief Search entry in bridge FDB table
@@ -1448,6 +1642,23 @@ static inline uint32_t SWT_FRERGetESEQRTableEntryNum(swt_handle_t *handle)
 status_t SWT_FRERConfigESEQRTableEntry(swt_handle_t *handle, netc_tb_eseqr_config_t *config);
 
 /*!
+ * @brief Query FRER sequence recovery table entry
+ *
+ * @param handle
+ * @param entryID
+ * @param statistic
+ * @param config
+ * @param state
+ * @return status_t
+ * @return See @ref netc_cmd_error_t
+ */
+status_t SWT_FRERQueryESEQRTableEntry(swt_handle_t *handle,
+                                   uint32_t entryID,
+                                   netc_tb_eseqr_stse_t *statistic,
+                                   netc_tb_eseqr_cfge_t *config,
+                                   netc_tb_eseqr_srse_t *state);
+
+/*!
  * @brief Get FRER sequence recorvery table state and statistic
  *
  * @param handle
@@ -1635,17 +1846,6 @@ status_t SWT_TxPortTGSEnable(swt_handle_t *handle, netc_hw_port_idx_t portIdx, b
 #endif
 
 /*!
- * @brief Get status of the Traffic class
- *
- * @param handle
- * @param portIdx
- * @param curState
- * @param aheadState
- * @return status_t
- */
-status_t SWT_TxTrafficClassGetState(swt_handle_t *handle, netc_hw_port_idx_t portIdx, bool *curState, bool *aheadState);
-
-/*!
  * @brief Get remaining available entry number of egress treatment table
  * @note This is a dynamic bounded index table, the remaining entry can't be zero before add entry into it
  *
@@ -1677,6 +1877,17 @@ status_t SWT_TxEPPAddETTableEntry(swt_handle_t *handle, netc_tb_et_config_t *con
  * @return See @ref netc_cmd_error_t
  */
 status_t SWT_TxEPPUpdateETTableEntry(swt_handle_t *handle, netc_tb_et_config_t *config);
+
+/*!
+ * @brief Query an entry in the egress treatment table
+ *
+ * @param handle
+ * @param entryID
+ * @param config
+ * @return status_t
+ * @return See @ref netc_cmd_error_t
+ */
+status_t SWT_TxEPPQueryETTableEntry(swt_handle_t *handle, uint32_t entryID, netc_tb_et_config_t *config);
 
 /*!
  * @brief Delete entry for the egress treatment table
@@ -1731,20 +1942,6 @@ status_t SWT_TxETMConfigClassQueue(swt_handle_t *handle, netc_tb_etmcq_config_t 
  * @return See @ref netc_cmd_error_t
  */
 status_t SWT_TxETMConfigCongestionGroup(swt_handle_t *handle, netc_tb_etmcg_config_t *config);
-
-/*!
- * @brief
- *
- * @param handle
- * @param portIdx
- * @param queueIdx
- * @param map
- * @return status_t
- */
-status_t SWT_TxETMConfigQosToQueueMap(swt_handle_t *handle,
-                                      netc_hw_port_idx_t portIdx,
-                                      netc_hw_etm_class_queue_idx_t queueIdx,
-                                      uint32_t map);
 
 /*! @} */ // end of netc_swt_tx
 #if !(defined(__GNUC__) || defined(__ICCARM__))
@@ -2050,4 +2247,4 @@ static inline uint32_t SWT_GetPortTGSListStatus(swt_handle_t *handle, netc_hw_po
 #if defined(__cplusplus)
 }
 #endif
-#endif /* _FSL_NETC_SWITCH_H_ */
+#endif /* FSL_NETC_SWITCH_H_ */

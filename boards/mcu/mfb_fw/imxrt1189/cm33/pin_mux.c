@@ -1,6 +1,5 @@
 /*
- * Copyright 2022 NXP
- * All rights reserved.
+ * Copyright 2024 NXP
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -13,11 +12,11 @@
 /*
  * TEXT BELOW IS USED AS SETTING FOR TOOLS *************************************
 !!GlobalInfo
-product: Pins v11.0
+product: Pins v15.0
 processor: MIMXRT1189xxxxx
-package_id: MIMXRT1189CVM8A
+package_id: MIMXRT1189CVM8B
 mcu_data: ksdk2_0
-processor_version: 0.0.0
+processor_version: 0.15.9
  * BE CAREFUL MODIFYING THIS COMMENT - IT IS YAML SETTINGS FOR TOOLS ***********
  */
 
@@ -40,8 +39,10 @@ void BOARD_InitBootPins(void) {
 BOARD_InitPins:
 - options: {callFromInitBoot: 'true', coreID: cm33, enableClock: 'true'}
 - pin_list:
-  - {pin_num: B1, peripheral: LPUART1, signal: TXD, pin_signal: GPIO_AON_08}
-  - {pin_num: A5, peripheral: LPUART1, signal: RXD, pin_signal: GPIO_AON_09}
+  - {pin_num: A5, peripheral: LPUART1, signal: RXD, pin_signal: GPIO_AON_09, pull_up_down_config: Pull_Down, pull_keeper_select: Keeper, open_drain: Disable, drive_strength: High,
+    slew_rate: Slow}
+  - {pin_num: B1, peripheral: LPUART1, signal: TXD, pin_signal: GPIO_AON_08, pull_up_down_config: Pull_Down, pull_keeper_select: Keeper, open_drain: Disable, drive_strength: High,
+    slew_rate: Slow}
  * BE CAREFUL MODIFYING THIS COMMENT - IT IS YAML SETTINGS FOR TOOLS ***********
  */
 
@@ -52,7 +53,6 @@ BOARD_InitPins:
  *
  * END ****************************************************************************************************************/
 void BOARD_InitPins(void) {
-  CLOCK_EnableClock(kCLOCK_Iomuxc1);          /* Turn on LPCG: LPCG is ON. */
   CLOCK_EnableClock(kCLOCK_Iomuxc2);          /* Turn on LPCG: LPCG is ON. */
 
   IOMUXC_SetPinMux(
@@ -61,6 +61,20 @@ void BOARD_InitPins(void) {
   IOMUXC_SetPinMux(
       IOMUXC_GPIO_AON_09_LPUART1_RX,          /* GPIO_AON_09 is configured as LPUART1_RX */
       0U);                                    /* Software Input On Field: Input Path is determined by functionality */
+  IOMUXC_SetPinConfig(
+      IOMUXC_GPIO_AON_08_LPUART1_TX,          /* GPIO_AON_08 PAD functional properties : */
+      0x02U);                                 /* Slew Rate Field: Fast Slew Rate
+                                                 Drive Strength Field: high driver
+                                                 Pull / Keep Select Field: Pull Disable, Highz
+                                                 Pull Up / Down Config. Field: Weak pull down
+                                                 Open Drain Field: Disabled */
+  IOMUXC_SetPinConfig(
+      IOMUXC_GPIO_AON_09_LPUART1_RX,          /* GPIO_AON_09 PAD functional properties : */
+      0x02U);                                 /* Slew Rate Field: Fast Slew Rate
+                                                 Drive Strength Field: high driver
+                                                 Pull / Keep Select Field: Pull Disable, Highz
+                                                 Pull Up / Down Config. Field: Weak pull down
+                                                 Open Drain Field: Disabled */
 }
 
 /***********************************************************************************************************************

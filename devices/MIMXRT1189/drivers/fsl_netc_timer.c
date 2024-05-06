@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 NXP
+ * Copyright 2022-2023 NXP
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -55,16 +55,22 @@ static status_t NETC_TimerMSIXSetEntryTable(netc_timer_handle_t *handle, const n
     return kStatus_Success;
 }
 
+void NETC_TimerInitHandle(netc_timer_handle_t *handle)
+{
+    /* Initialize the handle. */
+    handle->hw.func      = TMR_PCI_HDR_TYPE0;
+    handle->hw.base      = TMR0_BASE;
+    handle->hw.global    = (ENETC_GLOBAL_Type *)(TMR0_BASE_BASE + NETC_TIMER_GLOBAL_BASE_OFFSET);
+    handle->hw.msixTable = (netc_msix_entry_t *)(FSL_FEATURE_NETC_MSIX_TABLE_BASE);
+}
+
 status_t NETC_TimerInit(netc_timer_handle_t *handle, const netc_timer_config_t *config)
 {
     status_t result = kStatus_Success;
     uint32_t period = NETC_NANOSECOND_ONE_SECOND / config->refClkHz;
 
     /* Initialize the handle. */
-    handle->hw.func      = NETC_F0_PCI_HDR_TYPE0;
-    handle->hw.base      = TMR0_BASE;
-    handle->hw.global    = (ENETC_GLOBAL_Type *)(TMR0_BASE_BASE + NETC_TIMER_GLOBAL_BASE_OFFSET);
-    handle->hw.msixTable = (netc_msix_entry_t *)(FSL_FEATURE_NETC_MSIX_TABLE_BASE);
+    NETC_TimerInitHandle(handle);
     handle->entryNum     = config->entryNum;
     handle->timerFreq    = config->refClkHz;
 
@@ -87,7 +93,7 @@ status_t NETC_TimerInit(netc_timer_handle_t *handle, const netc_timer_config_t *
     handle->hw.base->TMR_CTRL =
         ENETC_PF_TMR_TMR_CTRL_TCLK_PERIOD(period) | ENETC_PF_TMR_TMR_CTRL_COPH(config->clkOutputPhase) |
         ENETC_PF_TMR_TMR_CTRL_CIPH(config->clkInputPhase) | ENETC_PF_TMR_TMR_CTRL_TE(config->enableTimer) |
-        ENETC_PF_TMR_TMR_CTRL_CK_SEL(config->clockSelect);
+        ENETC_PF_TMR_TMR_CTRL_COMP_MODE(config->atomicMode) | ENETC_PF_TMR_TMR_CTRL_CK_SEL(config->clockSelect);
 
     NETC_TimerAdjustFreq(handle, config->defaultPpb);
 
@@ -103,7 +109,7 @@ void NETC_TimerDeinit(netc_timer_handle_t *handle)
     NETC_TimerEnable(handle, false);
 
     /* Disable master bus and memory access for PCIe and MSI-X. */
-    NETC_F0_PCI_HDR_TYPE0->PCI_CFH_CMD &=
+    TMR_PCI_HDR_TYPE0->PCI_CFH_CMD &=
         (uint16_t)(~(ENETC_PCI_TYPE0_PCI_CFH_CMD_MEM_ACCESS_MASK | ENETC_PCI_TYPE0_PCI_CFH_CMD_BUS_MASTER_EN_MASK));
 
     (void)memset(handle, 0, sizeof(netc_timer_handle_t));
@@ -325,15 +331,55 @@ status_t NETC_TimerReadExtPulseCaptureTime(netc_timer_handle_t *handle,
     return result;
 }
 
+static void __NETC_TimerGetCurrentTime(ENETC_PF_TMR_Type *base, uint64_t *nanosecond)
+{
+    uint32_t timeLow, timeHigh[2];
+
+    timeHigh[0] = base->TMR_CUR_TIME_H;
+    do {
+        timeHigh[1] = timeHigh[0];
+        timeLow     = base->TMR_CUR_TIME_L;
+        timeHigh[0] = base->TMR_CUR_TIME_H;
+    } while (timeHigh[0] != timeHigh[1]);
+
+    *nanosecond = ((uint64_t)timeHigh[0] << 32U) + timeLow;
+}
+
+void NETC_TimerGetTime(ENETC_PF_TMR_Type *base, uint64_t *nanosecond)
+{
+    if ((base->TMR_CTRL & ENETC_PF_TMR_TMR_CTRL_TE_MASK) != 0U) {
+        __NETC_TimerGetCurrentTime(base, nanosecond);
+    } else {
+        uint32_t timeLow, timeHigh[2];
+
+        timeHigh[0] = base->TMR_DEF_CNT_H;
+        do {
+            timeHigh[1] = timeHigh[0];
+            timeLow     = base->TMR_DEF_CNT_L;
+            timeHigh[0] = base->TMR_DEF_CNT_H;
+        } while (timeHigh[0] != timeHigh[1]);
+
+        *nanosecond = ((uint64_t)timeHigh[0] << 32U) + timeLow;
+    }
+}
+
 void NETC_TimerGetCurrentTime(netc_timer_handle_t *handle, uint64_t *nanosecond)
 {
-    uint32_t timeLow, timeHigh;
+    __NETC_TimerGetCurrentTime(handle->hw.base, nanosecond);
+}
 
-    /* TMR_SRT and TMR_CUR_TIME represent the same value, and a read to TMR_FRT_L captures all 64b of SRT_H/L */
-    handle->hw.base->TMR_FRT_L;
-    timeLow     = handle->hw.base->TMR_SRT_L;
-    timeHigh    = handle->hw.base->TMR_SRT_H;
-    *nanosecond = ((uint64_t)timeHigh << 32U) + timeLow;
+void NETC_TimerGetFreeRunningTime(netc_timer_handle_t *handle, uint64_t *nanosecond)
+{
+    uint32_t timeLow, timeHigh[2];
+
+    timeHigh[0] = handle->hw.base->TMR_FRT_H;
+    do {
+        timeHigh[1] = timeHigh[0];
+        timeLow     = handle->hw.base->TMR_FRT_L;
+        timeHigh[0] = handle->hw.base->TMR_FRT_H;
+    } while (timeHigh[0] != timeHigh[1]);
+
+    *nanosecond = ((uint64_t)timeHigh[0] << 32U) + timeLow;
 }
 
 void NETC_TimerAddOffset(netc_timer_handle_t *handle, int64_t nanosecond)
@@ -358,13 +404,17 @@ void NETC_TimerAddOffset(netc_timer_handle_t *handle, int64_t nanosecond)
 
 void NETC_TimerAdjustFreq(netc_timer_handle_t *handle, int32_t ppb)
 {
-    double fractional, inter;
-    uint32_t addend;
+    int64_t offset = 1000000000LL + ppb;
+    uint64_t addend;
 
-    fractional = modf((double)NETC_NANOSECOND_ONE_SECOND / ((double)handle->timerFreq + (double)ppb), &inter);
-    addend     = (uint32_t)ceil(fractional * (double)UINT32_MAX);
+    /* period (in ns) is given by: 10^9 / freq */
+    /* ppb is applied to period: period' = period * (1 + ppb / 10^9) */
+    /* addend is the fractional part of the period (in ns) scaled by 2^32, */
+    /* which is equivalent to scaling period by 2^32, and then taking the lower 32bits */
+    /* addend' = 10^9 / freq * (1 + ppp / 10^9) * 2^32 = (2^32 * (10^9 + ppb)) / freq */
+    addend = (((uint64_t)1ULL << 32) * (uint64_t)offset) / handle->timerFreq;
 
-    handle->hw.base->TMR_ADD = addend;
+    handle->hw.base->TMR_ADD = (uint32_t)addend;
 }
 
 void NETC_TimerGetFrtSrtTime(netc_timer_handle_t *handle, uint64_t *frt, uint64_t *srt)

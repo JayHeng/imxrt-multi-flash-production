@@ -10,6 +10,22 @@
 #include <stdlib.h>
 #include <string.h>
 
+/*
+ * $Coverage Justification Reference$
+ *
+ * $Justification fsl_lpi2c_c_ref_1$
+ * The default branch cannot be executed in any circumstances, it is only added to avoid MISRA violation.
+ *
+ * $Justification fsl_lpi2c_c_ref_2$
+ * Two instances failed to simulate #kStatus_LPI2C_Busy.
+ *
+ * $Justification fsl_lpi2c_c_ref_3$
+ * When the transmission is completed (remaining == 0), the SDF and RSF will be set, and the flags are get before
+ * that(get before set), it will be over when the next cycle occurs, the first condition cannot be verified, and the
+ * remaining will not be verified.(will improve)
+ *
+ */
+
 /*******************************************************************************
  * Definitions
  ******************************************************************************/
@@ -19,7 +35,11 @@
 #define FSL_COMPONENT_ID "platform.drivers.lpi2c"
 #endif
 
-/* ! @brief LPI2C master fifo commands. */
+#if defined(LPI2C_RSTS)
+#define LPI2C_RESETS_ARRAY LPI2C_RSTS
+#endif
+
+/*! @brief LPI2C master fifo commands. */
 enum
 {
     kTxDataCmd = LPI2C_MTDR_CMD(0x0U), /*!< Transmit DATA[7:0] */
@@ -50,16 +70,16 @@ enum
     kWaitForCompletionState,
 };
 
-/*
- * <! Structure definition for variables that passed as parameters in LPI2C_RunTransferStateMachine.
+/*!
+ * @brief Structure definition for variables that passed as parameters in LPI2C_RunTransferStateMachine.
  * The structure is private.
  */
 typedef struct _lpi2c_state_machine_param
 {
-    bool state_complete;
-    size_t rxCount;
-    size_t txCount;
-    uint32_t status;
+    bool state_complete; /*!< status of complete */
+    size_t rxCount;      /*!< rx count */
+    size_t txCount;      /*!< tx count */
+    uint32_t status;     /*!< machine status */
 } lpi2c_state_machine_param_t;
 
 /*! @brief Typedef for slave interrupt handler. */
@@ -181,6 +201,11 @@ static lpi2c_slave_isr_t s_lpi2cSlaveIsr;
 /*! @brief Pointers to slave handles for each instance. */
 static lpi2c_slave_handle_t *s_lpi2cSlaveHandle[ARRAY_SIZE(kLpi2cBases)];
 
+#if defined(LPI2C_RESETS_ARRAY)
+/* Reset array */
+static const reset_ip_name_t s_lpi2cResets[] = LPI2C_RESETS_ARRAY;
+#endif
+
 /*******************************************************************************
  * Code
  ******************************************************************************/
@@ -249,16 +274,15 @@ static uint32_t LPI2C_GetCyclesForWidth(
 }
 
 /*!
- * @brief Convert provided flags to status code, and clear any errors if present.
- * @param base The LPI2C peripheral base address.
- * @param status Current status flags value that will be checked.
- * @retval #kStatus_Success
- * @retval #kStatus_LPI2C_PinLowTimeout
- * @retval #kStatus_LPI2C_ArbitrationLost
- * @retval #kStatus_LPI2C_Nak
- * @retval #kStatus_LPI2C_FifoError
+ * brief Convert provided flags to status code, and clear any errors if present.
+ * param base The LPI2C peripheral base address.
+ * param status Current status flags value that will be checked.
+ * retval #kStatus_Success
+ * retval #kStatus_LPI2C_PinLowTimeout
+ * retval #kStatus_LPI2C_ArbitrationLost
+ * retval #kStatus_LPI2C_Nak
+ * retval #kStatus_LPI2C_FifoError
  */
-/* Not static so it can be used from fsl_lpi2c_edma.c. */
 status_t LPI2C_MasterCheckAndClearError(LPI2C_Type *base, uint32_t status)
 {
     status_t result = kStatus_Success;
@@ -281,6 +305,11 @@ status_t LPI2C_MasterCheckAndClearError(LPI2C_Type *base, uint32_t status)
         {
             result = kStatus_LPI2C_Nak;
         }
+        /*
+         * $Branch Coverage Justification$
+         * Before that, the state was stripped of other attributes, and it only contained the four brother flags.(will
+         * improve)
+         */
         else if (0U != (status & (uint32_t)kLPI2C_MasterFifoErrFlag))
         {
             result = kStatus_LPI2C_FifoError;
@@ -293,8 +322,16 @@ status_t LPI2C_MasterCheckAndClearError(LPI2C_Type *base, uint32_t status)
         /* Clear the flags. */
         LPI2C_MasterClearStatusFlags(base, status);
 
-        /* Reset fifos. These flags clear automatically. */
-        base->MCR |= LPI2C_MCR_RRF_MASK | LPI2C_MCR_RTF_MASK;
+        if (((base->MCFGR1 & LPI2C_MCFGR1_IGNACK_MASK) != 0x00U) && (result == kStatus_LPI2C_Nak))
+        {
+            /* ERR051119: If IGNACK was set and nak detect , we will ignore the Nak status */
+            result = kStatus_Success;
+        }
+        else
+        {
+            /* Reset fifos. These flags clear automatically.*/
+            base->MCR |= LPI2C_MCR_RRF_MASK | LPI2C_MCR_RTF_MASK;
+        }
     }
     else
     {
@@ -352,13 +389,13 @@ static status_t LPI2C_MasterWaitForTxReady(LPI2C_Type *base)
 }
 
 /*!
- * @brief Make sure the bus isn't already busy.
+ * brief Make sure the bus isn't already busy.
  *
  * A busy bus is allowed if we are the one driving it.
  *
- * @param base The LPI2C peripheral base address.
- * @retval #kStatus_Success
- * @retval #kStatus_LPI2C_Busy
+ * param base The LPI2C peripheral base address.
+ * retval #kStatus_Success
+ * retval #kStatus_LPI2C_Busy
  */
 /* Not static so it can be used from fsl_lpi2c_edma.c. */
 status_t LPI2C_CheckForBusyBus(LPI2C_Type *base)
@@ -366,6 +403,10 @@ status_t LPI2C_CheckForBusyBus(LPI2C_Type *base)
     status_t ret = kStatus_Success;
 
     uint32_t status = LPI2C_MasterGetStatusFlags(base);
+    /*
+     * $Branch Coverage Justification$
+     * $ref fsl_lpi2c_c_ref_2$
+     */
     if ((0U != (status & (uint32_t)kLPI2C_MasterBusBusyFlag)) && (0U == (status & (uint32_t)kLPI2C_MasterBusyFlag)))
     {
         ret = kStatus_LPI2C_Busy;
@@ -451,6 +492,10 @@ void LPI2C_MasterInit(LPI2C_Type *base, const lpi2c_master_config_t *masterConfi
 
 #endif /* FSL_SDK_DISABLE_DRIVER_CLOCK_CONTROL */
 
+#if defined(LPI2C_RESETS_ARRAY)
+    RESET_ReleasePeripheralReset(s_lpi2cResets[LPI2C_GetInstance(base)]);
+#endif
+
     /* Reset peripheral before configuring it. */
     LPI2C_MasterReset(base);
 
@@ -508,18 +553,16 @@ void LPI2C_MasterInit(LPI2C_Type *base, const lpi2c_master_config_t *masterConfi
     {
         /* Calculate bus idle timeout value. The value is equal to BUSIDLE cycles of functional clock divided by
            prescaler. And set BUSIDLE to 0 disables the fileter, so the min value is 1. */
-        cycles = LPI2C_GetCyclesForWidth(sourceClock_Hz, masterConfig->busIdleTimeout_ns, 1U,
-                                         (LPI2C_MCFGR2_BUSIDLE_MASK >> LPI2C_MCFGR2_BUSIDLE_SHIFT), prescaler);
-        cfgr2 &= ~LPI2C_MCFGR2_BUSIDLE_MASK;
-        cfgr2 |= LPI2C_MCFGR2_BUSIDLE(cycles);
+        cycles       = LPI2C_GetCyclesForWidth(sourceClock_Hz, masterConfig->busIdleTimeout_ns, 1U,
+                                               (LPI2C_MCFGR2_BUSIDLE_MASK >> LPI2C_MCFGR2_BUSIDLE_SHIFT), prescaler);
+        base->MCFGR2 = (base->MCFGR2 & (~LPI2C_MCFGR2_BUSIDLE_MASK)) | LPI2C_MCFGR2_BUSIDLE(cycles);
     }
-    base->MCFGR2 = cfgr2;
     if (0U != masterConfig->pinLowTimeout_ns)
     {
         /* Calculate bus pin low timeout value. The value is equal to PINLOW cycles of functional clock divided by
            prescaler. And set PINLOW to 0 disables the fileter, so the min value is 1. */
         cycles       = LPI2C_GetCyclesForWidth(sourceClock_Hz, masterConfig->pinLowTimeout_ns / 256U, 1U,
-                                         (LPI2C_MCFGR2_BUSIDLE_MASK >> LPI2C_MCFGR2_BUSIDLE_SHIFT), prescaler);
+                                               (LPI2C_MCFGR2_BUSIDLE_MASK >> LPI2C_MCFGR2_BUSIDLE_SHIFT), prescaler);
         base->MCFGR3 = (base->MCFGR3 & ~LPI2C_MCFGR3_PINLOW_MASK) | LPI2C_MCFGR3_PINLOW(cycles);
     }
 
@@ -733,6 +776,10 @@ status_t LPI2C_MasterStart(LPI2C_Type *base, uint8_t address, lpi2c_direction_t 
 {
     /* Return an error if the bus is already in use not by us. */
     status_t result = LPI2C_CheckForBusyBus(base);
+    /*
+     * $Branch Coverage Justification$
+     * $ref fsl_lpi2c_c_ref_2$
+     */
     if (kStatus_Success == result)
     {
         /* Clear all flags. */
@@ -974,6 +1021,7 @@ status_t LPI2C_MasterTransferBlocking(LPI2C_Type *base, lpi2c_master_transfer_t 
     assert(transfer->subaddressSize <= sizeof(transfer->subaddress));
 
     status_t result = kStatus_Success;
+    status_t ret    = kStatus_Success;
     uint16_t commandBuffer[7];
     uint32_t cmdCount = 0U;
 
@@ -984,8 +1032,16 @@ status_t LPI2C_MasterTransferBlocking(LPI2C_Type *base, lpi2c_master_transfer_t 
         return kStatus_InvalidArgument;
     }
 
+    /* Enable the master function and disable the slave function. */
+    LPI2C_MasterEnable(base, true);
+    LPI2C_SlaveEnable(base, false);
+
     /* Return an error if the bus is already in use not by us. */
     result = LPI2C_CheckForBusyBus(base);
+    /*
+     * $Branch Coverage Justification$
+     * $ref fsl_lpi2c_c_ref_2$
+     */
     if (kStatus_Success == result)
     {
         /* Clear all flags. */
@@ -1055,12 +1111,28 @@ status_t LPI2C_MasterTransferBlocking(LPI2C_Type *base, lpi2c_master_transfer_t 
             {
                 result = LPI2C_MasterReceive(base, transfer->data, transfer->dataSize);
             }
-
+            /*
+             * $Branch Coverage Justification$
+             * Errors cannot be simulated by software during transmission.(will improve)
+             */
             if (kStatus_Success == result)
             {
                 if ((transfer->flags & (uint32_t)kLPI2C_TransferNoStopFlag) == 0U)
                 {
                     result = LPI2C_MasterStop(base);
+                }
+            }
+        }
+
+        /* Transmit fail */
+        if (kStatus_Success != result)
+        {
+            if ((transfer->flags & (uint32_t)kLPI2C_TransferNoStopFlag) == 0U)
+            {
+                ret = LPI2C_MasterStop(base);
+                if (kStatus_Success != ret)
+                {
+                    result = ret;
                 }
             }
         }
@@ -1161,6 +1233,10 @@ static void LPI2C_TransferStateMachineSendCommand(LPI2C_Type *base,
                 while (tmpRxSize != 0U)
                 {
                     LPI2C_MasterGetFifoCounts(base, NULL, &stateParams->txCount);
+                    /*
+                     * $Branch Coverage Justification$
+                     * The transmission commands will not exceed FIFO SIZE.(will improve)
+                     */
                     while ((size_t)FSL_FEATURE_LPI2C_FIFO_SIZEn(base) == stateParams->txCount)
                     {
                         LPI2C_MasterGetFifoCounts(base, NULL, &stateParams->txCount);
@@ -1329,7 +1405,7 @@ static status_t LPI2C_RunTransferStateMachine(LPI2C_Type *base, lpi2c_master_han
 
     status_t result = kStatus_Success;
     lpi2c_state_machine_param_t stateParams;
-    memset(&stateParams, 0, sizeof(stateParams));
+    (void)memset(&stateParams, 0, sizeof(stateParams));
 
     stateParams.state_complete = false;
 
@@ -1368,6 +1444,10 @@ static status_t LPI2C_RunTransferStateMachine(LPI2C_Type *base, lpi2c_master_han
         while (!stateParams.state_complete)
         {
             /* Execute the state. */
+            /*
+             * $Branch Coverage Justification$
+             * $ref fsl_lpi2c_c_ref_1$
+             */
             switch (handle->state)
             {
                 case (uint8_t)kSendCommandState:
@@ -1504,6 +1584,10 @@ status_t LPI2C_MasterTransferNonBlocking(LPI2C_Type *base,
 
     if ((status_t)kStatus_Success == result)
     {
+        /* Enable the master function and disable the slave function. */
+        LPI2C_MasterEnable(base, true);
+        LPI2C_SlaveEnable(base, false);
+
         /* Disable LPI2C IRQ sources while we configure stuff. */
         LPI2C_MasterDisableInterrupts(base, (uint32_t)kLPI2C_MasterIrqFlags);
 
@@ -1602,8 +1686,6 @@ status_t LPI2C_MasterTransferGetCount(LPI2C_Type *base, lpi2c_master_handle_t *h
  *
  * param base The LPI2C peripheral base address.
  * param handle Pointer to the LPI2C master driver handle.
- * retval #kStatus_Success A transaction was successfully aborted.
- * retval #kStatus_LPI2C_Idle There is not a non-blocking transaction currently in progress.
  */
 void LPI2C_MasterTransferAbort(LPI2C_Type *base, lpi2c_master_handle_t *handle)
 {
@@ -1762,6 +1844,10 @@ void LPI2C_SlaveInit(LPI2C_Type *base, const lpi2c_slave_config_t *slaveConfig, 
 
 #endif /* FSL_SDK_DISABLE_DRIVER_CLOCK_CONTROL */
 
+#if defined(LPI2C_RESETS_ARRAY)
+    RESET_ReleasePeripheralReset(s_lpi2cResets[LPI2C_GetInstance(base)]);
+#endif
+
     /* Restore to reset conditions. */
     LPI2C_SlaveReset(base);
 
@@ -1850,6 +1936,10 @@ static status_t LPI2C_SlaveCheckAndClearError(LPI2C_Type *base, uint32_t flags)
     flags &= (uint32_t)kLPI2C_SlaveErrorFlags;
     if (0U != flags)
     {
+        /*
+         * $Branch Coverage Justification$
+         * It is hard to simulate bitError in automation test environment, need interference on bus.(will improve)
+         */
         if (0U != (flags & (uint32_t)kLPI2C_SlaveBitErrFlag))
         {
             result = kStatus_LPI2C_BitError;
@@ -1944,6 +2034,10 @@ status_t LPI2C_SlaveSend(LPI2C_Type *base, void *txBuff, size_t txSize, size_t *
         }
 
         /* Exit loop if we see a stop or restart in transfer*/
+        /*
+         * $Branch Coverage Justification$
+         * $ref fsl_lpi2c_c_ref_3$
+         */
         if ((0U != (flags & ((uint32_t)kLPI2C_SlaveStopDetectFlag | (uint32_t)kLPI2C_SlaveRepeatedStartDetectFlag))) &&
             (remaining != 0U))
         {
@@ -2031,6 +2125,10 @@ status_t LPI2C_SlaveReceive(LPI2C_Type *base, void *rxBuff, size_t rxSize, size_
         }
 
         /* Exit loop if we see a stop or restart */
+        /*
+         * $Branch Coverage Justification$
+         * $ref fsl_lpi2c_c_ref_3$
+         */
         if ((0U != (flags & ((uint32_t)kLPI2C_SlaveStopDetectFlag | (uint32_t)kLPI2C_SlaveRepeatedStartDetectFlag))) &&
             (remaining != 0U))
         {
@@ -2134,8 +2232,15 @@ status_t LPI2C_SlaveTransferNonBlocking(LPI2C_Type *base, lpi2c_slave_handle_t *
     }
     else
     {
+        /* Enable the slave function and disable the master function. */
+        LPI2C_MasterEnable(base, false);
+        LPI2C_SlaveEnable(base, true);
         /* Return an error if the bus is already in use not by us. */
         uint32_t status = LPI2C_SlaveGetStatusFlags(base);
+        /*
+         * $Branch Coverage Justification$
+         * $ref fsl_lpi2c_c_ref_2$
+         */
         if ((0U != (status & (uint32_t)kLPI2C_SlaveBusBusyFlag)) && (0U == (status & (uint32_t)kLPI2C_SlaveBusyFlag)))
         {
             result = kStatus_LPI2C_Busy;
@@ -2210,8 +2315,6 @@ status_t LPI2C_SlaveTransferGetCount(LPI2C_Type *base, lpi2c_slave_handle_t *han
  * note This API could be called at any time to stop slave for handling the bus events.
  * param base The LPI2C peripheral base address.
  * param handle Pointer to #lpi2c_slave_handle_t structure which stores the transfer state.
- * retval #kStatus_Success
- * retval #kStatus_LPI2C_Idle
  */
 void LPI2C_SlaveTransferAbort(LPI2C_Type *base, lpi2c_slave_handle_t *handle)
 {
@@ -2269,9 +2372,9 @@ void LPI2C_SlaveTransferHandleIRQ(LPI2C_Type *base, lpi2c_slave_handle_t *handle
             if (0U !=
                 (flags & (((uint32_t)kLPI2C_SlaveRepeatedStartDetectFlag) | ((uint32_t)kLPI2C_SlaveStopDetectFlag))))
             {
-                xfer->event = (0U != (flags & (uint32_t)kLPI2C_SlaveRepeatedStartDetectFlag)) ?
-                                  kLPI2C_SlaveRepeatedStartEvent :
-                                  kLPI2C_SlaveCompletionEvent;
+                xfer->event            = (0U != (flags & (uint32_t)kLPI2C_SlaveRepeatedStartDetectFlag)) ?
+                                             kLPI2C_SlaveRepeatedStartEvent :
+                                             kLPI2C_SlaveCompletionEvent;
                 xfer->receivedAddress  = 0U;
                 xfer->completionStatus = kStatus_Success;
                 xfer->transferredCount = handle->transferredCount;
