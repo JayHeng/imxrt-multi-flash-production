@@ -47,6 +47,33 @@
 
 // change driver strength to 100% from 50% to increase Output driving current to improve the load of flash
 #define WINBOND_FLASH_DRVIE_STRENGTH_100P  0x00
+
+#elif WINBOND_DEVICE_W25QxxxNW
+#define WINBOND_FLASH_QUAD_ENABLE        0x02
+
+// ¡°Set Read Parameters (C0h)¡± instruction is used to accommodate a wide range of applications with different needs
+//    for either maximum read frequency or minimum data access latency. This is accomplished by setting the number 
+//    of dummy clocks and wrap length configurations for set of selected instructions. Set Read Parameters (C0h) 
+//    instruction writes to the Read Parameter Register (P[7:0]).
+
+// In SPI mode, SPI Set Read Parameters (C0h)" instruction writes to ¡®Dummy Clocks¡¯ P[6:4] bits only, while it 
+//    will ignore ¡®Wrap Length¡¯ P[1:0] bits input as they are don¡¯t care in SPI mode.
+#define WINBOND_QUAD_FLASH_SET_DUMMY_CMD 0x30
+#define WINBOND_QUAD_FLASH_DUMMY_CYCLES  0x08
+
+//--------------------------------------------------
+//   P[6:4]   |  dummy cycles  | MAXIMUM READ FREQ |
+//                               Required address alignment and start address for Reads: LSB A[1:0]=00b
+//--------------------------------------------------
+//  3'b000    | 6(def for SPI) |        104MHz     |
+//  3'b001    |       6        |        104MHz     |
+//  3'b010    |       6        |        104MHz     |
+//  3'b011    |       8        |        133MHz     | 
+//  3'b100    |       10       |        133MHz     | 
+//  3'b101    |       12       |        133MHz     |
+//  3'b110    |       14       |        133MHz     |
+//  3'b111    |       16       |        133MHz     |
+//--------------------------------------------------
 #endif
 
 #if WINBOND_DEVICE_W35T51NW
