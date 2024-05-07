@@ -82,7 +82,7 @@ FlexSPI2 pin multiplex options performance specifications:
         <th>测试结果</th>
     </tr>
     <tr>
-        <td rowspan="9">华邦<br>
+        <td rowspan="11">华邦<br>
         <td>W25Q40CLNIG</td>
         <td>2.3-3.6V</td>
         <td>104M (x4)</td>
@@ -129,7 +129,7 @@ FlexSPI2 pin multiplex options performance specifications:
         <td>通过</td>
     </tr>
     <tr>
-        <td>W25Q128JWSQ</td>
+        <td>W25Q128JWSQ/M</td>
         <td>1.7-1.95V</td>
         <td>133M (x4)</td>
         <td>S133Mx4</td>
@@ -140,7 +140,14 @@ FlexSPI2 pin multiplex options performance specifications:
         <td>1.7-1.95V</td>
         <td>133M (x4)</td>
         <td>S133Mx4</td>
-        <td>通过 `</td>
+        <td>通过</td>
+    </tr>
+    <tr>
+        <td>W25QQ512NWSIQ/M</td>
+        <td>1.7-1.95V</td>
+        <td>133M (x4)</td>
+        <td>S133Mx4</td>
+        <td></td>
     </tr>
     <tr>
         <td>W25M512JWBIQ</td>
@@ -448,7 +455,7 @@ FlexSPI2 pin multiplex options performance specifications:
             回读校验失败</td>
     </tr>
     <tr>
-        <td rowspan="5">芯成 ISSI</td>
+        <td rowspan="6">芯成 ISSI</td>
         <td>IS25LP064A</td>
         <td>2.3-3.6V</td>
         <td>133M (x4)</td>
