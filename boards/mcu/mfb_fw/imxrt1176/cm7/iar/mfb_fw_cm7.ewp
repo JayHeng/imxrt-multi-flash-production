@@ -62,7 +62,7 @@
                 </option>
                 <option>
                     <name>RTDescription</name>
-                    <state>Use the normal configuration of the C/C++ runtime library. No locale interface, C locale, no file descriptor support, no multibytes in printf and scanf, and no hex floats in strtod.</state>
+                    <state>A compact configuration of the C/C++14 runtime library. No locale interface, C locale, no file descriptor support, no multibytes in printf and scanf, and no hex floats in strtod.</state>
                 </option>
                 <option>
                     <name>OGProductVersion</name>
@@ -358,6 +358,7 @@
                     <state>$PROJ_DIR$/..</state>
                     <state>$PROJ_DIR$/../../../src</state>
                     <state>$PROJ_DIR$/../../../../../../devices/MIMXRT1176/utilities/debug_console_lite</state>
+                    <state>$PROJ_DIR$/../../../../../../devices/MIMXRT1176/utilities/str</state>
                     <state>$PROJ_DIR$/../../../../../../devices/MIMXRT1176/drivers</state>
                     <state>$PROJ_DIR$/../../../../../../devices/MIMXRT1176</state>
                     <state>$PROJ_DIR$/../../../../../../components/uart</state>
@@ -1462,6 +1463,7 @@
                     <state>$PROJ_DIR$/..</state>
                     <state>$PROJ_DIR$/../../../src</state>
                     <state>$PROJ_DIR$/../../../../../../devices/MIMXRT1176/utilities/debug_console_lite</state>
+                    <state>$PROJ_DIR$/../../../../../../devices/MIMXRT1176/utilities/str</state>
                     <state>$PROJ_DIR$/../../../../../../devices/MIMXRT1176/drivers</state>
                     <state>$PROJ_DIR$/../../../../../../devices/MIMXRT1176</state>
                     <state>$PROJ_DIR$/../../../../../../components/uart</state>
@@ -2564,6 +2566,7 @@
                     <state>$PROJ_DIR$/..</state>
                     <state>$PROJ_DIR$/../../../src</state>
                     <state>$PROJ_DIR$/../../../../../../devices/MIMXRT1176/utilities/debug_console_lite</state>
+                    <state>$PROJ_DIR$/../../../../../../devices/MIMXRT1176/utilities/str</state>
                     <state>$PROJ_DIR$/../../../../../../devices/MIMXRT1176/drivers</state>
                     <state>$PROJ_DIR$/../../../../../../devices/MIMXRT1176</state>
                     <state>$PROJ_DIR$/../../../../../../components/uart</state>
@@ -3668,6 +3671,7 @@
                     <state>$PROJ_DIR$/..</state>
                     <state>$PROJ_DIR$/../../../src</state>
                     <state>$PROJ_DIR$/../../../../../../devices/MIMXRT1176/utilities/debug_console_lite</state>
+                    <state>$PROJ_DIR$/../../../../../../devices/MIMXRT1176/utilities/str</state>
                     <state>$PROJ_DIR$/../../../../../../devices/MIMXRT1176/drivers</state>
                     <state>$PROJ_DIR$/../../../../../../devices/MIMXRT1176</state>
                     <state>$PROJ_DIR$/../../../../../../components/uart</state>
