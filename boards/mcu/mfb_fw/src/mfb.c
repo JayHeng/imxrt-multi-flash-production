@@ -358,7 +358,7 @@ void mfb_main(void)
             else
             {
                 /* Do patten verify test under 1bit SPI mode */
-                mfb_flash_pattern_verify_test(false);
+                mfb_flash_pattern_verify_test(true);
                 /* Get perf test result under 1bit SPI mode */
                 mfb_flash_memcpy_perf_test(false);
             }
@@ -472,9 +472,9 @@ void mfb_main(void)
                 uint32_t round = 1;
                 while (round <= 2)
                 {
-                    bool showError = (round == 2);
+                    //bool showError = (round == 2);
                     /* Don't show error info when it is 1st round, as flash may be blank this time */
-                    if (!mfb_flash_pattern_verify_test(showError))
+                    if (!mfb_flash_pattern_verify_test(true))
                     {
                          /* Try to write pattern into flash when error occurs in 1st round */
                          if (round == 1)

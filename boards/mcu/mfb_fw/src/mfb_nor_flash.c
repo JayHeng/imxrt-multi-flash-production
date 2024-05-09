@@ -375,7 +375,7 @@ bool mfb_flash_write_pattern_region(flash_inst_mode_t flashInstMode)
     bool result = true;
 
 #if MFB_FLASH_PATTERN_VERIFY_ENABLE
-    mfb_printf("MFB: Write pattern data into Flash region 0x%x - 0x%x.\r\n", MFB_FLASH_ACCESS_REGION_START, MFB_FLASH_ACCESS_REGION_START + MFB_FLASH_ACCESS_REGION_SIZE - 1);
+    mfb_printf("MFB: Write pattern data into Flash region 0x%x - 0x%x (but without readback verify).\r\n", MFB_FLASH_ACCESS_REGION_START, MFB_FLASH_ACCESS_REGION_START + MFB_FLASH_ACCESS_REGION_SIZE - 1);
     uint32_t sectorMax = MFB_FLASH_ACCESS_REGION_SIZE / EXAMPLE_FLASH_SECTOR_SIZE;
     uint32_t pagesPerSector = EXAMPLE_FLASH_SECTOR_SIZE / EXAMPLE_FLASH_PAGE_SIZE;
     for (uint32_t sectorId = 0; sectorId < sectorMax; sectorId++)
@@ -432,7 +432,7 @@ bool mfb_flash_pattern_verify_test(bool showError)
     }
     else
     {
-        //mfb_printf("MFB: Failed to verify Flash Pattern data via readback.\r\n");
+        //mfb_printf("MFB: Fail to verify Flash Pattern data via readback.\r\n");
     }
 #endif
     
