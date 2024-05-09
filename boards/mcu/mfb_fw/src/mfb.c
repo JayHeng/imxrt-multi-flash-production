@@ -407,17 +407,24 @@ void mfb_main(void)
 #endif
                     {
                         /* Enable quad mode. */
-                        status = mixspi_nor_enable_quad_mode(EXAMPLE_MIXSPI);
-                        if (status != kStatus_Success)
+                        if (g_flashPropertyInfo.flashQuadEnableBytes)
                         {
-                            mfb_printf("MFB: Flash failed to Enter Quad I/O SDR mode.\r\n");
+                            status = mixspi_nor_enable_quad_mode(EXAMPLE_MIXSPI);
+                            if (status != kStatus_Success)
+                            {
+                                mfb_printf("MFB: Flash failed to Enter Quad I/O SDR mode.\r\n");
+                            }
+                            else
+                            {
+                                mfb_printf("MFB: Flash entered Quad I/O SDR mode.\r\n");
+                            }
                         }
                         else
                         {
-                            mfb_printf("MFB: Flash entered Quad I/O SDR mode.\r\n");
-                            /* Read internal registers of Flash */
-                            mfb_flash_show_registers(&jedecID, false);
+                            mfb_printf("MFB: Flash remained in default Quad Enable mode.\r\n");
                         }
+                        /* Read internal registers of Flash */
+                        mfb_flash_show_registers(&jedecID, false);
                     }
                 }
                 else
