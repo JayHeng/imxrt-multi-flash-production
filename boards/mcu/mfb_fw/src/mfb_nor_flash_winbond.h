@@ -59,6 +59,7 @@
 // In SPI mode, SPI Set Read Parameters (C0h)" instruction writes to ¡®Dummy Clocks¡¯ P[6:4] bits only, while it 
 //    will ignore ¡®Wrap Length¡¯ P[1:0] bits input as they are don¡¯t care in SPI mode.
 #define WINBOND_QUAD_FLASH_SET_DUMMY_CMD 0x30
+#if MFB_FLASH_USE_DEFAULT_DUMMY
 #define WINBOND_QUAD_FLASH_DUMMY_CYCLES  0x06
 #else
 #define WINBOND_QUAD_FLASH_DUMMY_CYCLES  0x08
