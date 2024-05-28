@@ -238,6 +238,18 @@ void mfb_hyper_flash_test(void)
     mfb_jump_to_application(EXAMPLE_MIXSPI_AMBA_BASE + MFB_APP_IMAGE_OFFSET);
 }
 
+static void mfb_show_final_result(bool isTrue)
+{
+    if (isTrue)
+    {
+        mfb_printf("\r\nMFB: PASS\r\n");
+    }
+    else
+    {
+        mfb_printf("\r\nMFB: FAIL\r\n");
+    }
+}
+
 void mfb_main(void)
 {
     status_t status = kStatus_Success;
@@ -481,11 +493,13 @@ void mfb_main(void)
                          {
                              if (!mfb_flash_write_pattern_region(sta_flashInstMode))
                              {
+                                 mfb_show_final_result(false);
                                  return;
                              }
                          }
                          else
                          {
+                             mfb_show_final_result(false);
                              return;
                          }
                     }
@@ -515,6 +529,7 @@ void mfb_main(void)
                 }
                 /* Get perf test result under Multi I/O fast read mode and user-set speed */
                 mfb_flash_memcpy_perf_test(true);
+                mfb_show_final_result(true);
                 /* Jump into user application */
                 mfb_jump_to_application(EXAMPLE_MIXSPI_AMBA_BASE + MFB_APP_IMAGE_OFFSET);
             }
