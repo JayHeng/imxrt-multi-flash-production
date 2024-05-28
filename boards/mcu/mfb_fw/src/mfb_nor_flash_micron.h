@@ -21,7 +21,11 @@
 #define MICRON_FLASH_QUAD_ENABLE        0x00
 
 #define MICRON_QUAD_FLASH_SET_DUMMY_CMD 0xEB
-#define MICRON_QUAD_FLASH_DUMMY_CYCLES  0x0e
+#if MFB_FLASH_USE_DEFAULT_DUMMY
+#define MICRON_QUAD_FLASH_DUMMY_CYCLES  0x0A
+#else
+#define MICRON_QUAD_FLASH_DUMMY_CYCLES  0x0E
+#endif
 
 //------------------------------------------------------
 //   DC[7:4]  |  dummy cycles  |   Quad IO Fast Read   |
@@ -49,7 +53,11 @@
 #define MICRON_FLASH_QUAD_ENABLE        0x00
 
 #define MICRON_QUAD_FLASH_SET_DUMMY_CMD 0xBB
-#define MICRON_QUAD_FLASH_DUMMY_CYCLES  0x0b
+#if MFB_FLASH_USE_DEFAULT_DUMMY
+#define MICRON_QUAD_FLASH_DUMMY_CYCLES  0x0A
+#else
+#define MICRON_QUAD_FLASH_DUMMY_CYCLES  0x0B
+#endif
 
 //------------------------------------------------------
 //   DC[7:4]  |  dummy cycles  |   Quad IO Fast Read   |

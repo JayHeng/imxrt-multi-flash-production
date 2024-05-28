@@ -23,11 +23,13 @@
 #define MFB_FLASH_QPI_MODE_ENABLE        (0)
 // Whether to disable OPI mode for Octal Flash (test dummy cycle setting for Octal Flash)
 #define MFB_FLASH_OPI_MODE_DISABLE       (0)
+// Whether to sue default dummy cycle for Quad Flash
+#define MFB_FLASH_USE_DEFAULT_DUMMY      (1)
 
 // Whether to show MFB log info via UART console (for development)
 #define MFB_DEBUG_LOG_INFO_ENABLE        (1)
 // The flash region size used for perf and pattern test
-#define MFB_FLASH_ACCESS_REGION_START    (0x40000UL)
+#define MFB_FLASH_ACCESS_REGION_START    (0x800000UL)
 #define MFB_FLASH_ACCESS_REGION_SIZE     (0x40000UL)
 // Whether to show flash to RAM memcpy perf result
 #define MFB_FLASH_MEMCPY_PERF_ENABLE     (1)

@@ -205,13 +205,12 @@ void mfb_flash_set_param_for_winbond(jedec_id_t *jedecID)
             break;
         case 0x60:
             mfb_printf(" -- W25QxxxJW/FW/EW/NW(-IQ/IN) QuadlSPI 1.8V Series.\r\n");
-#if WINBOND_DEVICE_W25QxxxFW | WINBOND_DEVICE_W25QxxxEW
             g_flashPropertyInfo.mixspiRootClkFreq = kMixspiRootClkFreq_100MHz;
-#else
-            g_flashPropertyInfo.mixspiRootClkFreq = kMixspiRootClkFreq_133MHz;
-#endif
 #if WINBOND_DEVICE_W25QxxxNW
+#if !MFB_FLASH_USE_DEFAULT_DUMMY
+            g_flashPropertyInfo.mixspiRootClkFreq = kMixspiRootClkFreq_133MHz;
             g_flashPropertyInfo.flashDummyValue = WINBOND_QUAD_FLASH_SET_DUMMY_CMD;
+#endif
 #endif
             break;
         case 0x61:
@@ -231,9 +230,12 @@ void mfb_flash_set_param_for_winbond(jedec_id_t *jedecID)
             break;
         case 0x80:
             mfb_printf(" -- W25QxxxJW/NW(-IM) QuadlSPI 1.8V Series.\r\n");
-            g_flashPropertyInfo.mixspiRootClkFreq = kMixspiRootClkFreq_133MHz;
+            g_flashPropertyInfo.mixspiRootClkFreq = kMixspiRootClkFreq_100MHz;
 #if WINBOND_DEVICE_W25QxxxNW
+#if !MFB_FLASH_USE_DEFAULT_DUMMY
+            g_flashPropertyInfo.mixspiRootClkFreq = kMixspiRootClkFreq_133MHz;
             g_flashPropertyInfo.flashDummyValue = WINBOND_QUAD_FLASH_SET_DUMMY_CMD;
+#endif
 #endif
             break;
         ////////////////////////OctalSPI////////////////////////

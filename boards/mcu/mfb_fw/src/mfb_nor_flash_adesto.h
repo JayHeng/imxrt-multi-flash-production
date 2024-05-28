@@ -19,6 +19,8 @@
 #define ADESTO_FLASH_BUSY_STATUS_POL    1
 #define ADESTO_FLASH_BUSY_STATUS_OFFSET 0
 
+#define ADESTO_QUAD_FLASH_DUMMY_CYCLES  0x06
+
 //------------------------------------------------------
 //    NTR     |  dummy cycles  |Quad IO Fast Read(SPI) | 
 //------------------------------------------------------

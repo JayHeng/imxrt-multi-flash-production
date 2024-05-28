@@ -209,14 +209,17 @@ void mfb_flash_set_param_for_issi(jedec_id_t *jedecID)
     if (!g_flashPropertyInfo.flashIsOctal)
     {
         g_flashPropertyInfo.mixspiPad                 = kFLEXSPI_4PAD;
-        g_flashPropertyInfo.mixspiRootClkFreq         = kMixspiRootClkFreq_133MHz;
+        g_flashPropertyInfo.mixspiRootClkFreq         = kMixspiRootClkFreq_80MHz;
         g_flashPropertyInfo.mixspiReadSampleClock     = kFLEXSPI_ReadSampleClkLoopbackFromDqsPad;
         g_flashPropertyInfo.flashBusyStatusPol        = ISSI_FLASH_BUSY_STATUS_POL;
         g_flashPropertyInfo.flashBusyStatusOffset     = ISSI_FLASH_BUSY_STATUS_OFFSET;
         g_flashPropertyInfo.flashQuadEnableCfg        = ISSI_FLASH_QUAD_ENABLE;
         g_flashPropertyInfo.flashQuadEnableBytes      = 1;
         g_flashPropertyInfo.mixspiCustomLUTVendor     = s_customLUT_ISSI_Quad;
+#if !MFB_FLASH_USE_DEFAULT_DUMMY
+        g_flashPropertyInfo.mixspiRootClkFreq         = kMixspiRootClkFreq_133MHz;
         g_flashPropertyInfo.flashDummyValue           = ISSI_QUAD_FLASH_SET_DUMMY_CMD;
+#endif
     }
 #endif
 #if ISSI_DEVICE_OCTAL

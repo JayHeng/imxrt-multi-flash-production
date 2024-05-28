@@ -21,7 +21,11 @@
 #define ISSI_FLASH_QUAD_ENABLE        0x40
 
 #define ISSI_QUAD_FLASH_SET_DUMMY_CMD 0x40
+#if MFB_FLASH_USE_DEFAULT_DUMMY
+#define ISSI_QUAD_FLASH_DUMMY_CYCLES  0x06
+#else
 #define ISSI_QUAD_FLASH_DUMMY_CYCLES  0x08
+#endif
 
 //------------------------------------------------------
 //    P[6:3]  |  dummy cycles  |   Quad IO Fast Read   |
@@ -48,7 +52,11 @@
 #define ISSI_FLASH_QUAD_ENABLE        0x40
 
 #define ISSI_QUAD_FLASH_SET_DUMMY_CMD 0x70
+#if MFB_FLASH_USE_DEFAULT_DUMMY
+#define ISSI_QUAD_FLASH_DUMMY_CYCLES  0x06
+#else
 #define ISSI_QUAD_FLASH_DUMMY_CYCLES  0x0E
+#endif
 
 // VDD = 2.70~3.6V, 125°„C
 //------------------------------------------------------
@@ -98,7 +106,11 @@
 #define ISSI_FLASH_QUAD_ENABLE        0x40
 
 #define ISSI_QUAD_FLASH_SET_DUMMY_CMD 0x48
+#if MFB_FLASH_USE_DEFAULT_DUMMY
+#define ISSI_QUAD_FLASH_DUMMY_CYCLES  0x06
+#else
 #define ISSI_QUAD_FLASH_DUMMY_CYCLES  0x09
+#endif
 
 //------------------------------------------------------
 //    P[6:3]  |  dummy cycles  |   Quad IO Fast Read   |
@@ -125,7 +137,11 @@
 #define ISSI_FLASH_QUAD_ENABLE        0x40
 
 #define ISSI_QUAD_FLASH_SET_DUMMY_CMD 0xF0
+#if MFB_FLASH_USE_DEFAULT_DUMMY
+#define ISSI_QUAD_FLASH_DUMMY_CYCLES  0x06
+#else
 #define ISSI_QUAD_FLASH_DUMMY_CYCLES  0x08
+#endif
 
 //------------------------------------------------------
 //    P[4:3]  |  dummy cycles  |   Quad IO Fast Read   |

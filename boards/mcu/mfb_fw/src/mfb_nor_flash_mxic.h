@@ -27,8 +27,13 @@
 //------------------------------------------------------
 
 #elif MXIC_DEVICE_MX25Lxx33F | MXIC_DEVICE_MX25Vxx35F
+#if MFB_FLASH_USE_DEFAULT_DUMMY
+#define MXIC_FLASH_QUAD_ENABLE        0x0040
+#define MXIC_QUAD_FLASH_DUMMY_CYCLES  0x06
+#else
 #define MXIC_FLASH_QUAD_ENABLE        0x4040
 #define MXIC_QUAD_FLASH_DUMMY_CYCLES  0x0A
+#endif
 
 //------------------------------------------------------
 //    DC[6]   |  dummy cycles  |Quad IO Fast Read(SPI) |
@@ -38,8 +43,13 @@
 //------------------------------------------------------
 
 #elif MXIC_DEVICE_MX25Lxxx45G | MXIC_DEVICE_MX25Uxxx45G | MXIC_DEVICE_MX25Lxxx33F | MXIC_DEVICE_MX25Uxxx32F
+#if MFB_FLASH_USE_DEFAULT_DUMMY
+#define MXIC_FLASH_QUAD_ENABLE        0x0740
+#define MXIC_QUAD_FLASH_DUMMY_CYCLES  0x06
+#else
 #define MXIC_FLASH_QUAD_ENABLE        0xC740
 #define MXIC_QUAD_FLASH_DUMMY_CYCLES  0x0A
+#endif
 
 // Uxxx32F
 //------------------------------------------------------

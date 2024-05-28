@@ -193,13 +193,16 @@ void mfb_flash_set_param_for_micron(jedec_id_t *jedecID)
     if (!g_flashPropertyInfo.flashIsOctal)
     {
         g_flashPropertyInfo.mixspiPad                 = kFLEXSPI_4PAD;
-        g_flashPropertyInfo.mixspiRootClkFreq         = kMixspiRootClkFreq_133MHz;
+        g_flashPropertyInfo.mixspiRootClkFreq         = kMixspiRootClkFreq_120MHz;
         g_flashPropertyInfo.mixspiReadSampleClock     = kFLEXSPI_ReadSampleClkLoopbackFromDqsPad;
         g_flashPropertyInfo.flashBusyStatusPol        = MICRON_FLASH_BUSY_STATUS_POL;
         g_flashPropertyInfo.flashBusyStatusOffset     = MICRON_FLASH_BUSY_STATUS_OFFSET;
         //g_flashPropertyInfo.flashQuadEnableCfg    = MICRON_FLASH_QUAD_ENABLE;
         g_flashPropertyInfo.mixspiCustomLUTVendor     = s_customLUT_MICRON_Quad;
+#if !MFB_FLASH_USE_DEFAULT_DUMMY
+        g_flashPropertyInfo.mixspiRootClkFreq         = kMixspiRootClkFreq_133MHz;
         g_flashPropertyInfo.flashDummyValue           = MICRON_QUAD_FLASH_SET_DUMMY_CMD;
+#endif
         /* No need to enable quad mode for micron device. */
     }
 #endif

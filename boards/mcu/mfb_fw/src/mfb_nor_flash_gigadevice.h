@@ -36,8 +36,13 @@
 //------------------------------------------------------
 
 #elif GIGADEVICE_DEVICE_GD25QxxxE 
+#if MFB_FLASH_USE_DEFAULT_DUMMY
+#define GIGADEVICE_FLASH_QUAD_ENABLE        0x0200
+#define GIGADEVICE_QUAD_FLASH_DUMMY_CYCLES  0x06
+#else
 #define GIGADEVICE_FLASH_QUAD_ENABLE        0x1200
 #define GIGADEVICE_QUAD_FLASH_DUMMY_CYCLES  0x0A
+#endif
 
 //-----------------------------------------------------
 //   SR2[4]   |  dummy cycles  |Quad IO Fast Read(SPI) |
@@ -50,7 +55,11 @@
 #define GIGADEVICE_FLASH_QUAD_ENABLE        0x02
 
 #define GIGADEVICE_QUAD_FLASH_SET_DUMMY_CMD 0x21
+#if MFB_FLASH_USE_DEFAULT_DUMMY
+#define GIGADEVICE_QUAD_FLASH_DUMMY_CYCLES  0x06
+#else
 #define GIGADEVICE_QUAD_FLASH_DUMMY_CYCLES  0x0A
+#endif
 
 //-----------------------------------------------------
 //   SR3[0]   |  dummy cycles  |Quad IO Fast Read(SPI) |
@@ -88,7 +97,11 @@
 #define GIGADEVICE_FLASH_QUAD_ENABLE        0x0000
 
 #define GIGADEVICE_QUAD_FLASH_SET_DUMMY_CMD 0x0A
+#if MFB_FLASH_USE_DEFAULT_DUMMY
+#define GIGADEVICE_QUAD_FLASH_DUMMY_CYCLES  0x10
+#else
 #define GIGADEVICE_QUAD_FLASH_DUMMY_CYCLES  0x0A
+#endif
 
 //-------------------------------------------------------
 //   DC[7:0]  |  dummy cycles  | Quad IO Fast Read(SPI) |
@@ -115,7 +128,11 @@
 #define GIGADEVICE_FLASH_QUAD_ENABLE        0x0000
 
 #define GIGADEVICE_QUAD_FLASH_SET_DUMMY_CMD 0x0E
+#if MFB_FLASH_USE_DEFAULT_DUMMY
+#define GIGADEVICE_QUAD_FLASH_DUMMY_CYCLES  0x10
+#else
 #define GIGADEVICE_QUAD_FLASH_DUMMY_CYCLES  0x0E
+#endif
 
 //-------------------------------------------------------
 //   DC[7:0]  |  dummy cycles  | Quad IO Fast Read(SPI) |

@@ -278,6 +278,9 @@ void mfb_flash_set_param_for_mxic(jedec_id_t *jedecID)
         g_flashPropertyInfo.flashBusyStatusOffset     = MXIC_FLASH_BUSY_STATUS_OFFSET;
         g_flashPropertyInfo.flashQuadEnableCfg        = MXIC_FLASH_QUAD_ENABLE;
         g_flashPropertyInfo.mixspiCustomLUTVendor     = s_customLUT_MXIC_Quad;
+#if MFB_FLASH_USE_DEFAULT_DUMMY
+        g_flashPropertyInfo.mixspiRootClkFreq         = kMixspiRootClkFreq_80MHz;
+#endif
     }
 #endif
 #if MXIC_DEVICE_OCTAL

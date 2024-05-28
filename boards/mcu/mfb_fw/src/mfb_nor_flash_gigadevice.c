@@ -299,8 +299,11 @@ void mfb_flash_set_param_for_gigadevice(jedec_id_t *jedecID)
         g_flashPropertyInfo.mixspiReadSampleClock     = kFLEXSPI_ReadSampleClkLoopbackFromDqsPad;
         g_flashPropertyInfo.flashQuadEnableCfg        = GIGADEVICE_FLASH_QUAD_ENABLE;
         g_flashPropertyInfo.flashQuadEnableBytes      = 1;
+        g_flashPropertyInfo.mixspiRootClkFreq         = kMixspiRootClkFreq_100MHz;
+#if !MFB_FLASH_USE_DEFAULT_DUMMY
         g_flashPropertyInfo.mixspiRootClkFreq         = kMixspiRootClkFreq_133MHz;
         g_flashPropertyInfo.flashDummyValue           = GIGADEVICE_QUAD_FLASH_SET_DUMMY_CMD;
+#endif
 #elif GIGADEVICE_DEVICE_GD25LExxxD | GIGADEVICE_DEVICE_GD25LQxxxC
         g_flashPropertyInfo.mixspiReadSampleClock     = kFLEXSPI_ReadSampleClkLoopbackFromDqsPad;
         g_flashPropertyInfo.flashQuadEnableCfg        = GIGADEVICE_FLASH_QUAD_ENABLE;
@@ -309,11 +312,15 @@ void mfb_flash_set_param_for_gigadevice(jedec_id_t *jedecID)
 #elif GIGADEVICE_DEVICE_GD25LBxxxE
         g_flashPropertyInfo.mixspiRootClkFreq         = kMixspiRootClkFreq_133MHz;
         g_flashPropertyInfo.mixspiReadSampleClock     = kFLEXSPI_ReadSampleClkLoopbackFromDqsPad;
+#if !MFB_FLASH_USE_DEFAULT_DUMMY
         g_flashPropertyInfo.flashDummyValue           = GIGADEVICE_QUAD_FLASH_SET_DUMMY_CMD;
+#endif
 #elif GIGADEVICE_DEVICE_GD25LTxxxE
         g_flashPropertyInfo.mixspiRootClkFreq         = kMixspiRootClkFreq_166MHz;
         g_flashPropertyInfo.mixspiReadSampleClock     = kFLEXSPI_ReadSampleClkExternalInputFromDqsPad;
+#if !MFB_FLASH_USE_DEFAULT_DUMMY
         g_flashPropertyInfo.flashDummyValue           = GIGADEVICE_QUAD_FLASH_SET_DUMMY_CMD;
+#endif
         //g_flashPropertyInfo.flashQuadEnableCfg        = GIGADEVICE_FLASH_QUAD_ENABLE;
         /* No need to enable quad mode for this device. */
 #endif
