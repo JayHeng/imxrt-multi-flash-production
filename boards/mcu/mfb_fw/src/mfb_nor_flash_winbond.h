@@ -17,6 +17,11 @@
 #define WINBOND_FLASH_BUSY_STATUS_POL    1
 #define WINBOND_FLASH_BUSY_STATUS_OFFSET 0
 
+#define WINBOND_FLASH_DRVIE_STRENGTH_100P  0x00
+#define WINBOND_FLASH_DRVIE_STRENGTH_075P  0x20
+#define WINBOND_FLASH_DRVIE_STRENGTH_050P  0x40
+#define WINBOND_FLASH_DRVIE_STRENGTH_025P  0x60
+
 #if WINBOND_DEVICE_W25QxxxJW | \
     WINBOND_DEVICE_W25QxxxJV | \
     WINBOND_DEVICE_W25QxxxCL | \
@@ -44,9 +49,6 @@
 //  2'b10     | 6(def for SPI) |        104MHz         |         104MHz         |
 //  2'b11     |       8        |        104MHz         |         104MHz         |
 //------------------------------------------------------------------------------
-
-// change driver strength to 100% from 50% to increase Output driving current to improve the load of flash
-#define WINBOND_FLASH_DRVIE_STRENGTH_100P  0x00
 
 #elif WINBOND_DEVICE_W25QxxxNW
 #define WINBOND_FLASH_QUAD_ENABLE        0x02

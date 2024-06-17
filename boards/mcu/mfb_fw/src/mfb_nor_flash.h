@@ -98,9 +98,9 @@ typedef struct _flash_reg_access
 #define NOR_CMD_LUT_SEQ_IDX_ERASESECTOR     1
 #define NOR_CMD_LUT_SEQ_IDX_ENABLEQE        2
 #define NOR_CMD_LUT_SEQ_IDX_ENTERQPI        3
-#define NOR_CMD_LUT_SEQ_IDX_ENTEROPI        4
-#define NOR_CMD_LUT_SEQ_IDX_READSTATUS      5
-#define NOR_CMD_LUT_SEQ_IDX_SETDUMMY        6
+#define NOR_CMD_LUT_SEQ_IDX_ENTEROPI        3
+#define NOR_CMD_LUT_SEQ_IDX_READSTATUS      4
+#define NOR_CMD_LUT_SEQ_IDX_SETDUMMY        5
 #define NOR_CMD_LUT_SEQ_IDX_SETDRIVE        6
 #define NOR_CMD_LUT_SEQ_IDX_WRITEENABLE     7
 #define NOR_CMD_LUT_SEQ_IDX_READREG         8
