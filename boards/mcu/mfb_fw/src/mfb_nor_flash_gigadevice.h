@@ -166,6 +166,9 @@
 
 #endif
 
+////////////////////////////////////////////////////////////////////////////////
+#define GIGADEVICE_X8_FLASH_BUS_PROTOCOL (kFlashProtocolType_XCCELA)
+
 #if GIGADEVICE_DEVICE_GD25LX | GIGADEVICE_DEVICE_GD25X
 // 0xFF - SPI with DQS (Default)
 // 0xDF - SPI W/O DQS

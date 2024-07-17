@@ -39,6 +39,9 @@
 //------------------------------------------------------------------------------
 #endif
 
+////////////////////////////////////////////////////////////////////////////////
+#define SPANSION_X8_FLASH_BUS_PROTOCOL (kFlashProtocolType_OctaBus)
+
 #if SPANSION_DEVICE_S28HS512
 // CFR5N/V
 // bit0 - SPI/OPI enable

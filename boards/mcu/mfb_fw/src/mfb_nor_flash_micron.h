@@ -83,6 +83,9 @@
 
 #endif
 
+////////////////////////////////////////////////////////////////////////////////
+#define MICRON_X8_FLASH_BUS_PROTOCOL (kFlashProtocolType_XCCELA)
+
 #if MICRON_DEVICE_MT35XU512_RW303 | MICRON_DEVICE_MT35XU512_RW304
 // 0xFF - Extended SPI (Default)
 // 0xDF - Extended SPI without DQS

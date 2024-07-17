@@ -84,6 +84,9 @@
 
 #endif
 
+////////////////////////////////////////////////////////////////////////////////
+#define MXIC_X8_FLASH_BUS_PROTOCOL (kFlashProtocolType_OctaBus)
+
 #if MXIC_DEVICE_MX25UMxx345
 // 0x00 - SPI (default)
 // 0x01 - STR OPI enable

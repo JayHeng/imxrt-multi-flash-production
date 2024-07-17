@@ -14,6 +14,17 @@
  * Definitions
  ******************************************************************************/
 
+// Supported NOR Flash protocol type
+typedef enum _flash_protocol_type
+{
+    kFlashProtocolType_QSPI     = 0,
+    kFlashProtocolType_XCCELA   = 2,
+    kFlashProtocolType_HYPERBUS = 3,
+    kFlashProtocolType_OctaBus  = 4,   // JESD251
+
+    kFlashProtocolType_MAX      = 5,
+} flash_protocol_type_t;
+
 #define U32_VALUE_INVALID                 (0xdeadbeefu)
 #define INVALID_JEDEC_ID_0                (0x00u)
 #define INVALID_JEDEC_ID_1                (0xFFu)
@@ -148,6 +159,7 @@ typedef struct _flash_reg_access
 #define WINBOND_DEVICE_W25QxxxDV    (0)
 #define WINBOND_DEVICE_W25QxxxNW    (0)  // MIMXRT1170-EVKB_Rev.Cx (W25Q512NW)
 #define WINBOND_DEVICE_W25MxxxJW    (0)
+#define WINBOND_QUAD_FLASH_JEDEC_ID (0x003740EF)
 #define WINBOND_DEVICE_OCTAL        (1)
 #define WINBOND_DEVICE_W35T51NW     (1)
 ////////////////////////////////////////////////////////////////////////////////

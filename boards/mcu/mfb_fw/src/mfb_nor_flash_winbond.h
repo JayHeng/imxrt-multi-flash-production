@@ -82,6 +82,9 @@
 //--------------------------------------------------
 #endif
 
+////////////////////////////////////////////////////////////////////////////////
+#define WINBOND_X8_FLASH_BUS_PROTOCOL (kFlashProtocolType_XCCELA)
+
 #if WINBOND_DEVICE_W35T51NW
 // 0xFF - Extended SPI (Default)
 // 0xDF - Extended SPI without DQS
