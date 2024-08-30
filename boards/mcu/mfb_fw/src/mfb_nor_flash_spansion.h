@@ -18,9 +18,11 @@
 #define SPANSION_FLASH_BUSY_STATUS_OFFSET 0
 
 #if SPANSION_DEVICE_S25FL064L
-#define SPANSION_25FL_L_FLASH_QUAD_ENABLE    0x0200
+#define SPANSION_FLASH_QUAD_ENABLE           0x0200
 
 #define SPANSION_QUAD_FLASH_DUMMY_CYCLES     0x08
+
+#define SPANSION_QUAD_FLASH_UNIQUE_CFG       0x00
 
 //------------------------------------------------------
 // CR3NV[3:0] |  dummy cycles  |Quad IO Fast Read(SPI) |
@@ -36,7 +38,31 @@
 //  4'b1000   |   8(default)   |        108MHz         |
 //   ...      |       ..       |        108MHz         |
 //  4'b1111   |       15       |        108MHz         |
-//------------------------------------------------------------------------------
+//------------------------------------------------------
+#elif SPANSION_DEVICE_S25HS512T
+#define SPANSION_FLASH_QUAD_ENABLE           0x0200
+
+#define SPANSION_QUAD_FLASH_DUMMY_CYCLES     0x08
+
+//------------------------------------------------------
+// CR2NV[3:0] |  dummy cycles  |Quad IO Fast Read(SPI) |
+//            |                |Quad IO Fast Read(QPI) |
+//------------------------------------------------------
+//  4'b0000   |        0       |         43MHz         |
+//  4'b0001   |        1       |         56MHz         |
+//  4'b0010   |        2       |         68MHz         |
+//  4'b0011   |        3       |         81MHz         |
+//  4'b0100   |        4       |         93MHz         |
+//  4'b0101   |        5       |        106MHz         |
+//  4'b0110   |        6       |        118MHz         |
+//  4'b0111   |        7       |        131MHz         |
+//  4'b1000   |   8(default)   |        143MHz         |
+//   ...      |       ..       |        156MHz         |
+//  4'b1111   |       15       |        156MHz         |
+//------------------------------------------------------
+
+// CFR3NV[3] - Uniform or Hybrid Sector Architecture selection
+#define SPANSION_QUAD_FLASH_UNIQUE_CFG       0x08
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////

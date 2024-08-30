@@ -304,6 +304,11 @@ static status_t mixspi_nor_write_register(FLEXSPI_Type *base, flash_reg_access_t
         status = mixspi_nor_wait_bus_busy(base, kFlashInstMode_OPI);
         mixspi_sw_delay_us(100UL);
     }
+    else if (regAccess->regSeqIdx == NOR_CMD_LUT_SEQ_IDX_UNIQUECFG)
+    {
+        // For Infineon MirrorBit device, typical delay time for CFR3N setting is 45ms
+        mixspi_sw_delay_us(100000UL);
+    }
 
     /* Do software reset. */
     FLEXSPI_SoftwareReset(base);
@@ -329,6 +334,15 @@ status_t mixspi_nor_set_drive_strength(FLEXSPI_Type *base, uint8_t driveCmd)
     flash_reg_access_t regAccess;
     regAccess.regNum = 1;
     regAccess.regSeqIdx = NOR_CMD_LUT_SEQ_IDX_SETDRIVE;
+    regAccess.regValue.U = driveCmd;
+    return mixspi_nor_write_register(base, &regAccess);
+}
+
+status_t mixspi_nor_set_unique_cfg(FLEXSPI_Type *base, uint8_t driveCmd)
+{
+    flash_reg_access_t regAccess;
+    regAccess.regNum = 1;
+    regAccess.regSeqIdx = NOR_CMD_LUT_SEQ_IDX_UNIQUECFG;
     regAccess.regValue.U = driveCmd;
     return mixspi_nor_write_register(base, &regAccess);
 }

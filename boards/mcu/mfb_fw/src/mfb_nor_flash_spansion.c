@@ -21,7 +21,7 @@
  * Variables
  ******************************************************************************/
 
-#if SPANSION_DEVICE_S25FL064L
+#if SPANSION_DEVICE_QUAD
 const uint32_t s_customLUT_SPANSION_Quad[CUSTOM_LUT_LENGTH] = {
 #if !MFB_FLASH_QPI_MODE_ENABLE
     /* Fast read quad mode - SDR */
@@ -50,9 +50,15 @@ const uint32_t s_customLUT_SPANSION_Quad[CUSTOM_LUT_LENGTH] = {
     [4 * NOR_CMD_LUT_SEQ_IDX_WRITEENABLE] =
         FLEXSPI_LUT_SEQ(kFLEXSPI_Command_SDR,       kFLEXSPI_1PAD, 0x06, kFLEXSPI_Command_STOP,      kFLEXSPI_1PAD, 0x00),
 
-    /* Erase Sector - SPI */
+#if SPANSION_DEVICE_S25FL064L
+    /* Erase 4KB Sector - SPI */
     [4 * NOR_CMD_LUT_SEQ_IDX_ERASESECTOR] =
         FLEXSPI_LUT_SEQ(kFLEXSPI_Command_SDR,       kFLEXSPI_1PAD, 0x20, kFLEXSPI_Command_RADDR_SDR, kFLEXSPI_1PAD, 0x18),
+#elif SPANSION_DEVICE_S25HS512T
+    /* Erase 256KB Sector - SPI */
+    [4 * NOR_CMD_LUT_SEQ_IDX_ERASESECTOR] =
+        FLEXSPI_LUT_SEQ(kFLEXSPI_Command_SDR,       kFLEXSPI_1PAD, 0xD8, kFLEXSPI_Command_RADDR_SDR, kFLEXSPI_1PAD, 0x18),
+#endif
 
     /* Page Program - single mode */
     [4 * NOR_CMD_LUT_SEQ_IDX_PAGEPROGRAM] =
@@ -65,6 +71,14 @@ const uint32_t s_customLUT_SPANSION_Quad[CUSTOM_LUT_LENGTH] = {
     // opcode 0x01 to write Status Registers 1 and Configuration Registers (1&2&3)
     [4 * NOR_CMD_LUT_SEQ_IDX_ENABLEQE] =
         FLEXSPI_LUT_SEQ(kFLEXSPI_Command_SDR,       kFLEXSPI_1PAD, 0x01, kFLEXSPI_Command_WRITE_SDR, kFLEXSPI_1PAD, 0x04),
+
+    /* Write Any register - CFR3N */
+    [4 * NOR_CMD_LUT_SEQ_IDX_UNIQUECFG] =
+        FLEXSPI_LUT_SEQ(kFLEXSPI_Command_SDR,       kFLEXSPI_1PAD, 0x71, kFLEXSPI_Command_SDR,       kFLEXSPI_1PAD, 0x00),
+    [4 * NOR_CMD_LUT_SEQ_IDX_UNIQUECFG + 1] =
+        FLEXSPI_LUT_SEQ(kFLEXSPI_Command_SDR,       kFLEXSPI_1PAD, 0x00, kFLEXSPI_Command_SDR,       kFLEXSPI_1PAD, 0x04),
+    [4 * NOR_CMD_LUT_SEQ_IDX_UNIQUECFG + 2] =
+        FLEXSPI_LUT_SEQ(kFLEXSPI_Command_WRITE_SDR, kFLEXSPI_1PAD, 0x01, kFLEXSPI_Command_STOP,      kFLEXSPI_1PAD, 0x00),
 
     /* Read Any register */
     [4 * NOR_CMD_LUT_SEQ_IDX_READREG] =
@@ -301,11 +315,27 @@ void mfb_flash_set_param_for_spansion(jedec_id_t *jedecID)
     switch (jedecID->memoryTypeID)
     {
         /////////////////////////QuadSPI////////////////////////
+        case 0x2A:
+            g_flashPropertyInfo.flashHasQpiSupport = true;
+            g_flashPropertyInfo.mixspiReadSampleClock = kFLEXSPI_ReadSampleClkLoopbackFromDqsPad;
+            g_flashPropertyInfo.flashQuadEnableCfg = SPANSION_FLASH_QUAD_ENABLE;
+            g_flashPropertyInfo.flashQuadEnableBytes = 2;
+            g_flashPropertyInfo.flashUniqueCfg = SPANSION_QUAD_FLASH_UNIQUE_CFG;
+            mfb_printf(" -- S25HL-T QuadSPI 3.3V Series.\r\n");
+            break;
+        case 0x2B:
+            g_flashPropertyInfo.flashHasQpiSupport = true;
+            g_flashPropertyInfo.mixspiReadSampleClock = kFLEXSPI_ReadSampleClkLoopbackFromDqsPad;
+            g_flashPropertyInfo.flashQuadEnableCfg = SPANSION_FLASH_QUAD_ENABLE;
+            g_flashPropertyInfo.flashQuadEnableBytes = 2;
+            g_flashPropertyInfo.flashUniqueCfg = SPANSION_QUAD_FLASH_UNIQUE_CFG;
+            mfb_printf(" -- S25HS-T QuadSPI 1.8V Series.\r\n");
+            break;
         case 0x60:
             // S25FL-L QuadSPI
             g_flashPropertyInfo.flashHasQpiSupport = true;
             g_flashPropertyInfo.mixspiReadSampleClock = kFLEXSPI_ReadSampleClkLoopbackFromDqsPad;
-            g_flashPropertyInfo.flashQuadEnableCfg = SPANSION_25FL_L_FLASH_QUAD_ENABLE;
+            g_flashPropertyInfo.flashQuadEnableCfg = SPANSION_FLASH_QUAD_ENABLE;
             g_flashPropertyInfo.flashQuadEnableBytes = 2;
             mfb_printf(" -- S25FL-L QuadSPI 3.3V Series.\r\n");
             break;
@@ -379,6 +409,12 @@ void mfb_flash_show_registers_for_spansion(bool isOctalFlash)
         regAccess.regSeqIdx = NOR_CMD_LUT_SEQ_IDX_READREG;
         mixspi_nor_read_register(EXAMPLE_MIXSPI, &regAccess);
         mfb_printf("MFB: Flash Non-Volatile Configuration Register 3 (CR3NV): 0x%x\r\n", regAccess.regValue.B.reg1);
+#if SPANSION_DEVICE_S25HS512T
+        regAccess.regAddr = 0x000005;
+        regAccess.regSeqIdx = NOR_CMD_LUT_SEQ_IDX_READREG;
+        mixspi_nor_read_register(EXAMPLE_MIXSPI, &regAccess);
+        mfb_printf("MFB: Flash Non-Volatile Configuration Register 4 (CR4NV): 0x%x\r\n", regAccess.regValue.B.reg1);
+#endif
         regAccess.regAddr = 0x000030;
         regAccess.regSeqIdx = NOR_CMD_LUT_SEQ_IDX_READREG;
         mixspi_nor_read_register(EXAMPLE_MIXSPI, &regAccess);
@@ -407,10 +443,17 @@ void mfb_flash_show_registers_for_spansion(bool isOctalFlash)
         regAccess.regSeqIdx = NOR_CMD_LUT_SEQ_IDX_READREG;
         mixspi_nor_read_register(EXAMPLE_MIXSPI, &regAccess);
         mfb_printf("MFB: Flash Volatile Configuration Register 3 (CR3V): 0x%x\r\n", regAccess.regValue.B.reg1);
+#if SPANSION_DEVICE_S25HS512T
+        regAccess.regAddr = 0x800005;
+        regAccess.regSeqIdx = NOR_CMD_LUT_SEQ_IDX_READREG;
+        mixspi_nor_read_register(EXAMPLE_MIXSPI, &regAccess);
+        mfb_printf("MFB: Flash Volatile Configuration Register 4 (CR4V): 0x%x\r\n", regAccess.regValue.B.reg1);
+#elif SPANSION_DEVICE_S25FL064L
         regAccess.regAddr = 0x800040;
         regAccess.regSeqIdx = NOR_CMD_LUT_SEQ_IDX_READREG;
         mixspi_nor_read_register(EXAMPLE_MIXSPI, &regAccess);
         mfb_printf("MFB: Flash Protection Register (PR): 0x%x\r\n", regAccess.regValue.B.reg1);
+#endif
     }
     else
     {

@@ -82,6 +82,7 @@ typedef struct _flash_property_info
     uint8_t  flashEnableOctalCmd;
     uint32_t flashDummyValue;
     uint32_t flashDriveStrength;
+    uint32_t flashUniqueCfg;
 } flash_property_info_t;
 
 // Flash status/cfg register r/w access helper
@@ -113,6 +114,7 @@ typedef struct _flash_reg_access
 #define NOR_CMD_LUT_SEQ_IDX_READSTATUS      4
 #define NOR_CMD_LUT_SEQ_IDX_SETDUMMY        5
 #define NOR_CMD_LUT_SEQ_IDX_SETDRIVE        6
+#define NOR_CMD_LUT_SEQ_IDX_UNIQUECFG       6
 #define NOR_CMD_LUT_SEQ_IDX_WRITEENABLE     7
 #define NOR_CMD_LUT_SEQ_IDX_READREG         8
 #define NOR_CMD_LUT_SEQ_IDX_PAGEPROGRAM     10
@@ -233,7 +235,8 @@ typedef struct _flash_reg_access
 #define CYPRESS_DEVICE_VENDOR_ID    (0x01)
 #define INFINEON_DEVICE_VENDOR_ID   (0x34)
 #define SPANSION_DEVICE_QUAD        (1)
-#define SPANSION_DEVICE_S25FL064L   (1)
+#define SPANSION_DEVICE_S25FL064L   (0)
+#define SPANSION_DEVICE_S25HS512T   (1)
 #define SPANSION_DEVICE_OCTAL       (1)
 #define SPANSION_DEVICE_S28HS512    (1)
 #define SPANSION_DEVICE_HYPERBUS    (1)
@@ -266,6 +269,7 @@ extern status_t mixspi_nor_get_jedec_id(MIXSPI_Type *base, uint32_t *jedecId, fl
 extern status_t mixspi_nor_get_cfi_id(MIXSPI_Type *base, cfi_device_id_t *cfiDeviceId);
 extern status_t mixspi_nor_set_dummy_cycle(MIXSPI_Type *base, uint8_t dummyCmd);
 extern status_t mixspi_nor_set_drive_strength(FLEXSPI_Type *base, uint8_t driveCmd);
+extern status_t mixspi_nor_set_unique_cfg(FLEXSPI_Type *base, uint8_t driveCmd);
 extern status_t mixspi_nor_enable_quad_mode(MIXSPI_Type *base);
 extern status_t mixspi_nor_enable_qpi_mode(MIXSPI_Type *base);
 extern status_t mixspi_nor_enable_opi_mode(MIXSPI_Type *base);

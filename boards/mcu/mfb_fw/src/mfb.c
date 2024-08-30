@@ -280,9 +280,9 @@ void mfb_main(void)
 
     /* Get JEDEC ID. */
 #if MFB_FLASH_FAKE_JEDEC_ID_ENABLE
-    jedecID.manufacturerID = MXIC_QUAD_FLASH_JEDEC_ID & 0xFF;
-    jedecID.memoryTypeID = (MXIC_QUAD_FLASH_JEDEC_ID >> 8) & 0xFF;
-    jedecID.capacityID = (MXIC_QUAD_FLASH_JEDEC_ID >> 16) & 0xFF;
+    jedecID.manufacturerID = WINBOND_QUAD_FLASH_JEDEC_ID & 0xFF;
+    jedecID.memoryTypeID = (WINBOND_QUAD_FLASH_JEDEC_ID >> 8) & 0xFF;
+    jedecID.capacityID = (WINBOND_QUAD_FLASH_JEDEC_ID >> 16) & 0xFF;
     /* Can change this variable according to Flash default state */
     sta_flashInstMode = kFlashInstMode_SPI;
     /* Init FlexSPI using common LUT */ 
@@ -395,6 +395,12 @@ void mfb_main(void)
             {
                 mixspi_nor_set_drive_strength(EXAMPLE_MIXSPI, (uint8_t)(g_flashPropertyInfo.flashDriveStrength & 0xFF));
                 mfb_printf("MFB: Flash register (with drive strength) is set to 0x%x.\r\n", g_flashPropertyInfo.flashDriveStrength);
+            }
+            /* Write unique config value into flash if needed */
+            if (g_flashPropertyInfo.flashUniqueCfg != U32_VALUE_INVALID)
+            {
+                mixspi_nor_set_unique_cfg(EXAMPLE_MIXSPI, (uint8_t)(g_flashPropertyInfo.flashUniqueCfg & 0xFF));
+                mfb_printf("MFB: Flash register (for unique cfg) is set to 0x%x.\r\n", g_flashPropertyInfo.flashUniqueCfg);
             }
             if (!g_flashPropertyInfo.flashIsOctal)
             {
