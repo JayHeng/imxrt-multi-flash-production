@@ -355,6 +355,7 @@ void mfb_main(void)
         g_flashPropertyInfo.flashDummyValue = U32_VALUE_INVALID;
         g_flashPropertyInfo.flashDriveStrength = U32_VALUE_INVALID;
         g_flashPropertyInfo.flashQuadEnableBytes = 0;
+        g_flashPropertyInfo.flashUniqueCfg = U32_VALUE_INVALID;
         /* Get real flash size according to jedec id result (it may not be appliable to some specifal adesto device) */
         g_flashPropertyInfo.flashMemSizeInByte = mfb_flash_decode_common_capacity_id(jedecID.capacityID);
         mfb_printf("MFB: Flash Manufacturer ID: 0x%x", jedecID.manufacturerID);

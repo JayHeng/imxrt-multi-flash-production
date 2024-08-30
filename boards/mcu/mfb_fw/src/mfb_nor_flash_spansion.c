@@ -80,11 +80,37 @@ const uint32_t s_customLUT_SPANSION_Quad[CUSTOM_LUT_LENGTH] = {
     [4 * NOR_CMD_LUT_SEQ_IDX_UNIQUECFG + 2] =
         FLEXSPI_LUT_SEQ(kFLEXSPI_Command_WRITE_SDR, kFLEXSPI_1PAD, 0x01, kFLEXSPI_Command_STOP,      kFLEXSPI_1PAD, 0x00),
 
+#if SPANSION_DEVICE_S25HS512T
     /* Read Any register */
+    // The Read Any Register (RDARG_C_0) transaction is the best way to read all device registers, both nonvolatile and
+    //   volatile. This is followed by a number of latency cycles set by (CFR2V[3:0]) for reading nonvolatile registers.
     [4 * NOR_CMD_LUT_SEQ_IDX_READREG] =
         FLEXSPI_LUT_SEQ(kFLEXSPI_Command_SDR,       kFLEXSPI_1PAD, 0x65, kFLEXSPI_Command_RADDR_SDR, kFLEXSPI_1PAD, 0x18),
     [4 * NOR_CMD_LUT_SEQ_IDX_READREG + 1] =
+        FLEXSPI_LUT_SEQ(kFLEXSPI_Command_DUMMY_SDR, kFLEXSPI_1PAD, 0x08, kFLEXSPI_Command_READ_SDR,  kFLEXSPI_1PAD, 0x01),
+
+    /* Read Any register */
+    // The Read Any Register (RDARG_C_0) transaction is the best way to read all device registers, both nonvolatile and
+    //   volatile. This is followed by a number of latency cycles set by CFR3V[7:6] for reading volatile registers.
+    [4 * NOR_CMD_LUT_SEQ_IDX_READREG2] =
+        FLEXSPI_LUT_SEQ(kFLEXSPI_Command_SDR,       kFLEXSPI_1PAD, 0x65, kFLEXSPI_Command_RADDR_SDR, kFLEXSPI_1PAD, 0x18),
+    [4 * NOR_CMD_LUT_SEQ_IDX_READREG2 + 1] =
         FLEXSPI_LUT_SEQ(kFLEXSPI_Command_READ_SDR,  kFLEXSPI_1PAD, 0x01, kFLEXSPI_Command_STOP,      kFLEXSPI_1PAD, 0x00),
+#elif SPANSION_DEVICE_S25FL064L
+    /* Read Any register */
+    // The Read Any Register (RDAR) command provides a way to read device registers. The instruction is followed by a 3 or 4 Byte
+    //   address (depending on the address length configuration CR2V[0]), followed by a number of latency (dummy) cycles set by
+    //   CR3V[3:0].
+    [4 * NOR_CMD_LUT_SEQ_IDX_READREG] =
+        FLEXSPI_LUT_SEQ(kFLEXSPI_Command_SDR,       kFLEXSPI_1PAD, 0x65, kFLEXSPI_Command_RADDR_SDR, kFLEXSPI_1PAD, 0x18),
+    [4 * NOR_CMD_LUT_SEQ_IDX_READREG + 1] =
+        FLEXSPI_LUT_SEQ(kFLEXSPI_Command_DUMMY_SDR, kFLEXSPI_1PAD, 0x08, kFLEXSPI_Command_READ_SDR,  kFLEXSPI_1PAD, 0x01),
+
+    [4 * NOR_CMD_LUT_SEQ_IDX_READREG2] =
+        FLEXSPI_LUT_SEQ(kFLEXSPI_Command_SDR,       kFLEXSPI_1PAD, 0x65, kFLEXSPI_Command_RADDR_SDR, kFLEXSPI_1PAD, 0x18),
+    [4 * NOR_CMD_LUT_SEQ_IDX_READREG2 + 1] =
+        FLEXSPI_LUT_SEQ(kFLEXSPI_Command_DUMMY_SDR, kFLEXSPI_1PAD, 0x08, kFLEXSPI_Command_READ_SDR,  kFLEXSPI_1PAD, 0x01),
+#endif
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     /* Enter QPI mode */
@@ -424,33 +450,33 @@ void mfb_flash_show_registers_for_spansion(bool isOctalFlash)
         mixspi_nor_read_register(EXAMPLE_MIXSPI, &regAccess);
         mfb_printf("MFB: Flash Individual and Region Protection Register (IRP[15:8]): 0x%x\r\n", regAccess.regValue.B.reg1);
         regAccess.regAddr = 0x800000;
-        regAccess.regSeqIdx = NOR_CMD_LUT_SEQ_IDX_READREG;
+        regAccess.regSeqIdx = NOR_CMD_LUT_SEQ_IDX_READREG2;
         mixspi_nor_read_register(EXAMPLE_MIXSPI, &regAccess);
         mfb_printf("MFB: Flash Volatile Status Register 1 (SR1V): 0x%x\r\n", regAccess.regValue.B.reg1);
         regAccess.regAddr = 0x800001;
-        regAccess.regSeqIdx = NOR_CMD_LUT_SEQ_IDX_READREG;
+        regAccess.regSeqIdx = NOR_CMD_LUT_SEQ_IDX_READREG2;
         mixspi_nor_read_register(EXAMPLE_MIXSPI, &regAccess);
         mfb_printf("MFB: Flash Volatile Status Register 2 (SR2V): 0x%x\r\n", regAccess.regValue.B.reg1);
         regAccess.regAddr = 0x800002;
-        regAccess.regSeqIdx = NOR_CMD_LUT_SEQ_IDX_READREG;
+        regAccess.regSeqIdx = NOR_CMD_LUT_SEQ_IDX_READREG2;
         mixspi_nor_read_register(EXAMPLE_MIXSPI, &regAccess);
         mfb_printf("MFB: Flash Volatile Configuration Register 1 (CR1V): 0x%x\r\n", regAccess.regValue.B.reg1);
         regAccess.regAddr = 0x800003;
-        regAccess.regSeqIdx = NOR_CMD_LUT_SEQ_IDX_READREG;
+        regAccess.regSeqIdx = NOR_CMD_LUT_SEQ_IDX_READREG2;
         mixspi_nor_read_register(EXAMPLE_MIXSPI, &regAccess);
         mfb_printf("MFB: Flash Volatile Configuration Register 2 (CR2V): 0x%x\r\n", regAccess.regValue.B.reg1);
         regAccess.regAddr = 0x800004;
-        regAccess.regSeqIdx = NOR_CMD_LUT_SEQ_IDX_READREG;
+        regAccess.regSeqIdx = NOR_CMD_LUT_SEQ_IDX_READREG2;
         mixspi_nor_read_register(EXAMPLE_MIXSPI, &regAccess);
         mfb_printf("MFB: Flash Volatile Configuration Register 3 (CR3V): 0x%x\r\n", regAccess.regValue.B.reg1);
 #if SPANSION_DEVICE_S25HS512T
         regAccess.regAddr = 0x800005;
-        regAccess.regSeqIdx = NOR_CMD_LUT_SEQ_IDX_READREG;
+        regAccess.regSeqIdx = NOR_CMD_LUT_SEQ_IDX_READREG2;
         mixspi_nor_read_register(EXAMPLE_MIXSPI, &regAccess);
         mfb_printf("MFB: Flash Volatile Configuration Register 4 (CR4V): 0x%x\r\n", regAccess.regValue.B.reg1);
 #elif SPANSION_DEVICE_S25FL064L
         regAccess.regAddr = 0x800040;
-        regAccess.regSeqIdx = NOR_CMD_LUT_SEQ_IDX_READREG;
+        regAccess.regSeqIdx = NOR_CMD_LUT_SEQ_IDX_READREG2;
         mixspi_nor_read_register(EXAMPLE_MIXSPI, &regAccess);
         mfb_printf("MFB: Flash Protection Register (PR): 0x%x\r\n", regAccess.regValue.B.reg1);
 #endif
