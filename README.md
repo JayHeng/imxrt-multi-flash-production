@@ -83,6 +83,7 @@ FlexSPI2 pin multiplex options performance specifications:
     </tr>
     <tr>
         <td rowspan="11">华邦<br>
+                         Winbond<br>
         <td>W25Q40CLNIG</td>
         <td>2.3-3.6V</td>
         <td>104M (x4)</td>
@@ -146,7 +147,7 @@ FlexSPI2 pin multiplex options performance specifications:
         <td>W25QQ512NWSIQ/M</td>
         <td>1.7-1.95V</td>
         <td>133M (x4)</td>
-        <td>S133Mx4</td>
+        <td></td>
         <td></td>
     </tr>
     <tr>
@@ -159,7 +160,7 @@ FlexSPI2 pin multiplex options performance specifications:
     <tr>
         <td>W35T51NW</td>
         <td>1.7-2.0V</td>
-        <td>200M (x8)</td>
+        <td>200M (x8D)</td>
         <td>D100Mx8<br>
             D166Mx8<br>
             D200Mx8</td>
@@ -263,7 +264,7 @@ FlexSPI2 pin multiplex options performance specifications:
         <td>MX25U25643G</td>
         <td>1.65-2V</td>
         <td>120M (x4)</td>
-        <td>S120Mx4</td>
+        <td></td>
         <td></td>
     </tr>
     <tr>
@@ -276,58 +277,58 @@ FlexSPI2 pin multiplex options performance specifications:
     <tr>
         <td>MX25UW6435G</td>
         <td>1.65-2V</td>
-        <td>200M (x8)</td>
-        <td>D200Mx8</td>
+        <td>200M (x8D)</td>
+        <td></td>
         <td></td>
     </tr>
     <tr>
         <td>MX25UW12845G</td>
         <td>1.65-2V</td>
-        <td>200M (x8)</td>
-        <td>D200Mx8</td>
+        <td>200M (x8D)</td>
+        <td></td>
         <td></td>
     </tr>
     <tr>
         <td>MX25UW25345G</td>
         <td>1.65-2V</td>
-        <td>200M (x8)</td>
+        <td>200M (x8D)</td>
         <td>D200Mx8</td>
         <td>通过</td>
     </tr>
     <tr>
         <td>MX25UW51345G</td>
         <td>1.65-2V</td>
-        <td>200M (x8)</td>
-        <td>D200Mx8</td>
+        <td>200M (x8D)</td>
+        <td></td>
         <td></td>
     </tr>
     <tr>
         <td>MX25UM51345G</td>
         <td>1.65-2V</td>
-        <td>200M (x8)</td>
+        <td>200M (x8D)</td>
         <td>D200Mx8</td>
         <td>通过</td>
     </tr>
     <tr>
         <td>MX25LM51245G</td>
         <td>2.7-3.6V</td>
-        <td>200M (x8)</td>
-        <td>D200Mx8</td>
+        <td>200M (x8D)</td>
+        <td></td>
         <td></td>
     </tr>
     <tr>
         <td>MX66UM1G45G</td>
         <td>1.65-2V</td>
-        <td>200M (x8)</td>
-        <td>D200Mx8</td>
+        <td>200M (x8D)</td>
+        <td></td>
         <td></td>
     </tr>
     <tr>
         <td rowspan="18">兆易创新<br>
                          GigaDevice</td>
-        <td>GD25LE32</td>
-        <td></td>
-        <td></td>
+        <td>GD25LE32E</td>
+        <td>1.65~2.0V</td>
+        <td>133M (x4)</td>
         <td></td>
         <td></td>
     </tr>
@@ -339,16 +340,16 @@ FlexSPI2 pin multiplex options performance specifications:
         <td>通过</td>
     </tr>
     <tr>
-        <td>GD25LQ64</td>
-        <td></td>
-        <td></td>
+        <td>GD25LQ64E</td>
+        <td>1.65~2.0V</td>
+        <td>133M (x4)</td>
         <td></td>
         <td></td>
     </tr>
     <tr>
-        <td>GD25LE64</td>
-        <td></td>
-        <td></td>
+        <td>GD25LE64E</td>
+        <td>1.65~2.0V</td>
+        <td>133M (x4)</td>
         <td></td>
         <td></td>
     </tr>
@@ -381,16 +382,16 @@ FlexSPI2 pin multiplex options performance specifications:
         <td>通过</td>
     </tr>
     <tr>
-        <td>GD25LQ128</td>
-        <td></td>
-        <td></td>
+        <td>GD25LQ128D</td>
+        <td>1.65~2.0V</td>
+        <td>120M (x4)</td>
         <td></td>
         <td></td>
     </tr>
     <tr>
-        <td>GD25LF128</td>
-        <td></td>
-        <td></td>
+        <td>GD25LF128E</td>
+        <td>1.65~2.0V</td>
+        <td>166M (x4)</td>
         <td></td>
         <td></td>
     </tr>
@@ -402,37 +403,37 @@ FlexSPI2 pin multiplex options performance specifications:
         <td>通过</td>
     </tr>
     <tr>
-        <td>GD25LB256</td>
-        <td></td>
-        <td></td>
-        <td></td>
-        <td></td>
-    </tr>
-    <tr>
-        <td>GD25LQ256</td>
-        <td></td>
-        <td></td>
+        <td>GD25LB256D</td>
+        <td>1.65-2.0V</td>
+        <td>120M (x4)</td>
         <td></td>
         <td></td>
     </tr>
     <tr>
-        <td>GD25LF255</td>
+        <td>GD25LQ256D</td>
+        <td>1.65-2.0V</td>
+        <td>120M (x4)</td>
         <td></td>
         <td></td>
+    </tr>
+    <tr>
+        <td>GD25LF255E</td>
+        <td>1.65-2.0V</td>
+        <td>166M (x4)</td>
         <td></td>
         <td></td>
     </tr>
     <tr>
         <td>GD25LT512</td>
-        <td></td>
-        <td></td>
+        <td>1.65-2.0V</td>
+        <td>200M (x4D)</td>
         <td></td>
         <td></td>
     </tr>
     <tr>
         <td>GD55B01G</td>
-        <td></td>
-        <td></td>
+        <td>2.7~3.6V</td>
+        <td>133M (x4)</td>
         <td></td>
         <td></td>
     </tr>
@@ -455,46 +456,69 @@ FlexSPI2 pin multiplex options performance specifications:
             回读校验失败</td>
     </tr>
     <tr>
-        <td rowspan="6">芯成 ISSI</td>
+        <td rowspan="9">芯成 ISSI</td>
         <td>IS25LP064A</td>
         <td>2.3-3.6V</td>
         <td>133M (x4)</td>
-        <td>S133Mx4</td>
+        <td></td>
         <td></td>
     </tr>
     <tr>
         <td>IS25WP064A</td>
         <td>1.65-1.95V</td>
         <td>133M (x4)</td>
-        <td>S133Mx4</td>
+        <td></td>
         <td></td>
     </tr>
     <tr>
         <td>IS25LP064D</td>
         <td>2.3-3.6V</td>
         <td>166M (x4)</td>
-        <td>S166Mx4</td>
+        <td></td>
         <td></td>
     </tr>
     <tr>
         <td>IS25WP064D</td>
         <td>1.65-1.95V</td>
         <td>166M (x4)</td>
-        <td>S166Mx4</td>
+        <td></td>
         <td></td>
     </tr>
     <tr>
         <td>IS25WP128</td>
         <td>1.65-1.95V</td>
         <td>133M (x4)</td>
-        <td>S133Mx4</td>
+        <td>S80Mx4<br>
+            S133Mx4</td>
+        <td>通过<br>
+            回读校验失败(设置Dummy失败)</td>
+    </tr>
+    <tr>
+        <td>IS25WP128F</td>
+        <td>1.65-1.95V</td>
+        <td>166M (x4)</td>
+        <td></td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>IS25LP128F</td>
+        <td>2.3-3.6V</td>
+        <td>166M (x4)</td>
+        <td></td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>IS25LP01G</td>
+        <td>2.7-3.6V</td>
+        <td>133M (x4)</td>
+        <td></td>
         <td></td>
     </tr>
     <tr>
         <td>IS25WX256</td>
         <td>1.7-2.0V</td>
         <td>200M (x8)</td>
-        <td>D200Mx8</td>
+        <td></td>
         <td></td>
     </tr>
     <tr>
@@ -503,95 +527,109 @@ FlexSPI2 pin multiplex options performance specifications:
         <td>MT25QU128_RW138</td>
         <td>1.7-2.0V</td>
         <td>166M (x4)</td>
-        <td>S166Mx4</td>
+        <td></td>
         <td></td>
     </tr>
     <tr>
         <td>MT25QL128_RW126</td>
         <td>2.7-3.6V</td>
         <td>133M (x4)</td>
-        <td>S133Mx4</td>
+        <td></td>
         <td></td>
     </tr>
     <tr>
         <td>MT25QL256_RW162</td>
         <td>2.7-3.6V</td>
         <td>133M (x4)</td>
-        <td>S133Mx4</td>
+        <td></td>
         <td></td>
     </tr>
     <tr>
         <td>MT35XU512_RW303</td>
         <td>1.7-2.0V</td>
         <td>200M (x8)</td>
-        <td>D200Mx8</td>
+        <td></td>
         <td></td>
     </tr>
     <tr>
         <td>MT35XU512_RW304</td>
         <td>1.7-2.0V</td>
         <td>200M (x8)</td>
-        <td>D200Mx8</td>
+        <td></td>
         <td></td>
     </tr>
     <tr>
         <td rowspan="6">Renesas<br>
                         (Adesto)</td>
         <td>AT25QF641</td>
-        <td></td>
-        <td></td>
+        <td>2.7-3.6V</td>
+        <td>133M (x4)</td>
         <td></td>
         <td></td>
     </tr>
     <tr>
         <td>AT25QL641</td>
-        <td></td>
-        <td></td>
+        <td>1.7-2.0V</td>
+        <td>104M (x4)</td>
         <td></td>
         <td></td>
     </tr>
     <tr>
         <td>AT25SF128A</td>
-        <td></td>
-        <td></td>
+        <td>2.7-3.6V</td>
+        <td>133M (x4)</td>
         <td></td>
         <td></td>
     </tr>
     <tr>
         <td>AT25SL128A</td>
-        <td></td>
-        <td></td>
+        <td>1.7-2.0V</td>
+        <td>133M (x4)</td>
         <td></td>
         <td></td>
     </tr>
     <tr>
         <td>AT25QL128A</td>
-        <td></td>
-        <td></td>
+        <td>1.7-2.0V</td>
+        <td>133M (x4)</td>
         <td></td>
         <td></td>
     </tr>
     <tr>
         <td>ATXP032</td>
-        <td></td>
+        <td>1.65-1.95V</td>
         <td>200M (x8)</td>
-        <td>D200Mx8</td>
+        <td></td>
         <td></td>
     </tr>
     <tr>
-        <td rowspan="2">Infineon<br>
+        <td rowspan="4">Infineon<br>
                         (Spansion)</td>
         <td>S25FL064L</td>
-        <td></td>
-        <td></td>
+        <td>2.7-3.6V</td>
+        <td>108M (x4)</td>
         <td></td>
         <td></td>
     </tr>
     <tr>
-        <td>S28HS512</td>
+        <td>S79FL256S</td>
+        <td>2.7-3.6V</td>
+        <td>133M (x4)</td>
         <td></td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>S25HL512T</td>
+        <td>2.7-3.6V</td>
+        <td>166M (x4)</td>
+        <td></td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>S28HS512T</td>
+        <td>1.7-2.0V</td>
         <td>200M (x8)</td>
-        <td>D200Mx8</td>
+        <td></td>
         <td></td>
     </tr>
 </table>
