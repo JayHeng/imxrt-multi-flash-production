@@ -75,7 +75,7 @@ mixspi_root_clk_freq_t get_current_mixspi_root_clk(uint32_t clkInHz)
         {
             uint32_t delta1 = (g_mixspiRootClkFreqInMHz[idx] >= clkInMHz)?(g_mixspiRootClkFreqInMHz[idx] - clkInMHz):(clkInMHz - g_mixspiRootClkFreqInMHz[idx]);
             uint32_t delta2 = g_mixspiRootClkFreqInMHz[idx + 1] - clkInMHz;
-            if (delta1 < delta2)
+            if (delta1 > delta2)
             {
                 idx++;
             }
