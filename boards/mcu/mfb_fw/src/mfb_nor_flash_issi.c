@@ -111,6 +111,13 @@ const uint32_t s_customLUT_ISSI_Octal[CUSTOM_LUT_LENGTH] = {
     [4 * NOR_CMD_LUT_SEQ_IDX_SETDUMMY + 1] =
         FLEXSPI_LUT_SEQ(kFLEXSPI_Command_SDR,       kFLEXSPI_1PAD, 0x00, kFLEXSPI_Command_SDR,       kFLEXSPI_1PAD, 0x01),
     [4 * NOR_CMD_LUT_SEQ_IDX_SETDUMMY + 2] =
+         FLEXSPI_LUT_SEQ(kFLEXSPI_Command_WRITE_SDR, kFLEXSPI_1PAD, 0x01, kFLEXSPI_Command_STOP,      kFLEXSPI_1PAD, 0x00),
+
+    [4 * NOR_CMD_LUT_SEQ_IDX_SETDRIVE] =
+        FLEXSPI_LUT_SEQ(kFLEXSPI_Command_SDR,       kFLEXSPI_1PAD, 0x81, kFLEXSPI_Command_SDR,       kFLEXSPI_1PAD, 0x00),
+    [4 * NOR_CMD_LUT_SEQ_IDX_SETDRIVE + 1] =
+        FLEXSPI_LUT_SEQ(kFLEXSPI_Command_SDR,       kFLEXSPI_1PAD, 0x00, kFLEXSPI_Command_SDR,       kFLEXSPI_1PAD, 0x03),
+    [4 * NOR_CMD_LUT_SEQ_IDX_SETDRIVE + 2] =
         FLEXSPI_LUT_SEQ(kFLEXSPI_Command_WRITE_SDR, kFLEXSPI_1PAD, 0x01, kFLEXSPI_Command_STOP,      kFLEXSPI_1PAD, 0x00),
 
     /* Erase Sector - SPI */
@@ -199,6 +206,7 @@ void mfb_flash_set_param_for_issi(jedec_id_t *jedecID)
         case 0x5B:
             g_flashPropertyInfo.flashIsOctal = true;
             mfb_printf(" -- IS25WX OctalSPI 1.8V Series.\r\n");
+            g_flashPropertyInfo.flashDriveStrength = 0xFD;
             break;
         default:
             mfb_printf(" -- Unsupported Series.\r\n");
